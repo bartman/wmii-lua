@@ -12,6 +12,8 @@ local io = require("io")
 local os = require("os")
 local posix = require("posix")
 local string = require("string")
+local print = print
+local pairs = pairs
 
 module("wmii")
 
@@ -106,6 +108,22 @@ end
 -- ------------------------------------------------------------------------
 -- write a value to a wmii virtual file system
 function write (file, value)
-        os.execute ("echo -n '" .. value .. "' | wmiir write " .. file)
+        local tmpfile = os.tmpname()
+
+        local fh = io.open (tmpfile, "wb")
+        fh:write(value)
+        io.close (fh)
+
+        os.execute ("wmiir write " .. file .. " < " .. tmpfile)
+        os.remove (tmpfile)
+end
+
+-- ------------------------------------------------------------------------
+-- write a value to a wmii virtual file system
+function configure (config)
+        local x, y
+        for x, y in pairs(config) do
+                write ("/ctl", x .. " " .. y)
+        end
 end
 

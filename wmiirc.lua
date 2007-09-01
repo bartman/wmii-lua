@@ -2,25 +2,12 @@
 
 require "wmii"
 
-wmii.write ("/lbar/1", '#FF0000 #00FF00 #0000FF xxx')
-
-foo = wmii.ls ("/")
-io.write ("ls ::\n" .. foo .. "\n")
-
-foo = wmii.ls ("/lbar", "-l")
-io.write ("ls -l ::\n" .. foo .. "\n")
-
-foo = wmii.read ("/lbar/1")
-io.write ("read /lbar/1 ::\n" .. foo .. "\n\n")
-
-
-io.write ("read some events...\n")
---[[
-for x in wmii.iread("/event") do
-        io.write ("ev: " .. x .. "\n")
-end
-]]--
-for x,y in wmii.ievents() do
-        io.write ("ev: " .. x .. " - " .. y .. "\n")
-end
+local config = {
+        border      = 1,
+        font        = '-windows-proggytiny-medium-r-normal--10-80-96-96-c-60-iso8859-1',
+        focuscolors = '#FFFFaa #007700 #88ff88',
+        normcolors  = '#888888 #222222 #333333',
+        grabmod     = 'Mod1'
+}
+wmii.configure (config)
 
