@@ -80,7 +80,7 @@ local key_handlers = {
         end,
         ["Mod2-Shift-#"] = function (key)
                 io.write ("    Mod2-Shift-#: " .. key .. "\n")
-        end
+        end,
 
 
         -- ...
@@ -105,7 +105,7 @@ local key_handlers = {
         end,
         ["Mod1-Shift-t"] = function (key)
                 io.write ("    Mod1-Shift-t: " .. key .. "\n")
-        end,
+        end
 }
 
 -- event handlers
