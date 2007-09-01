@@ -13,6 +13,11 @@ local config = {
 }
 wmii.configure (config)
 
+-- stuff below will eventually go to a separate file, and configuration will remain here
+-- similar to the split between the wmii+ruby wmiirc and wmiirc-config
+--
+-- for now I just want to get the feel of how things will work in lua
+
 -- key handlers
 
 local key_handlers = {
