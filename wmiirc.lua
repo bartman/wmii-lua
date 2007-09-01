@@ -4,14 +4,16 @@ require "wmii"
 
 -- this is the base configuration
 local config = {
+        xterm = 'x-terminal-emulator'
+}
+wmii.configure ({
         view        = 1,
         border      = 1,
         font        = '-windows-proggytiny-medium-r-normal--10-80-96-96-c-60-iso8859-1',
         focuscolors = '#FFFFaa #007700 #88ff88',
         normcolors  = '#888888 #222222 #333333',
         grabmod     = 'Mod1'
-}
-wmii.configure (config)
+})
 
 -- stuff below will eventually go to a separate file, and configuration will remain here
 -- similar to the split between the wmii+ruby wmiirc and wmiirc-config
@@ -24,20 +26,10 @@ local key_handlers = {
         ["*"] = function (key)
                 io.write ("*: " .. key .. "\n")
         end,
-        ["Mod1-Control-t"] = function (key)
-                io.write ("    Mod1-Control-t: " .. key .. "\n")
-        end,
-        ["Mod1-space"] = function (key)
-                io.write ("    Mod1-space: " .. key .. "\n")
-        end,
-        ["Mod1-d"] = function (key)
-                io.write ("    Mod1-d: " .. key .. "\n")
-        end,
-        ["Mod1-s"] = function (key)
-                io.write ("    Mod1-s: " .. key .. "\n")
-        end,
-        ["Mod1-m"] = function (key)
-                io.write ("    Mod1-m: " .. key .. "\n")
+
+        -- execution and actions
+        ["Mod1-Return"] = function (key)
+                os.execute (config.xterm)
         end,
         ["Mod1-a"] = function (key)
                 io.write ("    Mod1-a: " .. key .. "\n")
@@ -45,21 +37,8 @@ local key_handlers = {
         ["Mod1-p"] = function (key)
                 io.write ("    Mod1-p: " .. key .. "\n")
         end,
-        ["Mod1-t"] = function (key)
-                io.write ("    Mod1-t: " .. key .. "\n")
-        end,
-        ["Mod1-Return"] = function (key)
-                io.write ("    Mod1-Return: " .. key .. "\n")
-        end,
-        ["Mod1-Shift-space"] = function (key)
-                io.write ("    Mod1-Shift-space: " .. key .. "\n")
-        end,
-        ["Mod1-Shift-c"] = function (key)
-                io.write ("    Mod1-Shift-c: " .. key .. "\n")
-        end,
-        ["Mod1-Shift-t"] = function (key)
-                io.write ("    Mod1-Shift-t: " .. key .. "\n")
-        end,
+
+        -- HJKL active selection
         ["Mod1-h"] = function (key)
                 io.write ("    Mod1-h: " .. key .. "\n")
         end,
@@ -72,24 +51,61 @@ local key_handlers = {
         ["Mod1-k"] = function (key)
                 io.write ("    Mod1-k: " .. key .. "\n")
         end,
-        ["Mod1-Shift-$LEFT"] = function (key)
-                io.write ("    Mod1-Shift-$LEFT: " .. key .. "\n")
+
+        -- HJKL movement
+        ["Mod1-Shift-h"] = function (key)
+                io.write ("    Mod1-Shift-h: " .. key .. "\n")
         end,
-        ["Mod1-Shift-$RIGHT"] = function (key)
-                io.write ("    Mod1-Shift-$RIGHT: " .. key .. "\n")
+        ["Mod1-Shift-l"] = function (key)
+                io.write ("    Mod1-Shift-l: " .. key .. "\n")
         end,
-        ["Mod1-Shift-$DOWN"] = function (key)
-                io.write ("    Mod1-Shift-$DOWN: " .. key .. "\n")
+        ["Mod1-Shift-j"] = function (key)
+                io.write ("    Mod1-Shift-j: " .. key .. "\n")
         end,
-        ["Mod1-Shift-$UP"] = function (key)
-                io.write ("    Mod1-Shift-$UP: " .. key .. "\n")
+        ["Mod1-Shift-k"] = function (key)
+                io.write ("    Mod1-Shift-k: " .. key .. "\n")
         end,
-        ["Mod1-#"] = function (key)
-                io.write ("    Mod1-#: " .. key .. "\n")
+
+        -- floating vs tiled
+        ["Mod1-space"] = function (key)
+                io.write ("    Mod1-space: " .. key .. "\n")
         end,
-        ["Mod1-Shift-#"] = function (key)
-                io.write ("    Mod1-Shift-#: " .. key .. "\n")
+        ["Mod1-Shift-space"] = function (key)
+                io.write ("    Mod1-Shift-space: " .. key .. "\n")
+        end,
+
+        -- work spaces
+        ["Mod2-#"] = function (key)
+                io.write ("    Mod2-#: " .. key .. "\n")
+        end,
+        ["Mod2-Shift-#"] = function (key)
+                io.write ("    Mod2-Shift-#: " .. key .. "\n")
         end
+
+
+        -- ...
+
+        ["Mod1-Control-t"] = function (key)
+                io.write ("    Mod1-Control-t: " .. key .. "\n")
+        end,
+        ["Mod1-d"] = function (key)
+                io.write ("    Mod1-d: " .. key .. "\n")
+        end,
+        ["Mod1-s"] = function (key)
+                io.write ("    Mod1-s: " .. key .. "\n")
+        end,
+        ["Mod1-m"] = function (key)
+                io.write ("    Mod1-m: " .. key .. "\n")
+        end,
+        ["Mod1-t"] = function (key)
+                io.write ("    Mod1-t: " .. key .. "\n")
+        end,
+        ["Mod1-Shift-c"] = function (key)
+                io.write ("    Mod1-Shift-c: " .. key .. "\n")
+        end,
+        ["Mod1-Shift-t"] = function (key)
+                io.write ("    Mod1-Shift-t: " .. key .. "\n")
+        end,
 }
 
 -- event handlers
