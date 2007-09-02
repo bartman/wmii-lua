@@ -1,11 +1,24 @@
 #!/usr/bin/env lua
 
-require "wmii"
+-- debug
+local log = io.open("/tmp/wmiirc.log", "a")
+function my_log (str)
+        io.stderr:write (str .. "\n")
+        log:write(str .. "\n")
+end
+
+-- load wmii.lua
+my_log("wmii: loading wmii.lua")
+package.path = './.wmii-3.5/?.lua;' .. package.path
+require "wmii" 
+
+my_log("wmii: wmii.lua loaded")
 
 -- this is the base configuration
 local config = {
         xterm = 'x-terminal-emulator'
 }
+my_log("wmii: setting confg")
 wmii.configure ({
         view        = 1,
         border      = 1,
@@ -14,6 +27,16 @@ wmii.configure ({
         normcolors  = '#888888 #222222 #333333',
         grabmod     = 'Mod1'
 })
+
+my_log("wmii: config set")
+
+wmii.write ("/colrules", "/.*/ -> 58+42")
+wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
+                      .. "/MPlayer.*/ -> ~\n"
+                      .. "/.*/ -> sel\n"
+                      .. "/.*/ -> 1\n")
+
+wmii.write ("/keys", "Mod1-Return")
 
 -- stuff below will eventually go to a separate file, and configuration will remain here
 -- similar to the split between the wmii+ruby wmiirc and wmiirc-config
@@ -24,87 +47,88 @@ wmii.configure ({
 
 local key_handlers = {
         ["*"] = function (key)
-                io.write ("*: " .. key .. "\n")
+                my_log ("*: " .. key)
         end,
 
         -- execution and actions
         ["Mod1-Return"] = function (key)
+                my_log ("    executing: " .. config.xterm)
                 os.execute (config.xterm)
         end,
         ["Mod1-a"] = function (key)
-                io.write ("    Mod1-a: " .. key .. "\n")
+                my_log ("    Mod1-a: " .. key)
         end,
         ["Mod1-p"] = function (key)
-                io.write ("    Mod1-p: " .. key .. "\n")
+                my_log ("    Mod1-p: " .. key)
         end,
 
         -- HJKL active selection
         ["Mod1-h"] = function (key)
-                io.write ("    Mod1-h: " .. key .. "\n")
+                my_log ("    Mod1-h: " .. key)
         end,
         ["Mod1-l"] = function (key)
-                io.write ("    Mod1-l: " .. key .. "\n")
+                my_log ("    Mod1-l: " .. key)
         end,
         ["Mod1-j"] = function (key)
-                io.write ("    Mod1-j: " .. key .. "\n")
+                my_log ("    Mod1-j: " .. key)
         end,
         ["Mod1-k"] = function (key)
-                io.write ("    Mod1-k: " .. key .. "\n")
+                my_log ("    Mod1-k: " .. key)
         end,
 
         -- HJKL movement
         ["Mod1-Shift-h"] = function (key)
-                io.write ("    Mod1-Shift-h: " .. key .. "\n")
+                my_log ("    Mod1-Shift-h: " .. key)
         end,
         ["Mod1-Shift-l"] = function (key)
-                io.write ("    Mod1-Shift-l: " .. key .. "\n")
+                my_log ("    Mod1-Shift-l: " .. key)
         end,
         ["Mod1-Shift-j"] = function (key)
-                io.write ("    Mod1-Shift-j: " .. key .. "\n")
+                my_log ("    Mod1-Shift-j: " .. key)
         end,
         ["Mod1-Shift-k"] = function (key)
-                io.write ("    Mod1-Shift-k: " .. key .. "\n")
+                my_log ("    Mod1-Shift-k: " .. key)
         end,
 
         -- floating vs tiled
         ["Mod1-space"] = function (key)
-                io.write ("    Mod1-space: " .. key .. "\n")
+                my_log ("    Mod1-space: " .. key)
         end,
         ["Mod1-Shift-space"] = function (key)
-                io.write ("    Mod1-Shift-space: " .. key .. "\n")
+                my_log ("    Mod1-Shift-space: " .. key)
         end,
 
         -- work spaces
         ["Mod2-#"] = function (key)
-                io.write ("    Mod2-#: " .. key .. "\n")
+                my_log ("    Mod2-#: " .. key)
         end,
         ["Mod2-Shift-#"] = function (key)
-                io.write ("    Mod2-Shift-#: " .. key .. "\n")
+                my_log ("    Mod2-Shift-#: " .. key)
         end,
 
 
         -- ...
 
         ["Mod1-Control-t"] = function (key)
-                io.write ("    Mod1-Control-t: " .. key .. "\n")
+                my_log ("    Mod1-Control-t: " .. key)
         end,
         ["Mod1-d"] = function (key)
-                io.write ("    Mod1-d: " .. key .. "\n")
+                my_log ("    Mod1-d: " .. key)
         end,
         ["Mod1-s"] = function (key)
-                io.write ("    Mod1-s: " .. key .. "\n")
+                my_log ("    Mod1-s: " .. key)
         end,
         ["Mod1-m"] = function (key)
-                io.write ("    Mod1-m: " .. key .. "\n")
+                my_log ("    Mod1-m: " .. key)
         end,
         ["Mod1-t"] = function (key)
-                io.write ("    Mod1-t: " .. key .. "\n")
+                my_log ("    Mod1-t: " .. key)
         end,
         ["Mod1-Shift-c"] = function (key)
-                io.write ("    Mod1-Shift-c: " .. key .. "\n")
+                my_log ("    Mod1-Shift-c: " .. key)
         end,
         ["Mod1-Shift-t"] = function (key)
-                io.write ("    Mod1-Shift-t: " .. key .. "\n")
+                my_log ("    Mod1-Shift-t: " .. key)
         end
 }
 
@@ -112,27 +136,27 @@ local key_handlers = {
 
 local ev_handlers = {
         ["*"] = function (ev, arg)
-                io.write ("ev: " .. ev .. " - " .. arg .. "\n")
+                my_log ("ev: " .. ev .. " - " .. arg)
         end,
 
         ClientMouseDown = function (ev, arg)
-                io.write ("ClientMouseDown: " .. arg .. "\n")
+                my_log ("ClientMouseDown: " .. arg)
         end,
 
         CreateTag = function (ev, arg)
-                io.write ("CreateTag: " .. arg .. "\n")
+                my_log ("CreateTag: " .. arg)
         end,
 
         DestroyTag = function (ev, arg)
-                io.write ("DestroyTag: " .. arg .. "\n")
+                my_log ("DestroyTag: " .. arg)
         end,
 
         FocusTag = function (ev, arg)
-                io.write ("FocusTag: " .. arg .. "\n")
+                my_log ("FocusTag: " .. arg)
         end,
 
         Key = function (ev, arg)
-                io.write ("Key: " .. arg .. "\n")
+                my_log ("Key: " .. arg)
                 local key = string.gsub(arg, "%d+", "#")
                 local fn = key_handlers[arg] or key_handlers[key] or key_handlers["*"]
                 if fn then
@@ -141,23 +165,23 @@ local ev_handlers = {
         end,
 
         LeftBarClick = function (ev, arg)
-                io.write ("LeftBarClick: " .. arg .. "\n")
+                my_log ("LeftBarClick: " .. arg)
         end,
 
         NotUrgentTag = function (ev, arg)
-                io.write ("NotUrgentTag: " .. arg .. "\n")
+                my_log ("NotUrgentTag: " .. arg)
         end,
 
         Start = function (ev, arg)
-                io.write ("Start: " .. arg .. "\n")
+                my_log ("Start: " .. arg)
         end,
 
         UnfocusTag = function (ev, arg)
-                io.write ("UnfocusTag: " .. arg .. "\n")
+                my_log ("UnfocusTag: " .. arg)
         end,
 
         UrgentTag = function (ev, arg)
-                io.write ("UrgentTag: " .. arg .. "\n")
+                my_log ("UrgentTag: " .. arg)
         end
 }
 
@@ -169,6 +193,7 @@ Action status
 ]]--
 
 -- reading events
+my_log("wmii: starting event loop")
 local ev, arg
 for ev, arg in wmii.ievents() do
 
@@ -177,4 +202,4 @@ for ev, arg in wmii.ievents() do
                 fn (ev, arg)
         end
 end
-
+my_log("wmii: event loop exited")
