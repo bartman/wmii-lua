@@ -70,46 +70,49 @@ local key_handlers = {
 
         -- HJKL active selection
         ["Mod1-h"] = function (key)
-                my_log ("    Mod1-h: " .. key)
+                wmii.write ("/tag/sel/ctl", "select left")
         end,
         ["Mod1-l"] = function (key)
-                my_log ("    Mod1-l: " .. key)
+		wmii.write ("/tag/sel/ctl", "select right")
         end,
         ["Mod1-j"] = function (key)
-                my_log ("    Mod1-j: " .. key)
+		wmii.write ("/tag/sel/ctl", "select down")
         end,
         ["Mod1-k"] = function (key)
-                my_log ("    Mod1-k: " .. key)
+		wmii.write ("/tag/sel/ctl", "select up")
         end,
 
         -- HJKL movement
         ["Mod1-Shift-h"] = function (key)
                 my_log ("    Mod1-Shift-h: " .. key)
+                wmii.write ("/tag/sel/ctl", "send sel left")
         end,
         ["Mod1-Shift-l"] = function (key)
-                my_log ("    Mod1-Shift-l: " .. key)
+		wmii.write ("/tag/sel/ctl", "send sel right")
         end,
         ["Mod1-Shift-j"] = function (key)
-                my_log ("    Mod1-Shift-j: " .. key)
+		wmii.write ("/tag/sel/ctl", "send sel down")
         end,
         ["Mod1-Shift-k"] = function (key)
-                my_log ("    Mod1-Shift-k: " .. key)
+		wmii.write ("/tag/sel/ctl", "send sel up")
         end,
 
         -- floating vs tiled
         ["Mod1-space"] = function (key)
-                my_log ("    Mod1-space: " .. key)
+                wmii.write ("/tag/sel/ctl", "select toggle")
         end,
         ["Mod1-Shift-space"] = function (key)
-                my_log ("    Mod1-Shift-space: " .. key)
+                wmii.write ("/tag/sel/ctl", "send sel toggle")
         end,
 
         -- work spaces
-        ["Mod2-#"] = function (key)
-                my_log ("    Mod2-#: " .. key)
+        ["Mod4-#"] = function (key, num)
+                my_log ("    Mod4-#: " .. tostring(num))
+                wmii.write ("/ctl", "view " .. tostring(num))
         end,
-        ["Mod2-Shift-#"] = function (key)
-                my_log ("    Mod2-Shift-#: " .. key)
+        ["Mod4-Shift-#"] = function (key, num)
+                my_log ("    Mod4-Shift-#: " .. tostring(num))
+                wmii.write ("/client/sel/tags", tostring(num))
         end,
 
 
@@ -189,10 +192,23 @@ local ev_handlers = {
 
         Key = function (ev, arg)
                 my_log ("Key: " .. arg)
-                local key = string.gsub(arg, "%d+", "#")
-                local fn = key_handlers[arg] or key_handlers[key] or key_handlers["*"]
+                local num = nil
+                -- can we find an exact match?
+                local fn = key_handlers[arg]
+                if not fn then
+                        local key = arg:gsub("-%d+", "-#")
+                        -- can we find a match with a # wild card for the number
+                        fn = key_handlers[key]
+                        if fn then
+                                -- convert the trailing number to a number
+                                num = tonumber(arg:match("-(%d+)"))
+                        else
+                                -- everything else failed, try default match
+                                fn = key_handlers["*"]
+                        end
+                end
                 if fn then
-                        fn (arg)
+                        fn (arg, num)
                 end
         end,
 
