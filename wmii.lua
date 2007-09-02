@@ -145,4 +145,20 @@ function tagmenu ()
         return tag
 end
 
+-- ------------------------------------------------------------------------
+-- displays the a program menu, returns selected program
+function progmenu ()
+        local tmpfile = os.tmpname()
+
+        os.execute ("dmenu_path | dmenu > " .. tmpfile)
+
+        local fh = io.open (tmpfile, "rb")
+        os.remove (tmpfile)
+
+        local prog = fh:read("*l")
+        io.close (fh)
+
+        return prog
+end
+
 

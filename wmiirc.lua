@@ -66,7 +66,11 @@ local key_handlers = {
                 end
         end,
         ["Mod1-p"] = function (key)
-                my_log ("    TODO: Mod1-p: " .. key)
+                local prog = wmii.progmenu()
+                if prog then
+                        my_log ("    executing: " .. prog)
+                        os.execute (prog .. " &")
+                end
         end,
         ["Mod1-Shift-c"] = function (key)
                 wmii.write ("/client/sel/ctl", "kill")
