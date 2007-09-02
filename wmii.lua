@@ -129,3 +129,20 @@ function configure (config)
         end
 end
 
+-- ------------------------------------------------------------------------
+-- displays the a tag selection menu, returns selected tag
+function tagmenu ()
+        local tmpfile = os.tmpname()
+
+        os.execute ("wmiir ls /tag | sed 's|/||; /^sel$/d' | dmenu > " .. tmpfile)
+
+        local fh = io.open (tmpfile, "rb")
+        os.remove (tmpfile)
+
+        local tag = fh:read("*l")
+        io.close (fh)
+
+        return tag
+end
+
+

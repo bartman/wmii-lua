@@ -116,22 +116,21 @@ local key_handlers = {
 
         -- switching views and retagging
         ["Mod1-t"] = function (key)
-                local tmpfile = os.tmpname()
-
-                os.execute ("wmiir ls /tag | sed 's|/||; /^sel$/d' | dmenu > " .. tmpfile)
-
-                local fh = io.open (tmpfile, "rb")
-                os.remove (tmpfile)
-
-                local tag = fh:read("*l")
-                io.close (fh)
-
+                local tag = wmii.tagmenu()
                 if tag then
                         wmii.write ("/ctl", "view " .. tag)
                 end
+
+        end,
+        ["Mod1-Shift-t"] = function (key)
+                local tag = wmii.tagmenu()
+                if tag then
+                        local cli = wmii.read ("/client/sel/ctl")
+                        wmii.write ("/client/" .. cli .. "/tags", tag)
+                end
         end,
         ["Mod1-Control-t"] = function (key)
-                my_log ("    TODO: Mod1-t: " .. key)
+                my_log ("    TODO: Mod1-Control-t: " .. key)
         end,
 
         -- ...
@@ -146,9 +145,6 @@ local key_handlers = {
         end,
         ["Mod1-Shift-c"] = function (key)
                 my_log ("    TODO: Mod1-Shift-c: " .. key)
-        end,
-        ["Mod1-Shift-t"] = function (key)
-                my_log ("    TODO: Mod1-Shift-t: " .. key)
         end
 }
 
