@@ -7,6 +7,8 @@
 -- This is just a proof of concept, and eventually this will 
 -- be rewritten in C to use libixp.
 -- 
+-- git://www.jukie.net/wmiirc-lua.git/
+
 local base = _G
 local io = require("io")
 local os = require("os")
@@ -127,6 +129,34 @@ function configure (config)
         for x, y in pairs(config) do
                 write ("/ctl", x .. " " .. y)
         end
+end
+
+-- ------------------------------------------------------------------------
+-- displays the menu given an table of entires, returns selected text
+function menu (tbl)
+
+        local infile = os.tmpname()
+        local fh = io.open (infile, "w+")
+
+        for n in pairs(tbl) do
+                fh:write (n)
+                fh:write ("\n")
+        end
+        fh:close()
+
+
+
+        local outfile = os.tmpname()
+
+        os.execute ("dmenu < " .. infile .. " > " .. outfile)
+
+        fh = io.open (outfile, "r")
+        os.remove (outfile)
+
+        local sel = fh:read("*l")
+        fh:close()
+
+        return sel
 end
 
 -- ------------------------------------------------------------------------

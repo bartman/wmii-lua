@@ -6,8 +6,13 @@
 -- will remain here similar to the split between the wmii+ruby wmiirc and
 -- wmiirc-config.  For now I just want to get the feel of how things will 
 -- work in lua.
+--
+-- git://www.jukie.net/wmiirc-lua.git/
 
 require "posix"
+
+-- this is us
+local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"
 
 -- debug
 function my_log (str)
@@ -20,6 +25,9 @@ package.path = './.wmii-3.5/?.lua;' .. package.path
 require "wmii" 
 
 my_log("wmii: wmii.lua loaded")
+
+-- stop any other instance of wmiirc
+wmii.write ("/event", "Start wmiirc")
 
 -- this is the base configuration
 local config = {
@@ -43,6 +51,37 @@ wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
                       .. "/.*/ -> sel\n"
                       .. "/.*/ -> 1\n")
 
+
+-- ------------------------------------------------------------------------
+-- action handlers
+
+local action_handlers = {
+        quit = function ()
+                wmii.write ("/ctl", "quit")
+        end,
+
+        exec = function (act, args)
+                local what = args or wmiirc
+                wmii.write ("/ctl", "exec " .. what)
+        end,
+
+        wmiirc = function ()
+                posix.exec ("lua", wmiirc)
+        end,
+
+        rehash = function ()
+                -- TODO: consider storing list of executables around, and 
+                -- this will then reinitialize that list
+                my_log ("    TODO: rehash")
+        end,
+
+        status = function ()
+                -- TODO: this should eventually update something on the /rbar
+                my_log ("    TODO: rehash")
+        end
+}
+
+-- ------------------------------------------------------------------------
 -- key handlers
 
 local key_handlers = {
@@ -56,13 +95,20 @@ local key_handlers = {
                 os.execute (config.xterm .. " &")
         end,
         ["Mod1-a"] = function (key)
-                my_log ("    TODO: Mod1-a: " .. key)
-                -- for now just restart us
-                do
-                        my_log ("*****************************************************\n"
-                             .. "******** HACK!!! Just restart wmiirc for now ********\n"
-                             .. "*****************************************************\n")
-                        posix.exec ("lua", os.getenv("home") .. ".wmii-3.5/wmiirc")
+                local text = wmii.menu (action_handlers)
+                if text then
+                        local act = text
+                        local args = nil
+                        local si = text:find("%s")
+                        if si then
+                                act,args = string.match(text .. " ", "(%w+)%s(.+)")
+                        end
+                        if act then
+                                local fn = action_handlers[act]
+                                if fn then
+                                        fn (act,args)
+                                end
+                        end
                 end
         end,
         ["Mod1-p"] = function (key)
@@ -152,6 +198,7 @@ local key_handlers = {
         end
 }
 
+-- ------------------------------------------------------------------------
 -- update the /keys wmii file with the list of all handlers
 
 do
@@ -178,6 +225,7 @@ do
 end
 
 
+-- ------------------------------------------------------------------------
 -- event handlers
 
 local ev_handlers = {
@@ -232,7 +280,9 @@ local ev_handlers = {
         end,
 
         Start = function (ev, arg)
-                my_log ("Start: " .. arg)
+                if arg == "wmiirc" then
+                        posix.exit (0)
+                end
         end,
 
         UnfocusTag = function (ev, arg)
@@ -244,13 +294,7 @@ local ev_handlers = {
         end
 }
 
---[[
-Action quit
-Action exec
-Action rehash
-Action status
-]]--
-
+-- ------------------------------------------------------------------------
 -- reading events
 my_log("wmii: starting event loop")
 local ev, arg
