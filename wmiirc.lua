@@ -136,15 +136,15 @@ local key_handlers = {
                 my_log ("    TODO: Mod1-Control-t: " .. key)
         end,
 
-        -- ...
+        -- column modes
         ["Mod1-d"] = function (key)
-                my_log ("    TODO: Mod1-d: " .. key)
+		wmii.write("/tag/sel/ctl", "colmode sel default")
         end,
         ["Mod1-s"] = function (key)
-                my_log ("    TODO: Mod1-s: " .. key)
+		wmii.write("/tag/sel/ctl", "colmode sel stack")
         end,
         ["Mod1-m"] = function (key)
-                my_log ("    TODO: Mod1-m: " .. key)
+		wmii.write("/tag/sel/ctl", "colmode sel max")
         end
 }
 
