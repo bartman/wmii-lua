@@ -17,13 +17,15 @@ local pairs = pairs
 
 module("wmii")
 
+local wmiir = "wmiir"
+
 -- ------------------------------------------------------------------------
 -- TODO I would like to be able to return an interator
 function ls (dir, fmt)
         local tmpfile = os.tmpname()
         local fmt = fmt or ""
 
-        os.execute ("wmiir ls " .. fmt .. " " .. dir .. " > " .. tmpfile)
+        os.execute (wmiir .. " ls " .. fmt .. " " .. dir .. " > " .. tmpfile)
 
         local fh = io.open (tmpfile, "rb")
         os.remove (tmpfile)
@@ -40,7 +42,7 @@ end
 function read (file)
         local tmpfile = os.tmpname()
 
-        os.execute ("wmiir read " .. file .. " > " .. tmpfile)
+        os.execute (wmiir .. " read " .. file .. " > " .. tmpfile)
 
         local fh = io.open (tmpfile, "rb")
         os.remove (tmpfile)
@@ -75,7 +77,7 @@ function iread (file)
                 end
         end
         if rc == 0 then -- child
-                os.execute ("wmiir read " .. file .. " > " .. tmpfile)
+                os.execute (wmiir .. " read " .. file .. " > " .. tmpfile)
                 posix.exec ("/usr/bin/env", "cat", "/dev/null")
         end
 
@@ -114,7 +116,7 @@ function write (file, value)
         fh:write(value)
         io.close (fh)
 
-        os.execute ("wmiir write " .. file .. " < " .. tmpfile)
+        os.execute (wmiir .. " write " .. file .. " < " .. tmpfile)
         os.remove (tmpfile)
 end
 
