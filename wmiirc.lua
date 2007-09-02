@@ -85,7 +85,6 @@ local key_handlers = {
 
         -- HJKL movement
         ["Mod1-Shift-h"] = function (key)
-                my_log ("    Mod1-Shift-h: " .. key)
                 wmii.write ("/tag/sel/ctl", "send sel left")
         end,
         ["Mod1-Shift-l"] = function (key)
@@ -115,28 +114,41 @@ local key_handlers = {
         end,
 
 
-        -- ...
+        -- switching views and retagging
+        ["Mod1-t"] = function (key)
+                local tmpfile = os.tmpname()
 
-        ["Mod1-Control-t"] = function (key)
-                my_log ("    Mod1-Control-t: " .. key)
+                os.execute ("wmiir ls /tag | sed 's|/||; /^sel$/d' | dmenu > " .. tmpfile)
+
+                local fh = io.open (tmpfile, "rb")
+                os.remove (tmpfile)
+
+                local tag = fh:read("*l")
+                io.close (fh)
+
+                if tag then
+                        wmii.write ("/ctl", "view " .. tag)
+                end
         end,
+        ["Mod1-Control-t"] = function (key)
+                my_log ("    TODO: Mod1-t: " .. key)
+        end,
+
+        -- ...
         ["Mod1-d"] = function (key)
-                my_log ("    Mod1-d: " .. key)
+                my_log ("    TODO: Mod1-d: " .. key)
         end,
         ["Mod1-s"] = function (key)
-                my_log ("    Mod1-s: " .. key)
+                my_log ("    TODO: Mod1-s: " .. key)
         end,
         ["Mod1-m"] = function (key)
-                my_log ("    Mod1-m: " .. key)
-        end,
-        ["Mod1-t"] = function (key)
-                my_log ("    Mod1-t: " .. key)
+                my_log ("    TODO: Mod1-m: " .. key)
         end,
         ["Mod1-Shift-c"] = function (key)
-                my_log ("    Mod1-Shift-c: " .. key)
+                my_log ("    TODO: Mod1-Shift-c: " .. key)
         end,
         ["Mod1-Shift-t"] = function (key)
-                my_log ("    Mod1-Shift-t: " .. key)
+                my_log ("    TODO: Mod1-Shift-t: " .. key)
         end
 }
 
