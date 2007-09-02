@@ -77,7 +77,7 @@ local action_handlers = {
 
         status = function ()
                 -- TODO: this should eventually update something on the /rbar
-                my_log ("    TODO: rehash")
+                my_log ("    TODO: status")
         end
 }
 
