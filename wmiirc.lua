@@ -1,10 +1,16 @@
 #!/usr/bin/env lua
 
+-- some stuff below will eventually go to a separate file, and configuration 
+-- will remain here similar to the split between the wmii+ruby wmiirc 
+-- and wmiirc-config
+--
+-- for now I just want to get the feel of how things will work in lua
+
+require "posix"
+
 -- debug
-local log = io.open("/tmp/wmiirc.log", "a")
 function my_log (str)
         io.stderr:write (str .. "\n")
-        log:write(str .. "\n")
 end
 
 -- load wmii.lua
@@ -36,13 +42,6 @@ wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
                       .. "/.*/ -> sel\n"
                       .. "/.*/ -> 1\n")
 
-wmii.write ("/keys", "Mod1-Return")
-
--- stuff below will eventually go to a separate file, and configuration will remain here
--- similar to the split between the wmii+ruby wmiirc and wmiirc-config
---
--- for now I just want to get the feel of how things will work in lua
-
 -- key handlers
 
 local key_handlers = {
@@ -53,10 +52,17 @@ local key_handlers = {
         -- execution and actions
         ["Mod1-Return"] = function (key)
                 my_log ("    executing: " .. config.xterm)
-                os.execute (config.xterm)
+                os.execute (config.xterm .. " &")
         end,
         ["Mod1-a"] = function (key)
                 my_log ("    Mod1-a: " .. key)
+                -- for now just restart us
+                do
+                        my_log ("*****************************************************\n"
+                             .. "******** HACK!!! Just restart wmiirc for now ********\n"
+                             .. "*****************************************************\n")
+                        posix.exec ("lua", os.getenv("home") .. ".wmii-3.5/wmiirc")
+                end
         end,
         ["Mod1-p"] = function (key)
                 my_log ("    Mod1-p: " .. key)
@@ -131,6 +137,32 @@ local key_handlers = {
                 my_log ("    Mod1-Shift-t: " .. key)
         end
 }
+
+-- update the /keys wmii file with the list of all handlers
+
+do
+        local t = {}
+        local x, y
+        for x,y in pairs(key_handlers) do
+                if x:find("%w") then
+                        local i = x:find("#")
+                        if i then
+                                local j
+                                for j=0,9 do
+                                        t[#t + 1] 
+                                                = x:sub(1,i-1) .. j
+                                end
+                        else
+                                t[#t + 1] 
+                                        = tostring(x)
+                        end
+                end
+        end
+        local all_keys = table.concat(t, "\n")
+        my_log ("setting /keys to...\n" .. all_keys .. "\n");
+        wmii.write ("/keys", all_keys)
+end
+
 
 -- event handlers
 
