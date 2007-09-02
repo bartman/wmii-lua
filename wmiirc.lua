@@ -56,7 +56,7 @@ local key_handlers = {
                 os.execute (config.xterm .. " &")
         end,
         ["Mod1-a"] = function (key)
-                my_log ("    Mod1-a: " .. key)
+                my_log ("    TODO: Mod1-a: " .. key)
                 -- for now just restart us
                 do
                         my_log ("*****************************************************\n"
@@ -66,7 +66,10 @@ local key_handlers = {
                 end
         end,
         ["Mod1-p"] = function (key)
-                my_log ("    Mod1-p: " .. key)
+                my_log ("    TODO: Mod1-p: " .. key)
+        end,
+        ["Mod1-Shift-c"] = function (key)
+                wmii.write ("/client/sel/ctl", "kill")
         end,
 
         -- HJKL active selection
@@ -142,9 +145,6 @@ local key_handlers = {
         end,
         ["Mod1-m"] = function (key)
                 my_log ("    TODO: Mod1-m: " .. key)
-        end,
-        ["Mod1-Shift-c"] = function (key)
-                my_log ("    TODO: Mod1-Shift-c: " .. key)
         end
 }
 
