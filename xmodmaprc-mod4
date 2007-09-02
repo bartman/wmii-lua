@@ -1,0 +1,12 @@
+! I have a Thinkpad X41.  It has no Mod4 (the Win key), but I want to use
+! a second modifier for wmii.  This configuration does the following:
+!
+! * CapsLock generates a Control keycode
+! * Left Control generates Mod4
+!
+! The CapsLock feature is dropped altogether.
+remove Lock = Caps_Lock
+remove Control = Control_L
+keysym Caps_Lock = Control_L
+keysym Control_L = Super_L
+add Control = Control_L

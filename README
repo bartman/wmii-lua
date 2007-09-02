@@ -1,0 +1,25 @@
+More details on my blog:
+ - see http://www.jukie.net/~bart/blog/wmiirc-in-lua
+
+Installation instructions:
+ - install lua5.1 liblua5.1-posix0
+   - on debian you can do this to install all of lua5.1:
+       apt-cache search lua5.1 | awk '/liblua5.1/ { print $1 }' \
+       | xargs sudo apt-get install -y
+
+ - build an install wmii from mercurial (3.5 or newer), you will also
+   need libixp;
+
+ - install the wmiirc script:
+     mkdir ~/.wmii-3.5/
+     cp wmii.lua wmiirc.lua ~/.wmii-3.5/
+     chmod +x ~/.wmii-3.5/ wmiirc.lua 
+
+ - make .xsession execute wmii
+
+Note:
+ - my configuration uses Mod4 (the Win key on PC keyboards) for
+   switching between work spaces and retagging.  If your keyboard does
+   not have a Win key, you can execute the xmodmaprc-mod4 from your
+   xsession: 
+     xmodmaprc .wmii-3.5/xmodmaprc-mod4
