@@ -1,10 +1,11 @@
 #!/usr/bin/env lua
-
--- some stuff below will eventually go to a separate file, and configuration 
--- will remain here similar to the split between the wmii+ruby wmiirc 
--- and wmiirc-config
 --
--- for now I just want to get the feel of how things will work in lua
+-- Copyrigh (c) 2007, Bart Trojanowski <bart@jukie.net>
+--
+-- Some stuff below will eventually go to a separate file, and configuration 
+-- will remain here similar to the split between the wmii+ruby wmiirc and
+-- wmiirc-config.  For now I just want to get the feel of how things will 
+-- work in lua.
 
 require "posix"
 
@@ -107,11 +108,9 @@ local key_handlers = {
 
         -- work spaces
         ["Mod4-#"] = function (key, num)
-                my_log ("    Mod4-#: " .. tostring(num))
                 wmii.write ("/ctl", "view " .. tostring(num))
         end,
         ["Mod4-Shift-#"] = function (key, num)
-                my_log ("    Mod4-Shift-#: " .. tostring(num))
                 wmii.write ("/client/sel/tags", tostring(num))
         end,
 
