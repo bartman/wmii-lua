@@ -137,6 +137,7 @@ static int l_read (lua_State *L)
 
 /* ------------------------------------------------------------------------
  * lua: itr = iread(file) -- returns a line iterator */
+
 struct l_iread_s {
 	IxpCFid *fid;
 };
@@ -154,11 +155,9 @@ static int l_iread (lua_State *L)
 	if (!ctx)
 		return pusherror (L, "count not allocate context");
 
-#if 0
 	// set the metatable for the new userdata
 	luaL_getmetatable (L, "ixp.iread");
 	lua_setmetatable (L, -2);
-#endif
 
 	ctx->fid = ixp_open(client, (char*)file, P9_OREAD);
 	if(ctx->fid == NULL) {
@@ -185,7 +184,6 @@ static int l_iread_iter (lua_State *L)
 
 	buf = malloc (ctx->fid->iounit);
 	if (!buf) {
-		ixp_close(ctx->fid);
 		ctx->fid = NULL;
 		return pusherror (L, "count not allocate memory");
 	}
@@ -193,8 +191,6 @@ static int l_iread_iter (lua_State *L)
 	rc = ixp_read (ctx->fid, buf, ctx->fid->iounit);
 	if (rc <= 0) {
 		free (buf);
-		ixp_close(ctx->fid);
-		ctx->fid = NULL;
 		return 0;
 	}
 
@@ -202,6 +198,28 @@ static int l_iread_iter (lua_State *L)
 	return 1;
 }
 
+static int l_iread_gc (lua_State *L)
+{
+	struct l_iread_s *ctx;
+
+	ctx = (struct l_iread_s*)lua_touserdata (L, 1);
+
+	fprintf (stderr, "** ixp.iread - gc **\n");
+
+	ixp_close (ctx->fid);
+
+	return 0;
+}
+
+static void init_iread_gc (lua_State *L)
+{
+	luaL_newmetatable(L, "ixp.iread");
+
+	// setup the __gc field
+	lua_pushstring (L, "__gc");
+	lua_pushcfunction (L, l_iread_gc);
+	lua_settable (L, -3);
+}
 
 /* ------------------------------------------------------------------------
  * the table */
@@ -220,6 +238,8 @@ LUALIB_API int luaopen_ixp (lua_State *L)
 {
 	const char *address = "unix!/tmp/ns.bart.:0/wmii";
 	client = ixp_mount((char*)address);
+
+	init_iread_gc (L);
 
 	luaL_register (L, MYNAME, R);
 	lua_pushliteral (L, "version");
