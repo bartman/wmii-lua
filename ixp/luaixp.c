@@ -31,14 +31,16 @@ static int pusherror(lua_State *L, const char *info)
 	}
 }
 
-/* lua: ixptest() */
+/* ------------------------------------------------------------------------
+ * lua: ixptest() */
 static int l_test (lua_State *L)
 {
 	fprintf (stderr, "** ixp.test **\n");
 	return pusherror (L, "some error occurred");
 }
 
-/* lua: write(file, data) -- writes data to a file */
+/* ------------------------------------------------------------------------
+ * lua: write(file, data) -- writes data to a file */
 static int l_write (lua_State *L)
 {
 	IxpCFid *fid;
@@ -76,7 +78,8 @@ static int l_write (lua_State *L)
 	return 0;
 }
 
-/* lua: data = read(file) -- returns all contents (upto 4k) */
+/* ------------------------------------------------------------------------
+ * lua: data = read(file) -- returns all contents (upto 4k) */
 static int l_read (lua_State *L)
 {
 	IxpCFid *fid;
@@ -132,15 +135,84 @@ static int l_read (lua_State *L)
 	return 1;
 }
 
-/* lua: itr = iread(file) -- returns a line iterator */
+/* ------------------------------------------------------------------------
+ * lua: itr = iread(file) -- returns a line iterator */
+struct l_iread_s {
+	IxpCFid *fid;
+};
+
+static int l_iread_iter (lua_State *L);
+
+static int l_iread (lua_State *L)
+{
+	const char *file;
+	struct l_iread_s *ctx;
+
+	file = luaL_checkstring (L, 1);
+
+	ctx = (struct l_iread_s*)lua_newuserdata (L, sizeof(*ctx));
+	if (!ctx)
+		return pusherror (L, "count not allocate context");
+
+#if 0
+	// set the metatable for the new userdata
+	luaL_getmetatable (L, "ixp.iread");
+	lua_setmetatable (L, -2);
+#endif
+
+	ctx->fid = ixp_open(client, (char*)file, P9_OREAD);
+	if(ctx->fid == NULL) {
+		return pusherror (L, "count not open p9 file");
+	}
+
+	fprintf (stderr, "** ixp.iread (%s) **\n", file);
+
+	// create and return the iterator function
+	// the only argument is the userdata
+	lua_pushcclosure (L, l_iread_iter, 1);
+	return 1;
+}
+
+static int l_iread_iter (lua_State *L)
+{
+	struct l_iread_s *ctx;
+	char *buf;
+	int rc;
+
+	ctx = (struct l_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
+
+	fprintf (stderr, "** ixp.iread - iter **\n");
+
+	buf = malloc (ctx->fid->iounit);
+	if (!buf) {
+		ixp_close(ctx->fid);
+		ctx->fid = NULL;
+		return pusherror (L, "count not allocate memory");
+	}
+
+	rc = ixp_read (ctx->fid, buf, ctx->fid->iounit);
+	if (rc <= 0) {
+		free (buf);
+		ixp_close(ctx->fid);
+		ctx->fid = NULL;
+		return 0;
+	}
+
+	lua_pushstring (L, buf);
+	return 1;
+}
 
 
+/* ------------------------------------------------------------------------
+ * the table */
 static const luaL_reg R[] =
 {
 	{ "test",		l_test },
 
 	{ "write",		l_write },
 	{ "read",		l_read },
+	{ "iread",		l_iread },
+	
 	{ NULL,			NULL },
 };
 
