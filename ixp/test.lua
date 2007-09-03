@@ -11,3 +11,8 @@ ixp.write ("/lbar/1", '#FF0000 #00FF00 #0000FF 1xxx')
 print ("reading...")
 data = ixp.read ("/lbar/1")
 print (data)
+
+print ("iterating...")
+for ev in ixp.iread("/event") do
+        print (ev)
+end
