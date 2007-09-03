@@ -17,12 +17,18 @@ static IxpClient *client;
 static int pusherror(lua_State *L, const char *info)
 {
 	lua_pushnil(L);
-	if (info==NULL)
+	if (info==NULL) {
 		lua_pushstring(L, strerror(errno));
-	else
+		lua_pushnumber(L, errno);
+		return 3;
+	} else if (errno) {
 		lua_pushfstring(L, "%s: %s", info, strerror(errno));
-	lua_pushnumber(L, errno);
-	return 3;
+		lua_pushnumber(L, errno);
+		return 3;
+	} else {
+		lua_pushfstring(L, "%s", info);
+		return 2;
+	}
 }
 
 /* lua: ixptest() */
@@ -38,8 +44,8 @@ static int l_write (lua_State *L)
 	IxpCFid *fid;
 	const char *file;
 	const char *data;
-	size_t data_len;
-	int rc;
+	size_t data_len, left;
+	off_t ofs = 0;
 
 	file = luaL_checkstring (L, 1);
 	data = luaL_checklstring (L, 2, &data_len);
@@ -48,11 +54,17 @@ static int l_write (lua_State *L)
 	if(fid == NULL)
 		return pusherror (L, "count not open p9 file");
 
-	rc = ixp_write(fid, (char*)data, data_len);
-	if (rc < 0)
-		return pusherror (L, "failed to write to p9 file");
-	else if (rc != data_len)
-		return pusherror (L, "short write");
+	left = data_len;
+	while (left) {
+		int rc = ixp_write(fid, (char*)data + ofs, left);
+		if (rc < 0)
+			return pusherror (L, "failed to write to p9 file");
+		if (rc > data_len)
+			return pusherror (L, "failed to write to p9 file");
+
+		left -= rc;
+		ofs += rc;
+	}
 
 	ixp_close(fid);
 	return 0;
