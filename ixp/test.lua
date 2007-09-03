@@ -2,6 +2,12 @@
 
 require "ixp"
 
+print ("testing...")
 ixp.test ()
 
-ixp.write ("/lbar/1", '#FF0000 #00FF00 #0000FF 1')
+print ("writing...")
+ixp.write ("/lbar/1", '#FF0000 #00FF00 #0000FF 1xxx')
+
+print ("reading...")
+data = ixp.read ("/lbar/1")
+print (data)
