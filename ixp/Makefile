@@ -8,7 +8,7 @@ IXPPREFIX = ${HOME}
 IXPINC := -I${IXPPREFIX}/usr/include
 IXPLIB := -L${IXPPREFIX}/usr/lib -lixp
 
-CFLAGS += ${LUAINC} ${IXPINC}
+CFLAGS += ${LUAINC} ${IXPINC} -ggdb -O0
 LIBS   += ${LUALIB} ${IXPLIB}
 
 TARGET = ixp.so
