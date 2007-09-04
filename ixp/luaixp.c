@@ -211,7 +211,7 @@ static int l_iread_gc (lua_State *L)
 	return 0;
 }
 
-static void init_iread_gc (lua_State *L)
+static void init_iread_mt (lua_State *L)
 {
 	luaL_newmetatable(L, "ixp.iread");
 
@@ -219,6 +219,53 @@ static void init_iread_gc (lua_State *L)
 	lua_pushstring (L, "__gc");
 	lua_pushcfunction (L, l_iread_gc);
 	lua_settable (L, -3);
+}
+
+/* ------------------------------------------------------------------------
+ * lua: stat = stat(file) -- returns a status table */
+
+static int pushstat (lua_State *L, struct IxpStat *stat);
+
+static int l_stat (lua_State *L)
+{
+	struct IxpStat *stat;
+	const char *file;
+	int rc;
+
+	file = luaL_checkstring (L, 1);
+
+	stat = ixp_stat(client, (char*)file);
+	if(!stat)
+		return pusherror(L, "cannot stat file");
+
+	rc = pushstat (L, stat);
+
+	ixp_freestat (stat);
+
+	return rc;
+}
+
+#define setfield(type,name,value) \
+	lua_pushstring (L, name); \
+	lua_push##type (L, value); \
+	lua_settable (L, -3);
+static int pushstat (lua_State *L, struct IxpStat *stat)
+{
+	lua_newtable (L);
+
+	setfield(number, "type", stat->type);
+	setfield(number, "dev", stat->dev);
+	//setfield(Qid,    "qid", stat->qid);
+	setfield(number, "mode", stat->mode);
+	setfield(number, "atime", stat->atime);
+	setfield(number, "mtime", stat->mtime);
+	setfield(number, "length", stat->length);
+	setfield(string, "name", stat->name);
+	setfield(string, "uid", stat->uid);
+	setfield(string, "gid", stat->gid);
+	setfield(string, "muid", stat->muid);
+
+	return 1;
 }
 
 /* ------------------------------------------------------------------------
@@ -230,6 +277,9 @@ static const luaL_reg R[] =
 	{ "write",		l_write },
 	{ "read",		l_read },
 	{ "iread",		l_iread },
+
+	{ "stat",		l_stat },
+
 	
 	{ NULL,			NULL },
 };
@@ -239,7 +289,7 @@ LUALIB_API int luaopen_ixp (lua_State *L)
 	const char *address = "unix!/tmp/ns.bart.:0/wmii";
 	client = ixp_mount((char*)address);
 
-	init_iread_gc (L);
+	init_iread_mt (L);
 
 	luaL_register (L, MYNAME, R);
 	lua_pushliteral (L, "version");
