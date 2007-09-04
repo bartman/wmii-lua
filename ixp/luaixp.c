@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include <ixp.h>
 
@@ -183,10 +184,8 @@ static int l_iread_iter (lua_State *L)
 	fprintf (stderr, "** ixp.iread - iter **\n");
 
 	buf = malloc (ctx->fid->iounit);
-	if (!buf) {
-		ctx->fid = NULL;
+	if (!buf)
 		return pusherror (L, "count not allocate memory");
-	}
 
 	rc = ixp_read (ctx->fid, buf, ctx->fid->iounit);
 	if (rc <= 0) {
@@ -224,7 +223,7 @@ static void init_iread_mt (lua_State *L)
 /* ------------------------------------------------------------------------
  * lua: stat = stat(file) -- returns a status table */
 
-static int pushstat (lua_State *L, struct IxpStat *stat);
+static int pushstat (lua_State *L, const struct IxpStat *stat);
 
 static int l_stat (lua_State *L)
 {
@@ -245,12 +244,42 @@ static int l_stat (lua_State *L)
 	return rc;
 }
 
+static void setrwx(long m, char *s)
+{
+	static char *modes[] = {
+		"---", "--x", "-w-",
+		"-wx", "r--", "r-x",
+		"rw-", "rwx",
+	};
+	strncpy(s, modes[m], 3);
+}
+
+static void build_modestr(char *buf, const struct IxpStat *stat)
+{
+	buf[0]='-';
+	if(stat->mode & P9_DMDIR)
+		buf[0]='d';
+	buf[1]='-';
+	setrwx((stat->mode >> 6) & 7, &buf[2]);
+	setrwx((stat->mode >> 3) & 7, &buf[5]);
+	setrwx((stat->mode >> 0) & 7, &buf[8]);
+	buf[11] = 0;
+}
+
+static void build_timestr(char *buf, const struct IxpStat *stat)
+{
+	ctime_r((time_t*)&stat->mtime, buf);
+	buf[strlen(buf) - 1] = '\0';
+}
+
+
 #define setfield(type,name,value) \
 	lua_pushstring (L, name); \
 	lua_push##type (L, value); \
 	lua_settable (L, -3);
-static int pushstat (lua_State *L, struct IxpStat *stat)
+static int pushstat (lua_State *L, const struct IxpStat *stat)
 {
+	static char buf[32];
 	lua_newtable (L);
 
 	setfield(number, "type", stat->type);
@@ -265,7 +294,110 @@ static int pushstat (lua_State *L, struct IxpStat *stat)
 	setfield(string, "gid", stat->gid);
 	setfield(string, "muid", stat->muid);
 
+	build_modestr(buf, stat);
+	setfield(string, "modestr", buf);
+
+	build_timestr(buf, stat);
+	setfield(string, "timestr", buf);
+
 	return 1;
+}
+
+/* ------------------------------------------------------------------------
+ * lua: itr = idir(dir) -- returns a file name iterator */
+
+struct l_idir_s {
+	IxpCFid *fid;
+	unsigned char *buf;
+	IxpMsg m;
+};
+
+static int l_idir_iter (lua_State *L);
+
+static int l_idir (lua_State *L)
+{
+	const char *file;
+	struct l_idir_s *ctx;
+
+	file = luaL_checkstring (L, 1);
+
+	ctx = (struct l_idir_s*)lua_newuserdata (L, sizeof(*ctx));
+	if (!ctx)
+		return pusherror (L, "count not allocate context");
+	memset(ctx, 0, sizeof (*ctx));
+
+	// set the metatable for the new userdata
+	luaL_getmetatable (L, "ixp.idir");
+	lua_setmetatable (L, -2);
+
+	ctx->fid = ixp_open(client, (char*)file, P9_OREAD);
+	if(ctx->fid == NULL) {
+		return pusherror (L, "count not open p9 file");
+	}
+
+	ctx->buf = malloc (ctx->fid->iounit);
+	if (!ctx->buf) {
+		ixp_close (ctx->fid);
+		ctx->fid = NULL;
+		return pusherror (L, "count not allocate memory");
+	}
+
+	fprintf (stderr, "** ixp.idir (%s) **\n", file);
+
+	// create and return the iterator function
+	// the only argument is the userdata
+	lua_pushcclosure (L, l_idir_iter, 1);
+	return 1;
+}
+
+static int l_idir_iter (lua_State *L)
+{
+	struct l_idir_s *ctx;
+	IxpStat stat;
+
+	ctx = (struct l_idir_s*)lua_touserdata (L, lua_upvalueindex(1));
+
+	fprintf (stderr, "** ixp.idir - iter **\n");
+
+	if (ctx->m.pos >= ctx->m.end) {
+		int rc = ixp_read (ctx->fid, ctx->buf, ctx->fid->iounit);
+		if (rc <= 0) {
+			return 0;
+		}
+
+		ctx->m = ixp_message(ctx->buf, rc, MsgUnpack);
+		if (ctx->m.pos >= ctx->m.end)
+			return 0;
+	}
+
+	ixp_pstat(&ctx->m, &stat);
+
+	return pushstat (L, &stat);
+}
+
+static int l_idir_gc (lua_State *L)
+{
+	struct l_idir_s *ctx;
+
+	ctx = (struct l_idir_s*)lua_touserdata (L, 1);
+
+	fprintf (stderr, "** ixp.idir - gc **\n");
+
+	free (ctx->buf);
+
+	ixp_close (ctx->fid);
+
+	return 0;
+}
+
+static void init_idir_mt (lua_State *L)
+{
+	luaL_newmetatable(L, "ixp.idir");
+
+	// setup the __gc field
+	lua_pushstring (L, "__gc");
+	lua_pushcfunction (L, l_idir_gc);
+	lua_settable (L, -3);
 }
 
 /* ------------------------------------------------------------------------
@@ -277,6 +409,7 @@ static const luaL_reg R[] =
 	{ "write",		l_write },
 	{ "read",		l_read },
 	{ "iread",		l_iread },
+	{ "idir",		l_idir },
 
 	{ "stat",		l_stat },
 
@@ -290,6 +423,7 @@ LUALIB_API int luaopen_ixp (lua_State *L)
 	client = ixp_mount((char*)address);
 
 	init_iread_mt (L);
+	init_idir_mt (L);
 
 	luaL_register (L, MYNAME, R);
 	lua_pushliteral (L, "version");

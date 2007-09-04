@@ -22,8 +22,19 @@ for k,v in pairs (data) do
         print ("  "..k.." = " .. tostring(v) .. hex)
 end
 
+print ("directory list...")
+for data in ixp.idir ("/") do
+        local slash = ""
+        if data.modestr:match("^d") then
+                slash = "/"
+        end
+        print ("  " .. data.name .. slash)
+end
 
+
+--[[
 print ("iterating...")
 for ev in ixp.iread("/event") do
         print (ev)
 end
+]]--
