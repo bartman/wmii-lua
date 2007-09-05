@@ -8,7 +8,7 @@ IXPPREFIX = ${HOME}
 IXPINC := -I${IXPPREFIX}/usr/include
 IXPLIB := -L${IXPPREFIX}/usr/lib -lixp
 
-CFLAGS += ${LUAINC} ${IXPINC} -ggdb -O0
+CFLAGS += ${LUAINC} ${IXPINC} -ggdb -O0 -fPIC
 LIBS   += ${LUALIB} ${IXPLIB}
 
 TARGET = ixp.so
@@ -16,10 +16,10 @@ TARGET = ixp.so
 all: ${TARGET}
 
 ${TARGET}: ${OBJS}
-	$(LD) -o $@ -shared $? $(LIBS)
+	$(CC) ${CFLAGS} -o $@ -shared $? $(LIBS)
 
 ${OBJS}: %.o: %.c Makefile
-	${CC} -o $@ ${CFLAGS} -c $<
+	${CC} ${CFLAGS} -o $@ -c $<
 
 test: ${TARGET}
 	./test.lua
