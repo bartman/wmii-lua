@@ -21,7 +21,7 @@ end
 
 -- load wmii.lua
 my_log("wmii: loading wmii.lua")
-package.path = './.wmii-3.5/?.lua;' .. package.path
+package.path = os.getenv("HOME") .. '/.wmii-3.5/?.lua;' .. package.path
 require "wmii" 
 
 my_log("wmii: wmii.lua loaded")
@@ -34,14 +34,15 @@ local config = {
         xterm = 'x-terminal-emulator'
 }
 my_log("wmii: setting confg")
-wmii.configure ({
+local wconfig = {
         view        = 1,
         border      = 1,
         font        = '-windows-proggytiny-medium-r-normal--10-80-96-96-c-60-iso8859-1',
         focuscolors = '#FFFFaa #007700 #88ff88',
         normcolors  = '#888888 #222222 #333333',
         grabmod     = 'Mod1'
-})
+}
+wmii.configure (wconfig)
 
 my_log("wmii: config set")
 
@@ -233,22 +234,38 @@ local ev_handlers = {
                 my_log ("ev: " .. ev .. " - " .. arg)
         end,
 
-        ClientMouseDown = function (ev, arg)
-                my_log ("ClientMouseDown: " .. arg)
+        -- exit if another wmiirc started up
+        Start = function (ev, arg)
+                if arg == "wmiirc" then
+                        posix.exit (0)
+                end
         end,
 
+        -- tag management
         CreateTag = function (ev, arg)
-                my_log ("CreateTag: " .. arg)
+                wmii.create ("/lbar/" .. arg, 
+                        wconfig.normcolors .. " " .. arg)
         end,
-
         DestroyTag = function (ev, arg)
-                my_log ("DestroyTag: " .. arg)
+                wmii.remove ("/lbar/" .. arg)
         end,
 
         FocusTag = function (ev, arg)
                 my_log ("FocusTag: " .. arg)
+                wmii.create ("/lbar/" .. arg, 
+                        wconfig.focuscolors .. " " .. arg)
+                wmii.write ("/lbar/" .. arg, 
+                        wconfig.focuscolors .. " " .. arg)
+        end,
+        UnfocusTag = function (ev, arg)
+                my_log ("UnfocusTag: " .. arg)
+                wmii.create ("/lbar/" .. arg, 
+                        wconfig.normcolors .. " " .. arg)
+                wmii.write ("/lbar/" .. arg, 
+                        wconfig.normcolors .. " " .. arg)
         end,
 
+        -- key event handling
         Key = function (ev, arg)
                 my_log ("Key: " .. arg)
                 local num = nil
@@ -271,27 +288,25 @@ local ev_handlers = {
                 end
         end,
 
+        -- mouse handling
+        ClientMouseDown = function (ev, arg)
+                my_log ("ClientMouseDown: " .. arg)
+        end,
         LeftBarClick = function (ev, arg)
                 my_log ("LeftBarClick: " .. arg)
+		-- wmiir xwrite /ctl view "$@"
         end,
 
-        NotUrgentTag = function (ev, arg)
-                my_log ("NotUrgentTag: " .. arg)
-        end,
-
-        Start = function (ev, arg)
-                if arg == "wmiirc" then
-                        posix.exit (0)
-                end
-        end,
-
-        UnfocusTag = function (ev, arg)
-                my_log ("UnfocusTag: " .. arg)
-        end,
-
+        -- urgent tag?
         UrgentTag = function (ev, arg)
                 my_log ("UrgentTag: " .. arg)
+		-- wmiir xwrite "/lbar/$@" "*$@"
+        end,
+        NotUrgentTag = function (ev, arg)
+                my_log ("NotUrgentTag: " .. arg)
+		-- wmiir xwrite "/lbar/$@" "$@"
         end
+
 }
 
 -- ------------------------------------------------------------------------
