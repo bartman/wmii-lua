@@ -9,6 +9,9 @@
 -- 
 -- git://www.jukie.net/wmiirc-lua.git/
 
+require "ixp"
+local ixp = ixp
+
 local base = _G
 local io = require("io")
 local os = require("os")

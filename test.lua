@@ -1,7 +1,6 @@
 #!/usr/bin/env lua
 
 require "wmii"
-require "ixp"
 
 wmii.write ("/lbar/1", '#FF0000 #00FF00 #0000FF xxx')
 
