@@ -11,6 +11,8 @@
 
 require "posix"
 
+print ('-----------------------')
+
 -- this is us
 local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"
 
@@ -21,7 +23,7 @@ end
 
 -- load wmii.lua
 my_log("wmii: loading wmii.lua")
-package.path = os.getenv("HOME") .. '/.wmii-3.5/?.lua;' .. package.path
+package.path = package.path .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/?.lua"
 require "wmii" 
 
 my_log("wmii: wmii.lua loaded")

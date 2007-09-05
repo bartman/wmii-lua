@@ -9,6 +9,7 @@
 -- 
 -- git://www.jukie.net/wmiirc-lua.git/
 
+package.cpath = package.path .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/ixp/?.so"
 require "ixp"
 local ixp = ixp
 
