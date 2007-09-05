@@ -110,6 +110,25 @@ function ievents ()
 end
 
 -- ------------------------------------------------------------------------
+-- create a wmii file
+function create (file, arg)
+        local tmpfile = os.tmpname()
+
+        local fh = io.open (tmpfile, "wb")
+        fh:write(arg or "")
+        io.close (fh)
+
+        os.execute (wmiir .. " create " .. file .. " < " .. tmpfile)
+        os.remove (tmpfile)
+end
+
+-- ------------------------------------------------------------------------
+-- remove a wmii file
+function remove (file)
+        os.execute (wmiir .. " remove " .. file)
+end
+
+-- ------------------------------------------------------------------------
 -- write a value to a wmii virtual file system
 function write (file, value)
         local tmpfile = os.tmpname()
