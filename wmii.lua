@@ -27,35 +27,43 @@ local wmiir = "wmiir"
 -- ------------------------------------------------------------------------
 -- TODO I would like to be able to return an interator
 function ls (dir, fmt)
-        local tmpfile = os.tmpname()
-        local fmt = fmt or ""
+        local itr = idir (dir)
+        local verbose = fmt:match("l")
 
-        os.execute (wmiir .. " ls " .. fmt .. " " .. dir .. " > " .. tmpfile)
+        local s = ixp:stat(dir)
+        if s.modestr:match("^[^d]") then
+                return stat2str(verbose, s)
+        end
 
-        local fh = io.open (tmpfile, "rb")
-        os.remove (tmpfile)
+        return function ()
+                if itr then
+                        local n = itr()
+                        if n then
+                                local f = dir .. "/" .. n
+                                local s = ixp:stat(f)
+                                return stat2str(verbose, s)
+                        end
+                end
+                return nil
+        end
+end
 
-        local data = fh:read("*a")      -- read everything
-
-        io.close (fh)
-
-        return data
+function stat2str(verbose, stat)
+        if verbose then
+                return string.format("%s %s %s %5llud %s %s", stat.modestr, stat.uid, stat.gid, stat.length, stat.timestr, stat.name)
+        else
+                if s.modestr:match("^d") then
+                        return stat.name .. "/"
+                else
+                        return stat.name
+                end
+        end
 end
 
 -- ------------------------------------------------------------------------
 -- read all contents of a wmii virtual file
 function read (file)
-        local tmpfile = os.tmpname()
-
-        os.execute (wmiir .. " read " .. file .. " > " .. tmpfile)
-
-        local fh = io.open (tmpfile, "rb")
-        os.remove (tmpfile)
-
-        local data = fh:read("*a")      -- read all
-        io.close (fh)
-
-        return data
+        return ixp.read (file)
 end
 
 -- ------------------------------------------------------------------------
@@ -66,39 +74,7 @@ end
 --         ...
 --     end
 function iread (file)
-        local tmpfile = os.tmpname()
-        os.remove (tmpfile)
-
-        io.write ("-- tmpname " .. tmpfile .. "\n")
-
-        local rc = posix.mkfifo (tmpfile)
-        io.write ("-- mkfifo " .. rc .. "\n")
-
-        rc = posix.fork ()
-        if rc < 0 then
-                io.write ("-- fork failed " .. rc .. "\n")
-                return function ()
-                        return nil
-                end
-        end
-        if rc == 0 then -- child
-                os.execute (wmiir .. " read " .. file .. " > " .. tmpfile)
-                posix.exec ("/usr/bin/env", "cat", "/dev/null")
-        end
-
-        -- parent
-
-        local fh = io.open (tmpfile, "rb")
-        os.remove (tmpfile)
-
-        return function ()
-                local line = fh:read("*l")      -- read a line
-                if not line then
-                        io.write ("-- closing " .. file .. "\n")
-                        io.close (fh)
-                end
-                return line
-        end
+        return ixp.iread(file)
 end
 
 -- ------------------------------------------------------------------------
@@ -134,14 +110,7 @@ end
 -- ------------------------------------------------------------------------
 -- write a value to a wmii virtual file system
 function write (file, value)
-        local tmpfile = os.tmpname()
-
-        local fh = io.open (tmpfile, "wb")
-        fh:write(value)
-        io.close (fh)
-
-        os.execute (wmiir .. " write " .. file .. " < " .. tmpfile)
-        os.remove (tmpfile)
+        ixp.write (file, value)
 end
 
 -- ------------------------------------------------------------------------

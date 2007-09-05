@@ -177,7 +177,7 @@ static int l_iread_iter (lua_State *L)
 {
 	struct l_iread_s *ctx;
 	char *buf;
-	int rc;
+	int rc, len;
 
 	ctx = (struct l_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
@@ -192,6 +192,10 @@ static int l_iread_iter (lua_State *L)
 		free (buf);
 		return 0;
 	}
+
+	len = strlen (buf);
+	if (buf[len-1] == '\n')
+		buf[len-1] = 0;
 
 	lua_pushstring (L, buf);
 	return 1;
