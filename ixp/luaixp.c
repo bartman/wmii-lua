@@ -141,6 +141,10 @@ static int l_read (lua_State *L)
 
 struct l_iread_s {
 	IxpCFid *fid;
+	char *buf;
+	size_t buf_pos;
+	size_t buf_len;
+	size_t buf_size;
 };
 
 static int l_iread_iter (lua_State *L);
@@ -176,29 +180,49 @@ static int l_iread (lua_State *L)
 static int l_iread_iter (lua_State *L)
 {
 	struct l_iread_s *ctx;
-	char *buf;
-	int rc, len;
+	char *s, *e, *cr;
 
 	ctx = (struct l_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
 	fprintf (stderr, "** ixp.iread - iter **\n");
 
-	buf = malloc (ctx->fid->iounit);
-	if (!buf)
-		return pusherror (L, "count not allocate memory");
-
-	rc = ixp_read (ctx->fid, buf, ctx->fid->iounit);
-	if (rc <= 0) {
-		free (buf);
-		return 0;
+	if (!ctx->buf) {
+		ctx->buf = malloc (ctx->fid->iounit);
+		if (!ctx->buf)
+			return pusherror (L, "count not allocate memory");
+		ctx->buf_size = ctx->fid->iounit;
+		ctx->buf_len = 0;
 	}
 
-	len = strlen (buf);
-	if (buf[len-1] == '\n')
-		buf[len-1] = 0;
+	if (!ctx->buf_len) {
+		int rc;
+		ctx->buf_pos = 0;
+		rc = ixp_read (ctx->fid, ctx->buf, ctx->buf_size);
+		if (rc <= 0)
+			return 0; // we are done
+		ctx->buf_len = rc;
+	}
 
-	lua_pushstring (L, buf);
-	return 1;
+	s = ctx->buf + ctx->buf_pos;
+	e = s + ctx->buf_len;
+
+	cr = strchr (s, '\n');
+	if (!cr) {
+		// no match, just return the whole thing
+		// TODO: should read more upto a cr or some limit
+		lua_pushstring (L, s);
+		ctx->buf_len = 0;
+		return 1;
+
+	} else {
+		// we have a match s..cr is our sub string
+		int len = (cr-s) + 1;
+		*cr = 0;
+		lua_pushstring (L, s);
+		ctx->buf_pos += len;
+		ctx->buf_len -= len;
+		return 1;
+	}
 }
 
 static int l_iread_gc (lua_State *L)
@@ -210,6 +234,9 @@ static int l_iread_gc (lua_State *L)
 	fprintf (stderr, "** ixp.iread - gc **\n");
 
 	ixp_close (ctx->fid);
+
+	if (ctx->buf)
+		free (ctx->buf);
 
 	return 0;
 }
