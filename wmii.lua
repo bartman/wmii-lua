@@ -90,22 +90,15 @@ function ievents ()
 end
 
 -- ------------------------------------------------------------------------
--- create a wmii file
-function create (file, arg)
-        local tmpfile = os.tmpname()
-
-        local fh = io.open (tmpfile, "wb")
-        fh:write(arg or "")
-        io.close (fh)
-
-        os.execute (wmiir .. " create " .. file .. " < " .. tmpfile)
-        os.remove (tmpfile)
+-- create a wmii file, optionally write data to it
+function create (file, data)
+        ixp.create(file, data)
 end
 
 -- ------------------------------------------------------------------------
 -- remove a wmii file
 function remove (file)
-        os.execute (wmiir .. " remove " .. file)
+        ixp.remove(file)
 end
 
 -- ------------------------------------------------------------------------
@@ -135,8 +128,6 @@ function menu (tbl)
                 fh:write ("\n")
         end
         fh:close()
-
-
 
         local outfile = os.tmpname()
 
