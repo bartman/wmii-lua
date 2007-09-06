@@ -33,7 +33,8 @@ static int pusherror(lua_State *L, const char *info)
 }
 
 /* ------------------------------------------------------------------------
- * lua: ixptest() */
+ * lua: ixptest() 
+ */
 static int l_test (lua_State *L)
 {
 	fprintf (stderr, "** ixp.test **\n");
@@ -41,14 +42,18 @@ static int l_test (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * lua: write(file, data) -- writes data to a file */
+ * lua: write(file, data) -- writes data to a file 
+ */
+
+static int write_data (IxpCFid *fid, const char *data, size_t data_len);
+
 static int l_write (lua_State *L)
 {
 	IxpCFid *fid;
 	const char *file;
 	const char *data;
-	size_t data_len, left;
-	off_t ofs = 0;
+	size_t data_len;
+	int rc;
 
 	file = luaL_checkstring (L, 1);
 	data = luaL_checklstring (L, 2, &data_len);
@@ -59,28 +64,41 @@ static int l_write (lua_State *L)
 
 	fprintf (stderr, "** ixp.write (%s,%s) **\n", file, data);
 	
-	left = data_len;
-	while (left) {
-		int rc = ixp_write(fid, (char*)data + ofs, left);
-		if (rc < 0) {
-			ixp_close(fid);
-			return pusherror (L, "failed to write to p9 file");
-
-		} else if (rc > data_len) {
-			ixp_close(fid);
-			return pusherror (L, "failed to write to p9 file");
-		}
-
-		left -= rc;
-		ofs += rc;
+	rc = write_data (fid, data, data_len);
+	if (rc < 0) {
+		ixp_close(fid);
+		return pusherror (L, "failed to write to p9 file");
 	}
 
 	ixp_close(fid);
 	return 0;
 }
 
+static int write_data (IxpCFid *fid, const char *data, size_t data_len)
+{
+	size_t left;
+	off_t ofs = 0;
+
+	left = data_len;
+	while (left) {
+		int rc = ixp_write(fid, (char*)data + ofs, left);
+		if (rc < 0)
+			return rc;
+
+		else if (rc > left)
+			return -ENXIO;
+
+		left -= rc;
+		ofs += rc;
+	}
+
+	return data_len;
+}
+
+
 /* ------------------------------------------------------------------------
- * lua: data = read(file) -- returns all contents (upto 4k) */
+ * lua: data = read(file) -- returns all contents (upto 4k) 
+ */
 static int l_read (lua_State *L)
 {
 	IxpCFid *fid;
@@ -137,7 +155,59 @@ static int l_read (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * lua: itr = iread(file) -- returns a line iterator */
+ * lua: create(file, [data]) -- create a file, optionally write data to it 
+ */
+static int l_create (lua_State *L)
+{
+	IxpCFid *fid;
+	const char *file;
+	const char *data;
+	size_t data_len = 0;
+
+	file = luaL_checkstring (L, 1);
+	data = luaL_optlstring (L, 2, NULL, &data_len);
+
+	fprintf (stderr, "** ixp.create (%s) **\n", file);
+	
+	fid = ixp_create (client, (char*)file, 0777, P9_OWRITE);
+	if (!fid)
+		return pusherror (L, "count not create file");
+
+	if (data && data_len
+			&& !(fid->qid.type & P9_DMDIR)) {
+		int rc = write_data (fid, data, data_len);
+		if (rc < 0) {
+			ixp_close(fid);
+			return pusherror (L, "failed to write to p9 file");
+		}
+	}
+
+	ixp_close(fid);
+	return 0;
+}
+
+/* ------------------------------------------------------------------------
+ * lua: remove(file) -- remove a file 
+ */
+static int l_remove (lua_State *L)
+{
+	int rc;
+	const char *file;
+
+	file = luaL_checkstring (L, 1);
+
+	fprintf (stderr, "** ixp.remove (%s) **\n", file);
+	
+	rc = ixp_remove (client, (char*)file);
+	if (!rc)
+		return pusherror (L, "failed to remove p9 file");
+
+	return 0;
+}
+
+/* ------------------------------------------------------------------------
+ * lua: itr = iread(file) -- returns a line iterator 
+ */
 
 struct l_iread_s {
 	IxpCFid *fid;
@@ -252,7 +322,8 @@ static void init_iread_mt (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * lua: stat = stat(file) -- returns a status table */
+ * lua: stat = stat(file) -- returns a status table 
+ */
 
 static int pushstat (lua_State *L, const struct IxpStat *stat);
 
@@ -335,7 +406,8 @@ static int pushstat (lua_State *L, const struct IxpStat *stat)
 }
 
 /* ------------------------------------------------------------------------
- * lua: itr = idir(dir) -- returns a file name iterator */
+ * lua: itr = idir(dir) -- returns a file name iterator 
+ */
 
 struct l_idir_s {
 	IxpCFid *fid;
@@ -439,6 +511,10 @@ static const luaL_reg R[] =
 
 	{ "write",		l_write },
 	{ "read",		l_read },
+
+	{ "create",		l_create },
+	{ "remove",		l_remove },
+
 	{ "iread",		l_iread },
 	{ "idir",		l_idir },
 
