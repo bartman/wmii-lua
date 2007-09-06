@@ -253,14 +253,14 @@ local ev_handlers = {
         end,
 
         FocusTag = function (ev, arg)
-                my_log ("FocusTag: " .. arg)
+                my_log ("FocusTag: " .. arg:gsub("%W",".") .. '--')
                 wmii.create ("/lbar/" .. arg, 
                         wconfig.focuscolors .. " " .. arg)
                 wmii.write ("/lbar/" .. arg, 
                         wconfig.focuscolors .. " " .. arg)
         end,
         UnfocusTag = function (ev, arg)
-                my_log ("UnfocusTag: " .. arg)
+                my_log ("UnfocusTag: " .. arg:gsub("%W",".") .. '--')
                 wmii.create ("/lbar/" .. arg, 
                         wconfig.normcolors .. " " .. arg)
                 wmii.write ("/lbar/" .. arg, 
@@ -297,6 +297,14 @@ local ev_handlers = {
         LeftBarClick = function (ev, arg)
                 my_log ("LeftBarClick: " .. arg)
 		-- wmiir xwrite /ctl view "$@"
+        end,
+
+        -- focus updates
+        ClientFocus = function (ev, arg)
+                my_log ("ClientFocus: " .. arg)
+        end,
+        ColumnFocus = function (ev, arg)
+                my_log ("ColumnFocus: " .. arg)
         end,
 
         -- urgent tag?
