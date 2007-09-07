@@ -43,3 +43,5 @@ print ("iterating...")
 for ev in x:iread("/event") do
         print ("ev: '" .. ev .. "'")
 end
+
+print ("finished!")

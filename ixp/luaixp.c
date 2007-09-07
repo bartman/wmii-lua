@@ -272,6 +272,7 @@ static int l_ixp_iread (lua_State *L)
 	ctx = (struct l_ixp_iread_s*)lua_newuserdata (L, sizeof(*ctx));
 	if (!ctx)
 		return pusherror (L, "count not allocate context");
+	memset (ctx, 0, sizeof (*ctx));
 
 	// set the metatable for the new userdata
 	luaL_getmetatable (L, L_IXP_IREAD_MT);
