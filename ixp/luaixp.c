@@ -381,6 +381,8 @@ static int l_ixp_stat (lua_State *L)
 	ixp = checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
 
+	fprintf (stderr, "** ixp.stat (%s) **\n", file);
+
 	stat = ixp_stat(ixp->client, (char*)file);
 	if(!stat)
 		return pusherror(L, "cannot stat file");

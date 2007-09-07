@@ -1,27 +1,31 @@
 #!/usr/bin/env lua
 
-require "ixp"
 require "wmii"
 
 wmii.write ("/lbar/1", '#FF0000 #00FF00 #0000FF xxx')
 
-foo = wmii.ls ("/")
-io.write ("ls ::\n" .. foo .. "\n")
-
-foo = wmii.ls ("/lbar", "-l")
-io.write ("ls -l ::\n" .. foo .. "\n")
-
 foo = wmii.read ("/lbar/1")
-io.write ("read /lbar/1 ::\n" .. foo .. "\n\n")
+print ("read /lbar/1 ::\n" .. foo .. "\n")
 
+print ("ls / ::")
+for foo in  wmii.ls ("/") do
+        print ("    ", foo)
+end
+print ("")
 
-io.write ("read some events...\n")
+print ("ls -l /lbar ::")
+for foo in wmii.ls ("/lbar", "-l") do
+        print ("    ", foo)
+end
+print ("")
+
+print ("read some events...\n")
 --[[
 for x in wmii.iread("/event") do
-        io.write ("ev: " .. x .. "\n")
+        print ("ev: " .. x .. "\n")
 end
 ]]--
 for x,y in wmii.ievents() do
-        io.write ("ev: " .. x .. " - " .. y .. "\n")
+        print ("ev: " .. x .. " - " .. y)
 end
 

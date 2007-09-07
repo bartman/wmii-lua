@@ -20,30 +20,43 @@ local posix = require("posix")
 local string = require("string")
 local print = print
 local pairs = pairs
+local tostring = tostring
 
 module("wmii")
 
 local wmiir = "wmiir"
+local wmii_adr = os.getenv("WMII_ADDRESS")
+        or ("unix!/tmp/ns." ..  os.getenv("USER") ..  "." 
+            .. os.getenv("DISPLAY"):match("(:%d+)") .. "/wmii")
+local wmixp = ixp.new(wmii_adr)
 
 -- ------------------------------------------------------------------------
--- TODO I would like to be able to return an interator
+-- returns an iterator
 function ls (dir, fmt)
-        local itr = idir (dir)
-        local verbose = fmt:match("l")
+        local verbose = fmt and fmt:match("l")
 
-        local s = ixp:stat(dir)
+        local s = wmixp:stat(dir)
+        if not s then
+                return function () return nil end
+        end
         if s.modestr:match("^[^d]") then
-                return stat2str(verbose, s)
+                return function ()
+                        return stat2str(verbose, s)
+                end
         end
 
+        local itr = wmixp:idir (dir)
+        if not itr then
+                --return function ()
+                        return nil
+                --end
+        end
+
+
         return function ()
-                if itr then
-                        local n = itr()
-                        if n then
-                                local f = dir .. "/" .. n
-                                local s = ixp:stat(f)
-                                return stat2str(verbose, s)
-                        end
+                local s = itr()
+                if s then
+                        return stat2str(verbose, s)
                 end
                 return nil
         end
@@ -51,9 +64,9 @@ end
 
 function stat2str(verbose, stat)
         if verbose then
-                return string.format("%s %s %s %5llud %s %s", stat.modestr, stat.uid, stat.gid, stat.length, stat.timestr, stat.name)
+                return string.format("%s %s %s %5d %s %s", stat.modestr, stat.uid, stat.gid, stat.length, stat.timestr, stat.name)
         else
-                if s.modestr:match("^d") then
+                if stat.modestr:match("^d") then
                         return stat.name .. "/"
                 else
                         return stat.name
@@ -64,7 +77,7 @@ end
 -- ------------------------------------------------------------------------
 -- read all contents of a wmii virtual file
 function read (file)
-        return ixp.read (file)
+        return wmixp:read (file)
 end
 
 -- ------------------------------------------------------------------------
@@ -75,7 +88,7 @@ end
 --         ...
 --     end
 function iread (file)
-        return ixp.iread(file)
+        return wmixp:iread(file)
 end
 
 -- ------------------------------------------------------------------------
@@ -92,19 +105,19 @@ end
 -- ------------------------------------------------------------------------
 -- create a wmii file, optionally write data to it
 function create (file, data)
-        ixp.create(file, data)
+        wmixp:create(file, data)
 end
 
 -- ------------------------------------------------------------------------
 -- remove a wmii file
 function remove (file)
-        ixp.remove(file)
+        wmixp:remove(file)
 end
 
 -- ------------------------------------------------------------------------
 -- write a value to a wmii virtual file system
 function write (file, value)
-        ixp.write (file, value)
+        wmixp:write (file, value)
 end
 
 -- ------------------------------------------------------------------------
