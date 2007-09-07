@@ -13,8 +13,13 @@
 #include "lua.h"
 #include "lauxlib.h"
 
-static IxpClient *client;
+#define L_IXP_MT "ixp.ixp_mt"
+#define L_IXP_IDIR_MT "ixp.idir_mt"
+#define L_IXP_IREAD_MT "ixp.iread_mt"
 
+/* ------------------------------------------------------------------------
+ * error helper
+ */
 static int pusherror(lua_State *L, const char *info)
 {
 	lua_pushnil(L);
@@ -33,11 +38,39 @@ static int pusherror(lua_State *L, const char *info)
 }
 
 /* ------------------------------------------------------------------------
+ * the C representation of a ixp instance object
+ */
+struct ixp {
+	const char *address;;
+	IxpClient *client;
+};
+
+static struct ixp *checkixp (lua_State *L, int narg)
+{
+	void *ud = luaL_checkudata (L, narg, L_IXP_MT);
+	luaL_argcheck (L, ud != NULL, 1, "`ixp' expected");
+	return (struct ixp*)ud;
+}
+
+static int l_ixp_tostring (lua_State *L)
+{
+	struct ixp *ixp = checkixp (L, 1);
+	lua_pushfstring (L, "ixp instance %p", ixp);
+	return 1;
+}
+
+/* ------------------------------------------------------------------------
  * lua: ixptest() 
  */
 static int l_test (lua_State *L)
 {
 	fprintf (stderr, "** ixp.test **\n");
+	return pusherror (L, "some error occurred");
+}
+static int l_ixp_test (lua_State *L)
+{
+	struct ixp *ixp = checkixp (L, 1);
+	fprintf (stderr, "** ixp:test (%p [%s]) **\n", ixp, ixp->address);
 	return pusherror (L, "some error occurred");
 }
 
@@ -47,18 +80,20 @@ static int l_test (lua_State *L)
 
 static int write_data (IxpCFid *fid, const char *data, size_t data_len);
 
-static int l_write (lua_State *L)
+static int l_ixp_write (lua_State *L)
 {
+	struct ixp *ixp;
 	IxpCFid *fid;
 	const char *file;
 	const char *data;
 	size_t data_len;
 	int rc;
 
-	file = luaL_checkstring (L, 1);
-	data = luaL_checklstring (L, 2, &data_len);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
+	data = luaL_checklstring (L, 3, &data_len);
 
-	fid = ixp_open(client, (char*)file, P9_OWRITE);
+	fid = ixp_open(ixp->client, (char*)file, P9_OWRITE);
 	if(fid == NULL)
 		return pusherror (L, "count not open p9 file");
 
@@ -99,16 +134,18 @@ static int write_data (IxpCFid *fid, const char *data, size_t data_len)
 /* ------------------------------------------------------------------------
  * lua: data = read(file) -- returns all contents (upto 4k) 
  */
-static int l_read (lua_State *L)
+static int l_ixp_read (lua_State *L)
 {
+	struct ixp *ixp;
 	IxpCFid *fid;
 	const char *file;
 	char *buf;
 	size_t buf_ofs, buf_size, buf_left;
 
-	file = luaL_checkstring (L, 1);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
 
-	fid = ixp_open(client, (char*)file, P9_OREAD);
+	fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
 	if(fid == NULL)
 		return pusherror (L, "count not open p9 file");
 
@@ -157,19 +194,21 @@ static int l_read (lua_State *L)
 /* ------------------------------------------------------------------------
  * lua: create(file, [data]) -- create a file, optionally write data to it 
  */
-static int l_create (lua_State *L)
+static int l_ixp_create (lua_State *L)
 {
+	struct ixp *ixp;
 	IxpCFid *fid;
 	const char *file;
 	const char *data;
 	size_t data_len = 0;
 
-	file = luaL_checkstring (L, 1);
-	data = luaL_optlstring (L, 2, NULL, &data_len);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
+	data = luaL_optlstring (L, 3, NULL, &data_len);
 
 	fprintf (stderr, "** ixp.create (%s) **\n", file);
 	
-	fid = ixp_create (client, (char*)file, 0777, P9_OWRITE);
+	fid = ixp_create (ixp->client, (char*)file, 0777, P9_OWRITE);
 	if (!fid)
 		return pusherror (L, "count not create file");
 
@@ -189,16 +228,18 @@ static int l_create (lua_State *L)
 /* ------------------------------------------------------------------------
  * lua: remove(file) -- remove a file 
  */
-static int l_remove (lua_State *L)
+static int l_ixp_remove (lua_State *L)
 {
+	struct ixp *ixp;
 	int rc;
 	const char *file;
 
-	file = luaL_checkstring (L, 1);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
 
 	fprintf (stderr, "** ixp.remove (%s) **\n", file);
 	
-	rc = ixp_remove (client, (char*)file);
+	rc = ixp_remove (ixp->client, (char*)file);
 	if (!rc)
 		return pusherror (L, "failed to remove p9 file");
 
@@ -209,7 +250,7 @@ static int l_remove (lua_State *L)
  * lua: itr = iread(file) -- returns a line iterator 
  */
 
-struct l_iread_s {
+struct l_ixp_iread_s {
 	IxpCFid *fid;
 	char *buf;
 	size_t buf_pos;
@@ -217,24 +258,26 @@ struct l_iread_s {
 	size_t buf_size;
 };
 
-static int l_iread_iter (lua_State *L);
+static int l_ixp_iread_iter (lua_State *L);
 
-static int l_iread (lua_State *L)
+static int l_ixp_iread (lua_State *L)
 {
+	struct ixp *ixp;
 	const char *file;
-	struct l_iread_s *ctx;
+	struct l_ixp_iread_s *ctx;
 
-	file = luaL_checkstring (L, 1);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
 
-	ctx = (struct l_iread_s*)lua_newuserdata (L, sizeof(*ctx));
+	ctx = (struct l_ixp_iread_s*)lua_newuserdata (L, sizeof(*ctx));
 	if (!ctx)
 		return pusherror (L, "count not allocate context");
 
 	// set the metatable for the new userdata
-	luaL_getmetatable (L, "ixp.iread");
+	luaL_getmetatable (L, L_IXP_IREAD_MT);
 	lua_setmetatable (L, -2);
 
-	ctx->fid = ixp_open(client, (char*)file, P9_OREAD);
+	ctx->fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
 	if(ctx->fid == NULL) {
 		return pusherror (L, "count not open p9 file");
 	}
@@ -243,16 +286,16 @@ static int l_iread (lua_State *L)
 
 	// create and return the iterator function
 	// the only argument is the userdata
-	lua_pushcclosure (L, l_iread_iter, 1);
+	lua_pushcclosure (L, l_ixp_iread_iter, 1);
 	return 1;
 }
 
-static int l_iread_iter (lua_State *L)
+static int l_ixp_iread_iter (lua_State *L)
 {
-	struct l_iread_s *ctx;
+	struct l_ixp_iread_s *ctx;
 	char *s, *e, *cr;
 
-	ctx = (struct l_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
+	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
 	fprintf (stderr, "** ixp.iread - iter **\n");
 
@@ -295,11 +338,11 @@ static int l_iread_iter (lua_State *L)
 	}
 }
 
-static int l_iread_gc (lua_State *L)
+static int l_ixp_iread_gc (lua_State *L)
 {
-	struct l_iread_s *ctx;
+	struct l_ixp_iread_s *ctx;
 
-	ctx = (struct l_iread_s*)lua_touserdata (L, 1);
+	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, 1);
 
 	fprintf (stderr, "** ixp.iread - gc **\n");
 
@@ -313,11 +356,11 @@ static int l_iread_gc (lua_State *L)
 
 static void init_iread_mt (lua_State *L)
 {
-	luaL_newmetatable(L, "ixp.iread");
+	luaL_newmetatable(L, L_IXP_IREAD_MT);
 
 	// setup the __gc field
 	lua_pushstring (L, "__gc");
-	lua_pushcfunction (L, l_iread_gc);
+	lua_pushcfunction (L, l_ixp_iread_gc);
 	lua_settable (L, -3);
 }
 
@@ -327,15 +370,17 @@ static void init_iread_mt (lua_State *L)
 
 static int pushstat (lua_State *L, const struct IxpStat *stat);
 
-static int l_stat (lua_State *L)
+static int l_ixp_stat (lua_State *L)
 {
+	struct ixp *ixp;
 	struct IxpStat *stat;
 	const char *file;
 	int rc;
 
-	file = luaL_checkstring (L, 1);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
 
-	stat = ixp_stat(client, (char*)file);
+	stat = ixp_stat(ixp->client, (char*)file);
 	if(!stat)
 		return pusherror(L, "cannot stat file");
 
@@ -409,31 +454,33 @@ static int pushstat (lua_State *L, const struct IxpStat *stat)
  * lua: itr = idir(dir) -- returns a file name iterator 
  */
 
-struct l_idir_s {
+struct l_ixp_idir_s {
 	IxpCFid *fid;
 	unsigned char *buf;
 	IxpMsg m;
 };
 
-static int l_idir_iter (lua_State *L);
+static int l_ixp_idir_iter (lua_State *L);
 
-static int l_idir (lua_State *L)
+static int l_ixp_idir (lua_State *L)
 {
+	struct ixp *ixp;
 	const char *file;
-	struct l_idir_s *ctx;
+	struct l_ixp_idir_s *ctx;
 
-	file = luaL_checkstring (L, 1);
+	ixp = checkixp (L, 1);
+	file = luaL_checkstring (L, 2);
 
-	ctx = (struct l_idir_s*)lua_newuserdata (L, sizeof(*ctx));
+	ctx = (struct l_ixp_idir_s*)lua_newuserdata (L, sizeof(*ctx));
 	if (!ctx)
 		return pusherror (L, "count not allocate context");
 	memset(ctx, 0, sizeof (*ctx));
 
 	// set the metatable for the new userdata
-	luaL_getmetatable (L, "ixp.idir");
+	luaL_getmetatable (L, L_IXP_IDIR_MT);
 	lua_setmetatable (L, -2);
 
-	ctx->fid = ixp_open(client, (char*)file, P9_OREAD);
+	ctx->fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
 	if(ctx->fid == NULL) {
 		return pusherror (L, "count not open p9 file");
 	}
@@ -449,16 +496,16 @@ static int l_idir (lua_State *L)
 
 	// create and return the iterator function
 	// the only argument is the userdata
-	lua_pushcclosure (L, l_idir_iter, 1);
+	lua_pushcclosure (L, l_ixp_idir_iter, 1);
 	return 1;
 }
 
-static int l_idir_iter (lua_State *L)
+static int l_ixp_idir_iter (lua_State *L)
 {
-	struct l_idir_s *ctx;
+	struct l_ixp_idir_s *ctx;
 	IxpStat stat;
 
-	ctx = (struct l_idir_s*)lua_touserdata (L, lua_upvalueindex(1));
+	ctx = (struct l_ixp_idir_s*)lua_touserdata (L, lua_upvalueindex(1));
 
 	fprintf (stderr, "** ixp.idir - iter **\n");
 
@@ -478,11 +525,11 @@ static int l_idir_iter (lua_State *L)
 	return pushstat (L, &stat);
 }
 
-static int l_idir_gc (lua_State *L)
+static int l_ixp_idir_gc (lua_State *L)
 {
-	struct l_idir_s *ctx;
+	struct l_ixp_idir_s *ctx;
 
-	ctx = (struct l_idir_s*)lua_touserdata (L, 1);
+	ctx = (struct l_ixp_idir_s*)lua_touserdata (L, 1);
 
 	fprintf (stderr, "** ixp.idir - gc **\n");
 
@@ -495,46 +542,121 @@ static int l_idir_gc (lua_State *L)
 
 static void init_idir_mt (lua_State *L)
 {
-	luaL_newmetatable(L, "ixp.idir");
+	luaL_newmetatable(L, L_IXP_IDIR_MT);
 
 	// setup the __gc field
 	lua_pushstring (L, "__gc");
-	lua_pushcfunction (L, l_idir_gc);
+	lua_pushcfunction (L, l_ixp_idir_gc);
 	lua_settable (L, -3);
 }
 
 /* ------------------------------------------------------------------------
- * the table */
-static const luaL_reg R[] =
+ * lua: x = ixp.new("unix!/tmp/ns.bart.:0/wmii") -- create a new ixp object
+ */
+static int l_new (lua_State *L)
+{
+	const char *adr;
+	IxpClient *cli;
+	struct ixp *ixp;
+
+	adr = luaL_checkstring (L, 1);
+
+	fprintf (stderr, "** ixp.new ([%s]) **\n", adr);
+
+	cli = ixp_mount((char*)adr);
+	if (!cli)
+		return pusherror (L, "could not open ixp connection");
+
+	ixp = (struct ixp*)lua_newuserdata(L, sizeof (struct ixp));
+
+	luaL_getmetatable (L, L_IXP_MT);
+	lua_setmetatable (L, -2);
+
+	ixp->address = strdup (adr);
+	ixp->client = cli;
+
+	return 1;
+}
+
+static int l_ixp_gc (lua_State *L)
+{
+	struct ixp *ixp = checkixp (L, 1);
+
+	fprintf (stderr, "** ixp:__gc (%p [%s]) **\n", ixp, ixp->address);
+
+	ixp_unmount (ixp->client);
+	free ((char*)ixp->address);
+
+	return 0;
+}
+
+/* ------------------------------------------------------------------------
+ * the class method table 
+ */
+static const luaL_reg class_table[] =
 {
 	{ "test",		l_test },
 
-	{ "write",		l_write },
-	{ "read",		l_read },
-
-	{ "create",		l_create },
-	{ "remove",		l_remove },
-
-	{ "iread",		l_iread },
-	{ "idir",		l_idir },
-
-	{ "stat",		l_stat },
-
+	{ "new",		l_new },
 	
 	{ NULL,			NULL },
 };
 
-LUALIB_API int luaopen_ixp (lua_State *L)
+/* ------------------------------------------------------------------------
+ * the instance method table 
+ */
+static const luaL_reg instance_table[] =
 {
-	const char *address = "unix!/tmp/ns.bart.:0/wmii";
-	client = ixp_mount((char*)address);
+	{ "test",		l_ixp_test },
 
-	init_iread_mt (L);
-	init_idir_mt (L);
+	{ "__tostring",		l_ixp_tostring },
+	{ "__gc",		l_ixp_gc },
 
+	{ "write",		l_ixp_write },
+	{ "read",		l_ixp_read },
+
+	{ "create",		l_ixp_create },
+	{ "remove",		l_ixp_remove },
+
+	{ "iread",		l_ixp_iread },
+	{ "idir",		l_ixp_idir },
+
+	{ "stat",		l_ixp_stat },
+
+	{ NULL,			NULL },
+};
+
+/* ------------------------------------------------------------------------
+ * the class metatable
+ */
+static int init_ixp_class (lua_State *L)
+{
+	luaL_newmetatable(L, L_IXP_MT);
+
+	// setup the __index and __gc field
+	lua_pushstring (L, "__index");
+	lua_pushvalue (L, -2);		// pushes the new metatable
+	lua_settable (L, -3);		// metatable.__index = metatable
+
+	luaL_openlib (L, NULL, instance_table, 0);
+	luaL_openlib (L, "ixp", class_table, 0);
+
+#if 0
 	luaL_register (L, MYNAME, R);
 	lua_pushliteral (L, "version");
 	lua_pushliteral (L, MYVERSION);
 	lua_settable (L, -3);
+#endif
 	return 1;
+}
+
+/* ------------------------------------------------------------------------
+ * library entry
+ */
+LUALIB_API int luaopen_ixp (lua_State *L)
+{
+	init_iread_mt (L);
+	init_idir_mt (L);
+
+	return init_ixp_class (L);
 }
