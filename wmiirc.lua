@@ -163,12 +163,17 @@ local key_handlers = {
 
         -- work spaces
         ["Mod4-#"] = function (key, num)
-                wmii.write ("/ctl", "view " .. tostring(num))
+                wmii.setview (tostring(num))
         end,
         ["Mod4-Shift-#"] = function (key, num)
                 wmii.write ("/client/sel/tags", tostring(num))
         end,
-
+        ["Mod1-comma"] = function (key)
+                wmii.setview (-1)
+        end,
+        ["Mod1-period"] = function (key)
+                wmii.setview (1)
+        end,
 
         -- switching views and retagging
         ["Mod1-t"] = function (key)
