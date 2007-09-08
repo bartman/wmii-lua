@@ -18,6 +18,10 @@ local io = require("io")
 local os = require("os")
 local posix = require("posix")
 local string = require("string")
+local table = require("table")
+local math = require("math")
+local type = type
+local error = error
 local print = print
 local pairs = pairs
 local tostring = tostring
@@ -187,4 +191,63 @@ function progmenu ()
         return prog
 end
 
+-- ------------------------------------------------------------------------
+-- displays the a program menu, returns selected program
+function gettags()
+        local t = {}
+        local s
+        for s in wmixp:idir ("/tag") do
+                if s.name and not (s.name == "sel") then
+                        t[#t + 1] = s.name
+                end
+        end
+        table.sort(t)
+        return t
+end
 
+-- ------------------------------------------------------------------------
+-- displays the a program menu, returns selected program
+function getview()
+        local v = wmixp:read("/ctl") or ""
+        return v:match("view%s+(%S+)")
+end
+
+-- ------------------------------------------------------------------------
+-- changes the current view
+--   if the argument is a number it shifts the view left or right by that count
+--   if the argument is a string it moves to that view name
+function setview(sel)
+        local cur = getview()
+        local all = gettags()
+
+        if #all < 2 then
+                -- nothing to do if we have less then 2 tags
+                return
+
+        elseif type(sel) == "number" then
+                -- range check
+                if (sel < - #all) or (sel > #all) then
+                        error ("view selector is out of range")
+                end
+
+                -- find the one that's selected index
+                local curi = nil
+                local i,v
+                for i,v in pairs (all) do
+                        if v == cur then curi = i end
+                end
+
+                -- adjust by index
+                local newi = math.fmod(#all + curi + sel - 1, #all) + 1
+                if (newi < - #all) or (newi > #all) then
+                        error ("error computng new view")
+                end
+
+                sel = all[newi]
+
+        elseif not (type(sel) == "string") then
+                error ("number or string argument expected")
+        end
+
+        write ("/ctl", "view " .. sel)
+end

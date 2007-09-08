@@ -19,13 +19,21 @@ for foo in wmii.ls ("/lbar", "-l") do
 end
 print ("")
 
-print ("read some events...\n")
+print ("switch view left...")
+wmii.setview(1)
+posix.sleep(1)
+print ("switch view right...")
+wmii.setview(-1)
+print ("")
+
+
 --[[
+print ("read some events...\n")
 for x in wmii.iread("/event") do
         print ("ev: " .. x .. "\n")
 end
-]]--
 for x,y in wmii.ievents() do
         print ("ev: " .. x .. " - " .. y)
 end
+]]--
 
