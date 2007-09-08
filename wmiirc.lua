@@ -179,7 +179,7 @@ local key_handlers = {
         ["Mod1-t"] = function (key)
                 local tag = wmii.tagmenu()
                 if tag then
-                        wmii.write ("/ctl", "view " .. tag)
+                        wmii.setview (tag)
                 end
 
         end,
@@ -295,13 +295,10 @@ local ev_handlers = {
                 end
         end,
 
-        -- mouse handling
-        ClientMouseDown = function (ev, arg)
-                my_log ("ClientMouseDown: " .. arg)
-        end,
+        -- mouse handling on the lbar
         LeftBarClick = function (ev, arg)
-                my_log ("LeftBarClick: " .. arg)
-		-- wmiir xwrite /ctl view "$@"
+                local button,tag = string.match(arg, "(%w+)%s+(%w+)")
+                wmii.setview (tag)
         end,
 
         -- focus updates
