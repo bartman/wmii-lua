@@ -174,6 +174,9 @@ local key_handlers = {
         ["Mod1-period"] = function (key)
                 wmii.setview (1)
         end,
+        ["Mod1-r"] = function (key)
+                wmii.toggleview()
+        end,
 
         -- switching views and retagging
         ["Mod1-t"] = function (key)
@@ -270,6 +273,16 @@ local ev_handlers = {
                         wconfig.normcolors .. " " .. arg)
                 wmii.write ("/lbar/" .. arg, 
                         wconfig.normcolors .. " " .. arg)
+
+                -- don't duplicate the last entry
+                if not (arg == wmii.view_hist[#wmii.view_hist]) then
+                        wmii.view_hist[#wmii.view_hist+1] = arg
+
+                        -- limit to view_hist_max
+                        if #wmii.view_hist > wmii.view_hist_max then
+                                table.remove(wmii.view_hist, 1)
+                        end
+                end
         end,
 
         -- key event handling

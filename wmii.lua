@@ -28,11 +28,24 @@ local tostring = tostring
 
 module("wmii")
 
+-- ------------------------------------------------------------------------
+-- module variables
+
+-- wmiir points to the wmiir executable
 local wmiir = "wmiir"
+
+-- wmii_adr is the address we use when connecting using ixp
 local wmii_adr = os.getenv("WMII_ADDRESS")
         or ("unix!/tmp/ns." ..  os.getenv("USER") ..  "." 
             .. os.getenv("DISPLAY"):match("(:%d+)") .. "/wmii")
+
+-- wmixp is the ixp context we use to talk to wmii
 local wmixp = ixp.new(wmii_adr)
+
+-- history of previous views, view_hist[#view_hist] is the last one
+view_hist = {}                  -- sorted with 1 being the oldest
+view_hist_max = 10              -- max number to keep track of
+
 
 -- ------------------------------------------------------------------------
 -- returns an iterator
@@ -249,5 +262,13 @@ function setview(sel)
                 error ("number or string argument expected")
         end
 
+        -- set new view
         write ("/ctl", "view " .. sel)
+end
+
+function toggleview()
+        local last = view_hist[#view_hist]
+        if last then
+                setview(last)
+        end
 end
