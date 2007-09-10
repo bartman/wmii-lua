@@ -37,8 +37,28 @@ wmii.setconf ({
         xterm = 'x-terminal-emulator'
 })
 
-wmii.write ("/colrules", "/.*/ -> 58+42")
+-- colrules file contains a list of rules which affect the width of newly 
+-- created columns.  Rules have a form of
+--      /regexp/ -> width[+width[+width...]]
+-- When a new column, n, is created on a view whose name matches regex, the
+-- n'th given width percentage of the screen is given to it.  If there is 
+-- no nth width, 1/ncolth of the screen is given to it.
+--
+wmii.write ("/colrules", "/.*/ -> 58+42\n"
+                      .. "/gaim/ -> 80+20\n")
+
+-- tagrules file contains a list of riles which affect which tags are 
+-- applied to a new client.  Rules has a form of
+--      /regexp/ -> tag[+tag[+tag...]]
+-- When client's name:class:title matches regex, it is given the 
+-- tagstring tag(s).  There are two special tags:
+--      sel (or the deprecated form: !) represents the current tag, and
+--      ~ which represents the floating layer
 wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
+                      .. "/Firefox.*/ -> www\n"
+                      .. "/Gimp.*/ -> ~\n"
+                      .. "/Gimp.*/ -> gimp\n"
+                      .. "/Gaim.*/ -> gaim\n"
                       .. "/MPlayer.*/ -> ~\n"
                       .. "/.*/ -> sel\n"
                       .. "/.*/ -> 1\n")
