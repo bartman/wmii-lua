@@ -459,7 +459,7 @@ function update_active_keys ()
         end
         local all_keys = table.concat(t, "\n")
         --log ("setting /keys to...\n" .. all_keys .. "\n");
-        --write ("/keys", all_keys)
+        write ("/keys", all_keys)
 end
 
 
@@ -490,14 +490,12 @@ local ev_handlers = {
 
         FocusTag = function (ev, arg)
                 local fc = getctl("focuscolors") or ""
-                log ("FocusTag: " .. arg:gsub("%W",".") .. '--')
-                create ("/lbar/" .. arg, fc .. " " .. arg)
+                --create ("/lbar/" .. arg, fc .. " " .. arg)
                 write ("/lbar/" .. arg, fc .. " " .. arg)
         end,
         UnfocusTag = function (ev, arg)
                 local nc = getctl("normcolors") or ""
-                log ("UnfocusTag: " .. arg:gsub("%W",".") .. '--')
-                create ("/lbar/" .. arg, nc .. " " .. arg)
+                --create ("/lbar/" .. arg, nc .. " " .. arg)
                 write ("/lbar/" .. arg, nc .. " " .. arg)
 
                 -- don't duplicate the last entry
