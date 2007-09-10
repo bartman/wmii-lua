@@ -17,6 +17,12 @@
 #define L_IXP_IDIR_MT "ixp.idir_mt"
 #define L_IXP_IREAD_MT "ixp.iread_mt"
 
+#ifdef DBG
+#define DBGF(fmt,args...) fprintf(stderr,fmt,##args)
+#else
+#define DBGF(fmt,args...) ({})
+#endif
+
 /* ------------------------------------------------------------------------
  * error helper
  */
@@ -62,17 +68,19 @@ static int l_ixp_tostring (lua_State *L)
 /* ------------------------------------------------------------------------
  * lua: ixptest() 
  */
+#ifdef DBG
 static int l_test (lua_State *L)
 {
-	fprintf (stderr, "** ixp.test **\n");
+	DBGF("** ixp.test **\n");
 	return pusherror (L, "some error occurred");
 }
 static int l_ixp_test (lua_State *L)
 {
 	struct ixp *ixp = checkixp (L, 1);
-	fprintf (stderr, "** ixp:test (%p [%s]) **\n", ixp, ixp->address);
+	DBGF("** ixp:test (%p [%s]) **\n", ixp, ixp->address);
 	return pusherror (L, "some error occurred");
 }
+#endif
 
 /* ------------------------------------------------------------------------
  * lua: write(file, data) -- writes data to a file 
@@ -97,7 +105,7 @@ static int l_ixp_write (lua_State *L)
 	if(fid == NULL)
 		return pusherror (L, "count not open p9 file");
 
-	fprintf (stderr, "** ixp.write (%s,%s) **\n", file, data);
+	DBGF("** ixp.write (%s,%s) **\n", file, data);
 	
 	rc = write_data (fid, data, data_len);
 	if (rc < 0) {
@@ -157,7 +165,7 @@ static int l_ixp_read (lua_State *L)
 	buf_ofs = 0;
 	buf_size = buf_left = fid->iounit;
 
-	fprintf (stderr, "** ixp.read (%s) **\n", file);
+	DBGF("** ixp.read (%s) **\n", file);
 	
 	for (;;) {
 		int rc = ixp_read (fid, buf+buf_ofs, buf_left);
@@ -206,7 +214,7 @@ static int l_ixp_create (lua_State *L)
 	file = luaL_checkstring (L, 2);
 	data = luaL_optlstring (L, 3, NULL, &data_len);
 
-	fprintf (stderr, "** ixp.create (%s) **\n", file);
+	DBGF("** ixp.create (%s) **\n", file);
 	
 	fid = ixp_create (ixp->client, (char*)file, 0777, P9_OWRITE);
 	if (!fid)
@@ -237,7 +245,7 @@ static int l_ixp_remove (lua_State *L)
 	ixp = checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
 
-	fprintf (stderr, "** ixp.remove (%s) **\n", file);
+	DBGF("** ixp.remove (%s) **\n", file);
 	
 	rc = ixp_remove (ixp->client, (char*)file);
 	if (!rc)
@@ -283,7 +291,7 @@ static int l_ixp_iread (lua_State *L)
 		return pusherror (L, "count not open p9 file");
 	}
 
-	fprintf (stderr, "** ixp.iread (%s) **\n", file);
+	DBGF("** ixp.iread (%s) **\n", file);
 
 	// create and return the iterator function
 	// the only argument is the userdata
@@ -298,7 +306,7 @@ static int l_ixp_iread_iter (lua_State *L)
 
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
-	fprintf (stderr, "** ixp.iread - iter **\n");
+	DBGF("** ixp.iread - iter **\n");
 
 	if (!ctx->buf) {
 		ctx->buf = malloc (ctx->fid->iounit);
@@ -345,7 +353,7 @@ static int l_ixp_iread_gc (lua_State *L)
 
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, 1);
 
-	fprintf (stderr, "** ixp.iread - gc **\n");
+	DBGF("** ixp.iread - gc **\n");
 
 	ixp_close (ctx->fid);
 
@@ -381,7 +389,7 @@ static int l_ixp_stat (lua_State *L)
 	ixp = checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
 
-	fprintf (stderr, "** ixp.stat (%s) **\n", file);
+	DBGF("** ixp.stat (%s) **\n", file);
 
 	stat = ixp_stat(ixp->client, (char*)file);
 	if(!stat)
@@ -495,7 +503,7 @@ static int l_ixp_idir (lua_State *L)
 		return pusherror (L, "count not allocate memory");
 	}
 
-	fprintf (stderr, "** ixp.idir (%s) **\n", file);
+	DBGF("** ixp.idir (%s) **\n", file);
 
 	// create and return the iterator function
 	// the only argument is the userdata
@@ -510,7 +518,7 @@ static int l_ixp_idir_iter (lua_State *L)
 
 	ctx = (struct l_ixp_idir_s*)lua_touserdata (L, lua_upvalueindex(1));
 
-	fprintf (stderr, "** ixp.idir - iter **\n");
+	DBGF("** ixp.idir - iter **\n");
 
 	if (ctx->m.pos >= ctx->m.end) {
 		int rc = ixp_read (ctx->fid, ctx->buf, ctx->fid->iounit);
@@ -534,7 +542,7 @@ static int l_ixp_idir_gc (lua_State *L)
 
 	ctx = (struct l_ixp_idir_s*)lua_touserdata (L, 1);
 
-	fprintf (stderr, "** ixp.idir - gc **\n");
+	DBGF("** ixp.idir - gc **\n");
 
 	free (ctx->buf);
 
@@ -564,7 +572,7 @@ static int l_new (lua_State *L)
 
 	adr = luaL_checkstring (L, 1);
 
-	fprintf (stderr, "** ixp.new ([%s]) **\n", adr);
+	DBGF("** ixp.new ([%s]) **\n", adr);
 
 	cli = ixp_mount((char*)adr);
 	if (!cli)
@@ -585,7 +593,7 @@ static int l_ixp_gc (lua_State *L)
 {
 	struct ixp *ixp = checkixp (L, 1);
 
-	fprintf (stderr, "** ixp:__gc (%p [%s]) **\n", ixp, ixp->address);
+	DBGF("** ixp:__gc (%p [%s]) **\n", ixp, ixp->address);
 
 	ixp_unmount (ixp->client);
 	free ((char*)ixp->address);
@@ -598,7 +606,9 @@ static int l_ixp_gc (lua_State *L)
  */
 static const luaL_reg class_table[] =
 {
+#ifdef DBG
 	{ "test",		l_test },
+#endif
 
 	{ "new",		l_new },
 	
@@ -610,7 +620,9 @@ static const luaL_reg class_table[] =
  */
 static const luaL_reg instance_table[] =
 {
+#ifdef DBG
 	{ "test",		l_ixp_test },
+#endif
 
 	{ "__tostring",		l_ixp_tostring },
 	{ "__gc",		l_ixp_gc },
