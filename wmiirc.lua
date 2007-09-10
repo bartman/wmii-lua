@@ -20,16 +20,10 @@ local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"
 package.path = package.path .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/?.lua"
 require "wmii" 
 
-wmii.log("wmii: wmii.lua loaded")
-
 -- stop any other instance of wmiirc
 wmii.write ("/event", "Start wmiirc")
 
 -- this is the base configuration
-local config = {
-        xterm = 'x-terminal-emulator'
-}
-wmii.log("wmii: setting confg")
 wmii.setctl ({
         view        = 1,
         border      = 1,
@@ -39,7 +33,9 @@ wmii.setctl ({
         grabmod     = 'Mod1'
 })
 
-wmii.log("wmii: config set")
+wmii.setconf ({
+        xterm = 'x-terminal-emulator'
+})
 
 wmii.write ("/colrules", "/.*/ -> 58+42")
 wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"

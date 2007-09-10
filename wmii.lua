@@ -320,8 +320,9 @@ local key_handlers = {
 
         -- execution and actions
         ["Mod1-Return"] = function (key)
-                log ("    executing: " .. config.xterm)
-                os.execute (config.xterm .. " &")
+                local xterm = getconf("xterm")
+                log ("    executing: " .. xterm)
+                os.execute (xterm .. " &")
         end,
         ["Mod1-a"] = function (key)
                 local text = menu (action_handlers)
@@ -563,6 +564,10 @@ local ev_handlers = {
 -- MAIN INTERFACE FUNCTIONS
 -- ========================================================================
 
+local config = {
+        xterm = 'x-terminal-emulator'
+}
+
 -- ------------------------------------------------------------------------
 -- write configuration to /ctl wmii file
 --   setctl({ "var" = "val", ...})
@@ -575,7 +580,7 @@ function setctl (first,second)
                 end
 
         elseif type(first) == "string" and type(second) == "string" then
-                        write ("/ctl", first .. " " .. second)
+                write ("/ctl", first .. " " .. second)
 
         else
                 error ("expecting a table or two string arguments")
@@ -593,6 +598,31 @@ function getctl (name)
                 end
         end
         return nil
+end
+
+-- ------------------------------------------------------------------------
+-- set an internal wmiirc.lua variable
+--   setconf({ "var" = "val", ...})
+--   setconf("var, "val")
+function setconf (first,second)
+        if type(first) == "table" and second == nil then
+                local x, y
+                for x, y in pairs(first) do
+                        config[x] = y
+                end
+
+        elseif type(first) == "string" and type(second) == "string" then
+                config[first] = second
+
+        else
+                error ("expecting a table or two string arguments")
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- read an internal wmiirc.lua variable
+function getconf (name)
+        return config[name]
 end
 
 -- ------------------------------------------------------------------------
