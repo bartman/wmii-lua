@@ -25,11 +25,13 @@ local error = error
 local print = print
 local pairs = pairs
 local tostring = tostring
+local tonumber = tonumber
 
 module("wmii")
 
--- ------------------------------------------------------------------------
--- module variables
+-- ========================================================================
+-- MODULE VARIABLES
+-- ========================================================================
 
 -- wmiir points to the wmiir executable
 local wmiir = "wmiir"
@@ -43,9 +45,22 @@ local wmii_adr = os.getenv("WMII_ADDRESS")
 local wmixp = ixp.new(wmii_adr)
 
 -- history of previous views, view_hist[#view_hist] is the last one
-view_hist = {}                  -- sorted with 1 being the oldest
-view_hist_max = 10              -- max number to keep track of
+local view_hist = {}                  -- sorted with 1 being the oldest
+local view_hist_max = 10              -- max number to keep track of
 
+-- ========================================================================
+-- LOCAL HELPERS
+-- ========================================================================
+
+-- ------------------------------------------------------------------------
+-- log, right now write to stderr
+function log (str)
+        io.stderr:write (str .. "\n")
+end
+
+-- ========================================================================
+-- MAIN ACCESS FUNCTIONS
+-- ========================================================================
 
 -- ------------------------------------------------------------------------
 -- returns an iterator
@@ -135,15 +150,6 @@ end
 -- write a value to a wmii virtual file system
 function write (file, value)
         wmixp:write (file, value)
-end
-
--- ------------------------------------------------------------------------
--- write a value to a wmii virtual file system
-function configure (config)
-        local x, y
-        for x, y in pairs(config) do
-                write ("/ctl", x .. " " .. y)
-        end
 end
 
 -- ------------------------------------------------------------------------
@@ -272,3 +278,340 @@ function toggleview()
                 setview(last)
         end
 end
+
+-- ========================================================================
+-- ACTION HANDLERS
+-- ========================================================================
+
+local action_handlers = {
+        quit = function ()
+                write ("/ctl", "quit")
+        end,
+
+        exec = function (act, args)
+                local what = args or wmiirc
+                write ("/ctl", "exec " .. what)
+        end,
+
+        wmiirc = function ()
+                posix.exec ("lua", wmiirc)
+        end,
+
+        rehash = function ()
+                -- TODO: consider storing list of executables around, and 
+                -- this will then reinitialize that list
+                log ("    TODO: rehash")
+        end,
+
+        status = function ()
+                -- TODO: this should eventually update something on the /rbar
+                log ("    TODO: status")
+        end
+}
+
+-- ========================================================================
+-- KEY HANDLERS
+-- ========================================================================
+
+local key_handlers = {
+        ["*"] = function (key)
+                log ("*: " .. key)
+        end,
+
+        -- execution and actions
+        ["Mod1-Return"] = function (key)
+                log ("    executing: " .. config.xterm)
+                os.execute (config.xterm .. " &")
+        end,
+        ["Mod1-a"] = function (key)
+                local text = menu (action_handlers)
+                if text then
+                        local act = text
+                        local args = nil
+                        local si = text:find("%s")
+                        if si then
+                                act,args = string.match(text .. " ", "(%w+)%s(.+)")
+                        end
+                        if act then
+                                local fn = action_handlers[act]
+                                if fn then
+                                        fn (act,args)
+                                end
+                        end
+                end
+        end,
+        ["Mod1-p"] = function (key)
+                local prog = progmenu()
+                if prog then
+                        log ("    executing: " .. prog)
+                        os.execute (prog .. " &")
+                end
+        end,
+        ["Mod1-Shift-c"] = function (key)
+                write ("/client/sel/ctl", "kill")
+        end,
+
+        -- HJKL active selection
+        ["Mod1-h"] = function (key)
+                write ("/tag/sel/ctl", "select left")
+        end,
+        ["Mod1-l"] = function (key)
+		write ("/tag/sel/ctl", "select right")
+        end,
+        ["Mod1-j"] = function (key)
+		write ("/tag/sel/ctl", "select down")
+        end,
+        ["Mod1-k"] = function (key)
+		write ("/tag/sel/ctl", "select up")
+        end,
+
+        -- HJKL movement
+        ["Mod1-Shift-h"] = function (key)
+                write ("/tag/sel/ctl", "send sel left")
+        end,
+        ["Mod1-Shift-l"] = function (key)
+		write ("/tag/sel/ctl", "send sel right")
+        end,
+        ["Mod1-Shift-j"] = function (key)
+		write ("/tag/sel/ctl", "send sel down")
+        end,
+        ["Mod1-Shift-k"] = function (key)
+		write ("/tag/sel/ctl", "send sel up")
+        end,
+
+        -- floating vs tiled
+        ["Mod1-space"] = function (key)
+                write ("/tag/sel/ctl", "select toggle")
+        end,
+        ["Mod1-Shift-space"] = function (key)
+                write ("/tag/sel/ctl", "send sel toggle")
+        end,
+
+        -- work spaces
+        ["Mod4-#"] = function (key, num)
+                setview (tostring(num))
+        end,
+        ["Mod4-Shift-#"] = function (key, num)
+                write ("/client/sel/tags", tostring(num))
+        end,
+        ["Mod1-comma"] = function (key)
+                setview (-1)
+        end,
+        ["Mod1-period"] = function (key)
+                setview (1)
+        end,
+        ["Mod1-r"] = function (key)
+                toggleview()
+        end,
+
+        -- switching views and retagging
+        ["Mod1-t"] = function (key)
+                local tag = tagmenu()
+                if tag then
+                        setview (tag)
+                end
+
+        end,
+        ["Mod1-Shift-t"] = function (key)
+                local tag = tagmenu()
+                if tag then
+                        local cli = read ("/client/sel/ctl")
+                        write ("/client/" .. cli .. "/tags", tag)
+                end
+        end,
+        ["Mod1-Control-t"] = function (key)
+                log ("    TODO: Mod1-Control-t: " .. key)
+        end,
+
+        -- column modes
+        ["Mod1-d"] = function (key)
+		write("/tag/sel/ctl", "colmode sel default")
+        end,
+        ["Mod1-s"] = function (key)
+		write("/tag/sel/ctl", "colmode sel stack")
+        end,
+        ["Mod1-m"] = function (key)
+		write("/tag/sel/ctl", "colmode sel max")
+        end
+}
+
+-- ------------------------------------------------------------------------
+-- update the /keys wmii file with the list of all handlers
+
+function update_active_keys ()
+        local t = {}
+        local x, y
+        for x,y in pairs(key_handlers) do
+                if x:find("%w") then
+                        local i = x:find("#")
+                        if i then
+                                local j
+                                for j=0,9 do
+                                        t[#t + 1] 
+                                                = x:sub(1,i-1) .. j
+                                end
+                        else
+                                t[#t + 1] 
+                                        = tostring(x)
+                        end
+                end
+        end
+        local all_keys = table.concat(t, "\n")
+        log ("setting /keys to...\n" .. all_keys .. "\n");
+        write ("/keys", all_keys)
+end
+
+
+-- ========================================================================
+-- EVENT HANDLERS
+-- ========================================================================
+
+local ev_handlers = {
+        ["*"] = function (ev, arg)
+                log ("ev: " .. ev .. " - " .. arg)
+        end,
+
+        -- exit if another wmiirc started up
+        Start = function (ev, arg)
+                if arg == "wmiirc" then
+                        posix.exit (0)
+                end
+        end,
+
+        -- tag management
+        CreateTag = function (ev, arg)
+                local fc = getctl("focuscolors") or ""
+                create ("/lbar/" .. arg, fc .. " " .. arg)
+        end,
+        DestroyTag = function (ev, arg)
+                remove ("/lbar/" .. arg)
+        end,
+
+        FocusTag = function (ev, arg)
+                local fc = getctl("focuscolors") or ""
+                log ("FocusTag: " .. arg:gsub("%W",".") .. '--')
+                create ("/lbar/" .. arg, fc .. " " .. arg)
+                write ("/lbar/" .. arg, fc .. " " .. arg)
+        end,
+        UnfocusTag = function (ev, arg)
+                local nc = getctl("normcolors") or ""
+                log ("UnfocusTag: " .. arg:gsub("%W",".") .. '--')
+                create ("/lbar/" .. arg, nc .. " " .. arg)
+                write ("/lbar/" .. arg, nc .. " " .. arg)
+
+                -- don't duplicate the last entry
+                if not (arg == view_hist[#view_hist]) then
+                        view_hist[#view_hist+1] = arg
+
+                        -- limit to view_hist_max
+                        if #view_hist > view_hist_max then
+                                table.remove(view_hist, 1)
+                        end
+                end
+        end,
+
+        -- key event handling
+        Key = function (ev, arg)
+                log ("Key: " .. arg)
+                local num = nil
+                -- can we find an exact match?
+                local fn = key_handlers[arg]
+                if not fn then
+                        local key = arg:gsub("-%d+", "-#")
+                        -- can we find a match with a # wild card for the number
+                        fn = key_handlers[key]
+                        if fn then
+                                -- convert the trailing number to a number
+                                num = tonumber(arg:match("-(%d+)"))
+                        else
+                                -- everything else failed, try default match
+                                fn = key_handlers["*"]
+                        end
+                end
+                if fn then
+                        fn (arg, num)
+                end
+        end,
+
+        -- mouse handling on the lbar
+        LeftBarClick = function (ev, arg)
+                local button,tag = string.match(arg, "(%w+)%s+(%w+)")
+                setview (tag)
+        end,
+
+        -- focus updates
+        ClientFocus = function (ev, arg)
+                log ("ClientFocus: " .. arg)
+        end,
+        ColumnFocus = function (ev, arg)
+                log ("ColumnFocus: " .. arg)
+        end,
+
+        -- urgent tag?
+        UrgentTag = function (ev, arg)
+                log ("UrgentTag: " .. arg)
+		-- wmiir xwrite "/lbar/$@" "*$@"
+        end,
+        NotUrgentTag = function (ev, arg)
+                log ("NotUrgentTag: " .. arg)
+		-- wmiir xwrite "/lbar/$@" "$@"
+        end
+
+}
+
+-- ========================================================================
+-- MAIN INTERFACE FUNCTIONS
+-- ========================================================================
+
+-- ------------------------------------------------------------------------
+-- write configuration to /ctl wmii file
+--   setctl({ "var" = "val", ...})
+--   setctl("var, "val")
+function setctl (first,second)
+        if type(first) == "table" and second == nil then
+                local x, y
+                for x, y in pairs(first) do
+                        write ("/ctl", x .. " " .. y)
+                end
+
+        elseif type(first) == "string" and type(second) == "string" then
+                        write ("/ctl", first .. " " .. second)
+
+        else
+                error ("expecting a table or two string arguments")
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- read a value from /ctl wmii file
+function getctl (name)
+        local s
+        for s in iread("/ctl") do
+                local var,val = s:match("(%w+)%s+(.+)")
+                if var == name then
+                        return val
+                end
+        end
+        return nil
+end
+
+-- ------------------------------------------------------------------------
+-- run the event loop and process events, this function does not exit
+function run_event_loop ()
+
+        log("wmii: updating active keys")
+
+        update_active_keys ()
+
+        log("wmii: starting event loop")
+        local ev, arg
+        for ev, arg in ievents() do
+
+                local fn = ev_handlers[ev] or ev_handlers["*"]
+                if fn then
+                        fn (ev, arg)
+                end
+        end
+        log("wmii: event loop exited")
+end
+
