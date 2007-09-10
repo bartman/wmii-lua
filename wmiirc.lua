@@ -11,7 +11,7 @@
 
 require "posix"
 
-print ('-----------------------')
+io.stderr:write ("----------------------------------------------\n")
 
 -- this is us
 local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"

@@ -458,8 +458,8 @@ function update_active_keys ()
                 end
         end
         local all_keys = table.concat(t, "\n")
-        log ("setting /keys to...\n" .. all_keys .. "\n");
-        write ("/keys", all_keys)
+        --log ("setting /keys to...\n" .. all_keys .. "\n");
+        --write ("/keys", all_keys)
 end
 
 
