@@ -490,12 +490,12 @@ local ev_handlers = {
 
         FocusTag = function (ev, arg)
                 local fc = getctl("focuscolors") or ""
-                --create ("/lbar/" .. arg, fc .. " " .. arg)
+                create ("/lbar/" .. arg, fc .. " " .. arg)
                 write ("/lbar/" .. arg, fc .. " " .. arg)
         end,
         UnfocusTag = function (ev, arg)
                 local nc = getctl("normcolors") or ""
-                --create ("/lbar/" .. arg, nc .. " " .. arg)
+                create ("/lbar/" .. arg, nc .. " " .. arg)
                 write ("/lbar/" .. arg, nc .. " " .. arg)
 
                 -- don't duplicate the last entry
