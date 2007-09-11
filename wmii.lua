@@ -153,8 +153,50 @@ function write (file, value)
 end
 
 -- ------------------------------------------------------------------------
+-- setup a table describing dmenu command
+local function dmenu_cmd (prompt)
+        local cmdt = { "dmenu", "-b" }
+        local fn = getctl("font")
+        if fn then
+                cmdt[#cmdt+1] = "-fn"
+                cmdt[#cmdt+1] = fn
+        end
+        local normcolors = getctl("normcolors")
+        if normcolors then
+                local nf, nb = normcolors:match("(#%x+)%s+(#%x+)%s#%x+")
+                if nf then
+                        cmdt[#cmdt+1] = "-nf"
+                        cmdt[#cmdt+1] = "'" .. nf .. "'"
+                end
+                if nb then
+                        cmdt[#cmdt+1] = "-nb"
+                        cmdt[#cmdt+1] = "'" .. nb .. "'"
+                end
+        end
+        local focuscolors = getctl("focuscolors")
+        if focuscolors then
+                local sf, sb = focuscolors:match("(#%x+)%s+(#%x+)%s#%x+")
+                if sf then
+                        cmdt[#cmdt+1] = "-sf"
+                        cmdt[#cmdt+1] = "'" .. sf .. "'"
+                end
+                if sb then
+                        cmdt[#cmdt+1] = "-sb"
+                        cmdt[#cmdt+1] = "'" .. sb .. "'"
+                end
+        end
+        if prompt then
+                cmdt[#cmdt+1] = "-p"
+                cmdt[#cmdt+1] = "'" .. prompt .. "'"
+        end
+
+        return cmdt
+end
+
+-- ------------------------------------------------------------------------
 -- displays the menu given an table of entires, returns selected text
-function menu (tbl)
+function menu (tbl, prompt)
+        local dmenu = dmenu_cmd(prompt)
 
         local infile = os.tmpname()
         local fh = io.open (infile, "w+")
@@ -167,7 +209,13 @@ function menu (tbl)
 
         local outfile = os.tmpname()
 
-        os.execute ("dmenu < " .. infile .. " > " .. outfile)
+        dmenu[#dmenu+1] = "<"
+        dmenu[#dmenu+1] = infile
+        dmenu[#dmenu+1] = ">"
+        dmenu[#dmenu+1] = outfile
+
+        local cmd = table.concat(dmenu," ")
+        os.execute (cmd)
 
         fh = io.open (outfile, "r")
         os.remove (outfile)
@@ -181,28 +229,26 @@ end
 -- ------------------------------------------------------------------------
 -- displays the a tag selection menu, returns selected tag
 function tagmenu ()
-        local tmpfile = os.tmpname()
+        local tags = gettags()
 
-        os.execute ("wmiir ls /tag | sed 's|/||; /^sel$/d' | dmenu > " .. tmpfile)
-
-        local fh = io.open (tmpfile, "rb")
-        os.remove (tmpfile)
-
-        local tag = fh:read("*l")
-        io.close (fh)
-
-        return tag
+        return menu(tags, "tag:")
 end
 
 -- ------------------------------------------------------------------------
 -- displays the a program menu, returns selected program
 function progmenu ()
-        local tmpfile = os.tmpname()
+        local dmenu = dmenu_cmd("cmd:")
 
-        os.execute ("dmenu_path | dmenu > " .. tmpfile)
+        local outfile = os.tmpname()
 
-        local fh = io.open (tmpfile, "rb")
-        os.remove (tmpfile)
+        dmenu[#dmenu+1] = ">"
+        dmenu[#dmenu+1] = outfile
+
+        local cmd = "dmenu_path |" .. table.concat(dmenu," ")
+        os.execute (cmd)
+
+        local fh = io.open (outfile, "rb")
+        os.remove (outfile)
 
         local prog = fh:read("*l")
         io.close (fh)
@@ -325,7 +371,7 @@ local key_handlers = {
                 os.execute (xterm .. " &")
         end,
         ["Mod1-a"] = function (key)
-                local text = menu (action_handlers)
+                local text = menu(action_handlers, "action:")
                 if text then
                         local act = text
                         local args = nil

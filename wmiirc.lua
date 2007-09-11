@@ -23,7 +23,7 @@ require "wmii"
 -- stop any other instance of wmiirc
 wmii.write ("/event", "Start wmiirc")
 
--- this is the base configuration
+-- This is the base configuration of wmii, it writes to the /ctl file.
 wmii.setctl ({
         view        = 1,
         border      = 1,
@@ -33,6 +33,13 @@ wmii.setctl ({
         grabmod     = 'Mod1'
 })
 
+-- This overrides some variables that are used by event and key handlers.
+--   TODO: need to have a list of the standard ones somewhere.
+--         For now look in the wmii.lua for the key_handlers table, it
+--         will reference the variables as getconf("varname").
+-- If you add your own actions, or key handlers you are encouraged to 
+-- use configuration values as appropriate with wmii.setconf("var", "val"), or
+-- as a table like the example below.
 wmii.setconf ({
         xterm = 'x-terminal-emulator'
 })
