@@ -492,6 +492,14 @@ local key_handlers = {
         ["Mod1-Control-t"] = function (key)
                 log ("    TODO: Mod1-Control-t: " .. key)
         end,
+        ["Mod1-Shift-r"] = function (key)
+                local tag = tagmenu()
+                if tag then
+                        local cli = read ("/client/sel/ctl")
+                        write ("/client/" .. cli .. "/tags", tag)
+                end
+                setview(tag)
+        end,
 
         -- column modes
         ["Mod1-d"] = function (key)
