@@ -587,8 +587,8 @@ local ev_handlers = {
 
         -- tag management
         CreateTag = function (ev, arg)
-                local fc = getctl("focuscolors") or ""
-                create ("/lbar/" .. arg, fc .. " " .. arg)
+                local nc = getctl("normcolors") or ""
+                create ("/lbar/" .. arg, nc .. " " .. arg)
         end,
         DestroyTag = function (ev, arg)
                 remove ("/lbar/" .. arg)
