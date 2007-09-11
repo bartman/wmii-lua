@@ -494,34 +494,35 @@ local key_handlers = {
                 setviewofs (1)
         end,
         ["Mod1-r"] = function (key)
+                -- got to the last view
                 toggleview()
         end,
 
         -- switching views and retagging
         ["Mod1-t"] = function (key)
+                -- got to a view
                 local tag = tagmenu()
                 if tag then
                         setview (tag)
                 end
-
         end,
         ["Mod1-Shift-t"] = function (key)
+                -- move selected client to a tag
                 local tag = tagmenu()
                 if tag then
-                        local cli = read ("/client/sel/ctl")
-                        write ("/client/" .. cli .. "/tags", tag)
+                        write ("/client/sel/tags", tag)
+                end
+        end,
+        ["Mod1-Shift-r"] = function (key)
+                -- move selected client to a tag, and follow
+                local tag = tagmenu()
+                if tag then
+                        write ("/client/sel/tags", tag)
+                        setview(tag)
                 end
         end,
         ["Mod1-Control-t"] = function (key)
                 log ("    TODO: Mod1-Control-t: " .. key)
-        end,
-        ["Mod1-Shift-r"] = function (key)
-                local tag = tagmenu()
-                if tag then
-                        local cli = read ("/client/sel/ctl")
-                        write ("/client/" .. cli .. "/tags", tag)
-                end
-                setview(tag)
         end,
 
         -- column modes
