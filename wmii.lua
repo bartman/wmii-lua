@@ -284,36 +284,20 @@ end
 
 -- ------------------------------------------------------------------------
 -- changes the current view
---   if the argument is a number it shifts the view left or right by that count
+--   if the argument is a number it moves to that view at that index
 --   if the argument is a string it moves to that view name
 function setview(sel)
         local cur = getview()
         local all = gettags()
+
+        local view_num = nil
 
         if #all < 2 then
                 -- nothing to do if we have less then 2 tags
                 return
 
         elseif type(sel) == "number" then
-                -- range check
-                if (sel < - #all) or (sel > #all) then
-                        error ("view selector is out of range")
-                end
 
-                -- find the one that's selected index
-                local curi = nil
-                local i,v
-                for i,v in pairs (all) do
-                        if v == cur then curi = i end
-                end
-
-                -- adjust by index
-                local newi = math.fmod(#all + curi + sel - 1, #all) + 1
-                if (newi < - #all) or (newi > #all) then
-                        error ("error computng new view")
-                end
-
-                sel = all[newi]
 
         elseif not (type(sel) == "string") then
                 error ("number or string argument expected")
@@ -323,6 +307,40 @@ function setview(sel)
         write ("/ctl", "view " .. sel)
 end
 
+-- ------------------------------------------------------------------------
+-- chnages to current view by offset given
+function setviewofs(jump)
+        local cur = getview()
+        local all = gettags()
+
+        if #all < 2 then
+                -- nothing to do if we have less then 2 tags
+                return
+        end
+
+        -- range check
+        if (jump < - #all) or (jump > #all) then
+                error ("view selector is out of range")
+        end
+
+        -- find the one that's selected index
+        local curi = nil
+        local i,v
+        for i,v in pairs (all) do
+                if v == cur then curi = i end
+        end
+
+        -- adjust by index
+        local newi = math.fmod(#all + curi + jump - 1, #all) + 1
+        if (newi < - #all) or (newi > #all) then
+                error ("error computng new view")
+        end
+
+        write ("/ctl", "view " .. all[newi])
+end
+
+-- ------------------------------------------------------------------------
+-- toggle between last view and current view
 function toggleview()
         local last = view_hist[#view_hist]
         if last then
@@ -441,16 +459,16 @@ local key_handlers = {
 
         -- work spaces
         ["Mod4-#"] = function (key, num)
-                setview (tostring(num))
+                setview (num)
         end,
         ["Mod4-Shift-#"] = function (key, num)
                 write ("/client/sel/tags", tostring(num))
         end,
         ["Mod1-comma"] = function (key)
-                setview (-1)
+                setviewofs (-1)
         end,
         ["Mod1-period"] = function (key)
-                setview (1)
+                setviewofs (1)
         end,
         ["Mod1-r"] = function (key)
                 toggleview()
