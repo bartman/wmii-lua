@@ -484,7 +484,6 @@ local key_handlers = {
 
 -- ------------------------------------------------------------------------
 -- update the /keys wmii file with the list of all handlers
-
 function update_active_keys ()
         local t = {}
         local x, y
@@ -508,6 +507,29 @@ function update_active_keys ()
         write ("/keys", all_keys)
 end
 
+-- ------------------------------------------------------------------------
+-- update the /lbar wmii file with the current tags
+function update_displayed_tags ()
+        local s
+        for s in wmixp:idir ("/lbar") do
+                remove (s.name)
+        end
+
+        local fc = getctl("focuscolors") or ""
+        local nc = getctl("normcolors") or ""
+
+        local cur = getview()
+        local all = gettags()
+        local i,v
+        for i,v in pairs(all) do
+                local color = nc
+                if cur == v then
+                        color = fc
+                end
+                create ("/lbar/" .. v, color .. " " .. v)
+                write ("/lbar/" .. v, color .. " " .. v)
+        end
+end
 
 -- ========================================================================
 -- EVENT HANDLERS
@@ -672,6 +694,9 @@ end
 -- ------------------------------------------------------------------------
 -- run the event loop and process events, this function does not exit
 function run_event_loop ()
+        log("wmii: updating lbar")
+
+        update_displayed_tags ()
 
         log("wmii: updating active keys")
 
