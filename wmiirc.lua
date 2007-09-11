@@ -51,7 +51,7 @@ wmii.setconf ({
 -- n'th given width percentage of the screen is given to it.  If there is 
 -- no nth width, 1/ncolth of the screen is given to it.
 --
-wmii.write ("/colrules", "/.*/ -> 58+42\n"
+wmii.write ("/colrules", "/.*/ -> 50+50\n"
                       .. "/gaim/ -> 80+20\n")
 
 -- tagrules file contains a list of riles which affect which tags are 
