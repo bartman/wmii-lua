@@ -48,6 +48,9 @@ local wmixp = ixp.new(wmii_adr)
 local view_hist = {}                  -- sorted with 1 being the oldest
 local view_hist_max = 10              -- max number to keep track of
 
+-- allow for a client to be forced to a tag
+local next_client_goes_to_tag = nil
+
 -- ========================================================================
 -- LOCAL HELPERS
 -- ========================================================================
@@ -393,6 +396,15 @@ local key_handlers = {
                 log ("    executing: " .. xterm)
                 os.execute (xterm .. " &")
         end,
+        ["Mod1-Shift-Return"] = function (key)
+                local tag = tagmenu()
+                if tag then
+                        local xterm = getconf("xterm")
+                        log ("    executing: " .. xterm .. "  on: " .. tag)
+                        next_client_goes_to_tag = tag
+                        os.execute (xterm .. " &")
+                end
+        end,
         ["Mod1-a"] = function (key)
                 local text = menu(action_handlers, "action:")
                 if text then
@@ -415,6 +427,17 @@ local key_handlers = {
                 if prog then
                         log ("    executing: " .. prog)
                         os.execute (prog .. " &")
+                end
+        end,
+        ["Mod1-Shift-p"] = function (key)
+                local tag = tagmenu()
+                if tag then
+                        local prog = progmenu()
+                        if prog then
+                                log ("    executing: " .. prog .. "  on: " .. tag)
+                                next_client_goes_to_tag = tag
+                                os.execute (prog .. " &")
+                        end
                 end
         end,
         ["Mod1-Shift-c"] = function (key)
@@ -658,6 +681,17 @@ local ev_handlers = {
         end,
         ColumnFocus = function (ev, arg)
                 log ("ColumnFocus: " .. arg)
+        end,
+
+        -- client handling
+        CreateClient = function (ev, arg)
+                if next_client_goes_to_tag then
+                        local tag = next_client_goes_to_tag
+                        local cli = arg
+                        next_client_goes_to_tag = nil
+                        write ("/client/" .. cli .. "/tags", tag)
+                        setview(tag)
+                end
         end,
 
         -- urgent tag?
