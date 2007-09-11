@@ -201,8 +201,13 @@ function menu (tbl, prompt)
         local infile = os.tmpname()
         local fh = io.open (infile, "w+")
 
-        for n in pairs(tbl) do
-                fh:write (n)
+        local i,v
+        for i,v in pairs(tbl) do
+                if type(i) == 'number' and type(v) == 'string' then
+                        fh:write (v)
+                else
+                        fh:write (i)
+                end
                 fh:write ("\n")
         end
         fh:close()
@@ -510,14 +515,19 @@ end
 -- ------------------------------------------------------------------------
 -- update the /lbar wmii file with the current tags
 function update_displayed_tags ()
-        local s
-        for s in wmixp:idir ("/lbar") do
-                remove (s.name)
-        end
-
+        -- colours for /lbar
         local fc = getctl("focuscolors") or ""
         local nc = getctl("normcolors") or ""
 
+        -- build up a table of existing tags in the /lbar
+        local old = {}
+        local s
+        for s in wmixp:idir ("/lbar") do
+                old[s.name] = 1
+        end
+
+        -- for all actual tags in use create any entries in /lbar we don't have
+        -- clear the old table entries if we have them
         local cur = getview()
         local all = gettags()
         local i,v
@@ -526,8 +536,18 @@ function update_displayed_tags ()
                 if cur == v then
                         color = fc
                 end
-                create ("/lbar/" .. v, color .. " " .. v)
+                if not old[v] then
+                        create ("/lbar/" .. v, color .. " " .. v)
+                end
                 write ("/lbar/" .. v, color .. " " .. v)
+                old[v] = nil
+        end
+
+        -- anything left in the old table should be removed now
+        for i,v in pairs(old) do
+                if v then
+                        remove("/lbar/"..i)
+                end
         end
 end
 
