@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <signal.h>
 
 #include <ixp.h>
 
@@ -299,14 +300,21 @@ static int l_ixp_iread (lua_State *L)
 	return 1;
 }
 
+static void l_ixp_iread_catcher (int sig) { /* TBD */ 
+	fprintf (stderr," **** catcher\n");
+}
+
 static int l_ixp_iread_iter (lua_State *L)
 {
 	struct l_ixp_iread_s *ctx;
 	char *s, *e, *cr;
+	int timeout;
 
+	timeout = luaL_optnumber (L, 1, 0);
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
 	DBGF("** ixp.iread - iter **\n");
+fprintf (stderr, "**** iter (%d)\n", timeout);
 
 	if (!ctx->buf) {
 		ctx->buf = malloc (ctx->fid->iounit);
@@ -317,12 +325,41 @@ static int l_ixp_iread_iter (lua_State *L)
 	}
 
 	if (!ctx->buf_len) {
+		struct sigaction sact, sact2;
 		int rc;
 		ctx->buf_pos = 0;
+
+		if (timeout > 0) {
+			sigemptyset (&sact.sa_mask);
+			sact.sa_flags = 0;
+			sact.sa_handler = l_ixp_iread_catcher;
+
+			sigaction (SIGALRM, &sact, &sact2);
+			alarm (timeout);
+fprintf (stderr, "**** alarm (%d)\n", timeout);
+		}
+
 		rc = ixp_read (ctx->fid, ctx->buf, ctx->buf_size);
-		if (rc <= 0)
+
+		if (timeout > 0) {
+fprintf (stderr, "**** alarm (0)\n");
+			alarm (0);
+			sigaction (SIGALRM, &sact2, NULL);
+		}
+
+fprintf (stderr, "**** rc = %d\n", rc);
+		if (rc == EINTR) {
+fprintf (stderr, "**** return timeout\n");
+			lua_pushstring (L, "timeout");
+			return 1;
+		}
+
+		if (rc <= 0) {
+fprintf (stderr, "**** return EOF\n");
 			return 0; // we are done
+		}
 		ctx->buf_len = rc;
+fprintf (stderr, "**** ...\n");
 	}
 
 	s = ctx->buf + ctx->buf_pos;

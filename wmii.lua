@@ -131,10 +131,23 @@ end
 -- returns an events iterator
 function ievents ()
         local it = iread("/event")
+        local next_timers_on = 0
 
+log ("##### ievent")
         return function ()
-                local line = it()
-                return string.match(line, "(%S+)%s(.+)")
+                while true do
+                        local now = tonumber(os.date("%s"))
+                        if next_timers_on <= now then
+                                local time_to_wait = process_timers ()
+                                next_timers_on = time_to_wait + now
+                        end
+
+                        local time_to_wait = next_timers_on - now
+                        local line = it(time_to_wait)
+                        if not (line == "timeout") then
+                                return string.match(line, "(%S+)%s(.+)")
+                        end
+                end
         end
 end
 
@@ -915,3 +928,9 @@ end
 
 
 
+-- ------------------------------------------------------------------------
+-- function called from ievents() to process all timers
+function process_timers ()
+        log (">>>>>>>>>>> process_timers")
+        return 10
+end
