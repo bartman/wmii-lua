@@ -1,3 +1,9 @@
+This is a lean and mean implementation of wmiirc in lua.  The goals of
+the project are:
+  - be fast, small, and feature rich,
+  - avoid threading and polling at costs, and
+  - replicate the functionality of wmii+ruby.
+
 More details on my blog:
  - see http://www.jukie.net/~bart/blog/wmiirc-in-lua
 
@@ -11,7 +17,7 @@ Requirements:
 
 Installation instructions:
  - install lua5.1 liblua5.1-posix0
-   - on debian you can do this to install all of lua5.1:
+   - on Debian you can do this to install all of lua5.1:
 
        apt-cache search lua5.1 | awk '/liblua5.1/ { print $1 }' \
        | xargs sudo apt-get install -y
