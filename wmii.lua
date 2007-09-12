@@ -26,6 +26,7 @@ local print = print
 local pairs = pairs
 local tostring = tostring
 local tonumber = tonumber
+local setmetatable = setmetatable
 
 module("wmii")
 
@@ -758,11 +759,13 @@ function set_conf (first,second)
                         config[x] = y
                 end
 
-        elseif type(first) == "string" and type(second) == "string" then
+        elseif type(first) == "string" 
+                        and (type(second) == "string" 
+                                or type(second) == "number") then
                 config[first] = second
 
         else
-                error ("expecting a table or two string arguments")
+                error ("expecting a table, or string and string/number as arguments")
         end
 end
 
@@ -794,4 +797,121 @@ function run_event_loop ()
         end
         log("wmii: event loop exited")
 end
+
+-- ========================================================================
+-- PLUGINS API
+-- ========================================================================
+
+-- ------------------------------------------------------------------------
+-- widget template
+widget = {}
+
+-- ------------------------------------------------------------------------
+-- create a widget object and add it to the wmii /rbar
+--
+-- examples:
+--     widget = wmii.widget:new ("999_clock")
+--     widget = wmii.widget:new ("999_clock", clock_event_handler)
+function widget:new (name, fn)
+        o = {}
+
+        if type(name) == "string" then
+                o.name = name
+                if type(fn) == "function" then
+                        o.fn = fn
+                end
+        else
+                error ("expected name followed by an optional function as arguments")
+        end
+
+        setmetatable (o,self)
+        self.__index = self
+        self.__gc = function (o) o:hide() end
+
+        o:show()
+        return o
+end
+
+-- ------------------------------------------------------------------------
+-- displays or updates the widget text
+function widget:show (txt)
+        local txt = txt or ""
+        local color = get_ctl("normcolors") or ""
+        if not self.txt then
+                create ("/rbar/" .. self.name, color .. " " .. txt)
+        else
+                write ("/rbar/" .. self.name, color .. " " .. txt)
+        end
+        self.txt = txt
+end
+
+-- ------------------------------------------------------------------------
+-- hides a widget and removes it from the bar
+function widget:hide ()
+        if self.txt then
+                remove ("/lbar/" .. self.name)
+                self.txt = nil
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- timer template
+timer = {}
+
+-- ------------------------------------------------------------------------
+-- create a timer object and add it to the event loop
+--
+-- examples:
+--     timer:new (my_timer_fn)
+--     timer:new (my_timer_fn, 15)
+function timer:new (fn, seconds)
+        o = {}
+
+        if type(fn) == "function" then
+                o.fn = fn
+        else
+                error ("expected function followed by an optional number as arguments")
+        end
+
+        setmetatable (o,self)
+        self.__index = self
+        self.__gc = function (o) o:stop() end
+
+        if seconds then
+                o:resched(seconds)
+        end
+        return o
+end
+
+-- ------------------------------------------------------------------------
+-- run the timer given new interval
+function timer:resched (seconds)
+        if not (type(seconds) == "number") then
+                error ("expected number as argument")
+        end
+
+        o.interval = seconds
+
+        -- do magic to schedule it
+
+        -- for now we cheat... because to test it I just run it from a command line:
+        --   $ lua plugins/clock.lua
+        -- the scheduling requires changes to libixp that are not working yet
+
+        while true do
+                local rc = self.fn() or self.interval
+                if rc == -1 then
+                        return
+                end
+                posix.sleep (rc)
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- destroy an existing widget and remove it from the event loop
+function timer:stop ()
+        -- do magic to unschedule it
+end
+
+
 
