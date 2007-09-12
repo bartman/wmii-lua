@@ -1,19 +1,30 @@
 More details on my blog:
  - see http://www.jukie.net/~bart/blog/wmiirc-in-lua
 
+Requirements:
+ - wmii, 3.5+ or whatever is in hg at the moment
+ - libixp, latest
+ - lua5.1
+ - liblua5.1
+ - liblua5.1-posix0
+ - patience (no, it's not a package)
+
 Installation instructions:
  - install lua5.1 liblua5.1-posix0
    - on debian you can do this to install all of lua5.1:
+
        apt-cache search lua5.1 | awk '/liblua5.1/ { print $1 }' \
        | xargs sudo apt-get install -y
 
  - build an install wmii from mercurial (3.5 or newer), you will also
-   need libixp;
+   need libixp:
+
+     hg clone http://www.suckless.org/hg.rc/libixp
+     hg clone http://www.suckless.org/hg.rc/wmii
 
  - install the wmiirc script:
-     mkdir ~/.wmii-3.5/
-     cp wmii.lua wmiirc.lua ~/.wmii-3.5/
-     chmod +x ~/.wmii-3.5/ wmiirc.lua 
+
+     make install
 
  - make .xsession execute wmii
 

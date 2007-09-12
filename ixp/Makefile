@@ -13,6 +13,7 @@ LIBS   += ${LUALIB} ${IXPLIB}
 
 TARGET = ixp.so
 
+.PHONY: all test clean install
 all: ${TARGET}
 
 ${TARGET}: ${OBJS}
@@ -27,3 +28,7 @@ test: ${TARGET}
 clean:
 	-rm -f ${TARGET} ${OBJS}
 	-rm -f *.o *.so *~
+
+install: ${TARGET}
+	mkdir -p ~/.wmii-3.5/ixp/
+	cp ${TARGET} ~/.wmii-3.5/ixp/
