@@ -1,4 +1,4 @@
-SRCS = luaixp.c
+SRCS = luaixp.c debug.c
 OBJS = $(SRCS:.c=.o)
 
 LUAINC := $(shell pkg-config --cflags lua5.1)
@@ -17,7 +17,7 @@ TARGET = ixp.so
 all: ${TARGET}
 
 ${TARGET}: ${OBJS}
-	$(CC) ${CFLAGS} -o $@ -shared $? $(LIBS)
+	$(CC) ${CFLAGS} -o $@ -shared $^ $(LIBS)
 
 ${OBJS}: %.o: %.c Makefile
 	${CC} ${CFLAGS} -o $@ -c $<

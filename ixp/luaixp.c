@@ -14,6 +14,8 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include "debug.h"
+
 #define L_IXP_MT "ixp.ixp_mt"
 #define L_IXP_IDIR_MT "ixp.idir_mt"
 #define L_IXP_IREAD_MT "ixp.iread_mt"
@@ -306,7 +308,6 @@ static void l_ixp_iread_catcher (int sig)
 	int rc;
 	lua_State *L = l_ixp_iread_lua_state;
 
-fprintf (stderr, " **** catcher(%d)\n",sig);
 	//if (sig != SIGALRM)
 	//	return;
 
@@ -315,20 +316,21 @@ fprintf (stderr, " **** catcher(%d)\n",sig);
 	 * is passed into the iterator
 	 */
 	if (L) {
+		int top = lua_gettop (L);
 		int timeout = luaL_optnumber (L, 1, 0);
 		rc = lua_isfunction (L, 2);
-fprintf (stderr, "  **** timeout=%d isfunction=%d\n",timeout,rc);
 		if (timeout > 0 && rc) {
 			int new_timeout;
 
-fprintf (stderr, "  **** callback\n");
 			lua_pushvalue (L, 2);
 			lua_call (L, 0, 1);
 
-			new_timeout = luaL_checknumber (L, 1);
+			new_timeout = luaL_checknumber (L, 3);
 			lua_pop (L, 1);
-fprintf (stderr, "  **** catcher alarm(%d)\n", new_timeout);
 			alarm (new_timeout);
+
+			// restore the stack
+			lua_settop (L, top);
 		}
 	}
 }
@@ -343,7 +345,6 @@ static int l_ixp_iread_iter (lua_State *L)
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
 	DBGF("** ixp.iread - iter **\n");
-fprintf (stderr, "**** iter (%d)\n", timeout);
 
 	if (!ctx->buf) {
 		ctx->buf = malloc (ctx->fid->iounit);
@@ -366,31 +367,25 @@ fprintf (stderr, "**** iter (%d)\n", timeout);
 
 			sigaction (SIGALRM, &sact, &sact2);
 			alarm (timeout);
-fprintf (stderr, "**** alarm (%d)\n", timeout);
 		}
 
 		rc = ixp_read (ctx->fid, ctx->buf, ctx->buf_size);
 
 		if (timeout > 0) {
-fprintf (stderr, "**** alarm (0)\n");
 			alarm (0);
 			l_ixp_iread_lua_state = NULL;
 			sigaction (SIGALRM, &sact2, NULL);
 		}
 
-fprintf (stderr, "**** rc = %d\n", rc);
 		if (rc == EINTR) {
-fprintf (stderr, "**** return timeout\n");
 			lua_pushstring (L, "timeout");
 			return 1;
 		}
 
 		if (rc <= 0) {
-fprintf (stderr, "**** return EOF\n");
 			return 0; // we are done
 		}
 		ctx->buf_len = rc;
-fprintf (stderr, "**** ...\n");
 	}
 
 	s = ctx->buf + ctx->buf_pos;
