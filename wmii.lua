@@ -143,7 +143,11 @@ log ("##### ievent")
                         end
 
                         local time_to_wait = next_timers_on - now
-                        local line = it(time_to_wait)
+                        local line = it(time_to_wait,
+                        function ()
+                                log ("  #### ievent timeout function")
+                                return 10
+                        end)
                         if not (line == "timeout") then
                                 return string.match(line, "(%S+)%s(.+)")
                         end
