@@ -13,11 +13,10 @@ require "posix"
 
 io.stderr:write ("----------------------------------------------\n")
 
--- this is us
-local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"
-
 -- load wmii.lua
-package.path = package.path .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/?.lua"
+package.path = package.path
+               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/?.lua"
+               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
 require "wmii" 
 
 -- stop any other instance of wmiirc
