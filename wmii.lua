@@ -97,7 +97,7 @@ function ls (dir, fmt)
         end
 end
 
-function stat2str(verbose, stat)
+local function stat2str(verbose, stat)
         if verbose then
                 return string.format("%s %s %s %5d %s %s", stat.modestr, stat.uid, stat.gid, stat.length, stat.timestr, stat.name)
         else
@@ -159,12 +159,12 @@ end
 -- setup a table describing dmenu command
 local function dmenu_cmd (prompt)
         local cmdt = { "dmenu", "-b" }
-        local fn = getctl("font")
+        local fn = get_ctl("font")
         if fn then
                 cmdt[#cmdt+1] = "-fn"
                 cmdt[#cmdt+1] = fn
         end
-        local normcolors = getctl("normcolors")
+        local normcolors = get_ctl("normcolors")
         if normcolors then
                 local nf, nb = normcolors:match("(#%x+)%s+(#%x+)%s#%x+")
                 if nf then
@@ -176,7 +176,7 @@ local function dmenu_cmd (prompt)
                         cmdt[#cmdt+1] = "'" .. nb .. "'"
                 end
         end
-        local focuscolors = getctl("focuscolors")
+        local focuscolors = get_ctl("focuscolors")
         if focuscolors then
                 local sf, sb = focuscolors:match("(#%x+)%s+(#%x+)%s#%x+")
                 if sf then
@@ -236,15 +236,15 @@ end
 
 -- ------------------------------------------------------------------------
 -- displays the a tag selection menu, returns selected tag
-function tagmenu ()
-        local tags = gettags()
+function tag_menu ()
+        local tags = get_tags()
 
         return menu(tags, "tag:")
 end
 
 -- ------------------------------------------------------------------------
 -- displays the a program menu, returns selected program
-function progmenu ()
+function prog_menu ()
         local dmenu = dmenu_cmd("cmd:")
 
         local outfile = os.tmpname()
@@ -266,7 +266,7 @@ end
 
 -- ------------------------------------------------------------------------
 -- displays the a program menu, returns selected program
-function gettags()
+function get_tags()
         local t = {}
         local s
         for s in wmixp:idir ("/tag") do
@@ -280,7 +280,7 @@ end
 
 -- ------------------------------------------------------------------------
 -- displays the a program menu, returns selected program
-function getview()
+function get_view()
         local v = wmixp:read("/ctl") or ""
         return v:match("view%s+(%S+)")
 end
@@ -289,9 +289,9 @@ end
 -- changes the current view
 --   if the argument is a number it moves to that view at that index
 --   if the argument is a string it moves to that view name
-function setview(sel)
-        local cur = getview()
-        local all = gettags()
+function set_view(sel)
+        local cur = get_view()
+        local all = get_tags()
 
         local view_num = nil
 
@@ -312,9 +312,9 @@ end
 
 -- ------------------------------------------------------------------------
 -- chnages to current view by offset given
-function setviewofs(jump)
-        local cur = getview()
-        local all = gettags()
+function set_view_ofs(jump)
+        local cur = get_view()
+        local all = get_tags()
 
         if #all < 2 then
                 -- nothing to do if we have less then 2 tags
@@ -344,10 +344,10 @@ end
 
 -- ------------------------------------------------------------------------
 -- toggle between last view and current view
-function toggleview()
+function toggle_view()
         local last = view_hist[#view_hist]
         if last then
-                setview(last)
+                set_view(last)
         end
 end
 
@@ -392,14 +392,14 @@ local key_handlers = {
 
         -- execution and actions
         ["Mod1-Return"] = function (key)
-                local xterm = getconf("xterm")
+                local xterm = get_conf("xterm") or "xterm"
                 log ("    executing: " .. xterm)
                 os.execute (xterm .. " &")
         end,
         ["Mod1-Shift-Return"] = function (key)
-                local tag = tagmenu()
+                local tag = tag_menu()
                 if tag then
-                        local xterm = getconf("xterm")
+                        local xterm = get_conf("xterm") or "xterm"
                         log ("    executing: " .. xterm .. "  on: " .. tag)
                         next_client_goes_to_tag = tag
                         os.execute (xterm .. " &")
@@ -423,16 +423,16 @@ local key_handlers = {
                 end
         end,
         ["Mod1-p"] = function (key)
-                local prog = progmenu()
+                local prog = prog_menu()
                 if prog then
                         log ("    executing: " .. prog)
                         os.execute (prog .. " &")
                 end
         end,
         ["Mod1-Shift-p"] = function (key)
-                local tag = tagmenu()
+                local tag = tag_menu()
                 if tag then
-                        local prog = progmenu()
+                        local prog = prog_menu()
                         if prog then
                                 log ("    executing: " .. prog .. "  on: " .. tag)
                                 next_client_goes_to_tag = tag
@@ -482,43 +482,43 @@ local key_handlers = {
 
         -- work spaces
         ["Mod4-#"] = function (key, num)
-                setview (num)
+                set_view (num)
         end,
         ["Mod4-Shift-#"] = function (key, num)
                 write ("/client/sel/tags", tostring(num))
         end,
         ["Mod1-comma"] = function (key)
-                setviewofs (-1)
+                set_view_ofs (-1)
         end,
         ["Mod1-period"] = function (key)
-                setviewofs (1)
+                set_view_ofs (1)
         end,
         ["Mod1-r"] = function (key)
                 -- got to the last view
-                toggleview()
+                toggle_view()
         end,
 
         -- switching views and retagging
         ["Mod1-t"] = function (key)
                 -- got to a view
-                local tag = tagmenu()
+                local tag = tag_menu()
                 if tag then
-                        setview (tag)
+                        set_view (tag)
                 end
         end,
         ["Mod1-Shift-t"] = function (key)
                 -- move selected client to a tag
-                local tag = tagmenu()
+                local tag = tag_menu()
                 if tag then
                         write ("/client/sel/tags", tag)
                 end
         end,
         ["Mod1-Shift-r"] = function (key)
                 -- move selected client to a tag, and follow
-                local tag = tagmenu()
+                local tag = tag_menu()
                 if tag then
                         write ("/client/sel/tags", tag)
-                        setview(tag)
+                        set_view(tag)
                 end
         end,
         ["Mod1-Control-t"] = function (key)
@@ -566,8 +566,8 @@ end
 -- update the /lbar wmii file with the current tags
 function update_displayed_tags ()
         -- colours for /lbar
-        local fc = getctl("focuscolors") or ""
-        local nc = getctl("normcolors") or ""
+        local fc = get_ctl("focuscolors") or ""
+        local nc = get_ctl("normcolors") or ""
 
         -- build up a table of existing tags in the /lbar
         local old = {}
@@ -578,8 +578,8 @@ function update_displayed_tags ()
 
         -- for all actual tags in use create any entries in /lbar we don't have
         -- clear the old table entries if we have them
-        local cur = getview()
-        local all = gettags()
+        local cur = get_view()
+        local all = get_tags()
         local i,v
         for i,v in pairs(all) do
                 local color = nc
@@ -619,7 +619,7 @@ local ev_handlers = {
 
         -- tag management
         CreateTag = function (ev, arg)
-                local nc = getctl("normcolors") or ""
+                local nc = get_ctl("normcolors") or ""
                 create ("/lbar/" .. arg, nc .. " " .. arg)
         end,
         DestroyTag = function (ev, arg)
@@ -627,12 +627,12 @@ local ev_handlers = {
         end,
 
         FocusTag = function (ev, arg)
-                local fc = getctl("focuscolors") or ""
+                local fc = get_ctl("focuscolors") or ""
                 create ("/lbar/" .. arg, fc .. " " .. arg)
                 write ("/lbar/" .. arg, fc .. " " .. arg)
         end,
         UnfocusTag = function (ev, arg)
-                local nc = getctl("normcolors") or ""
+                local nc = get_ctl("normcolors") or ""
                 create ("/lbar/" .. arg, nc .. " " .. arg)
                 write ("/lbar/" .. arg, nc .. " " .. arg)
 
@@ -673,7 +673,7 @@ local ev_handlers = {
         -- mouse handling on the lbar
         LeftBarClick = function (ev, arg)
                 local button,tag = string.match(arg, "(%w+)%s+(%w+)")
-                setview (tag)
+                set_view (tag)
         end,
 
         -- focus updates
@@ -691,7 +691,7 @@ local ev_handlers = {
                         local cli = arg
                         next_client_goes_to_tag = nil
                         write ("/client/" .. cli .. "/tags", tag)
-                        setview(tag)
+                        set_view(tag)
                 end
         end,
 
@@ -717,9 +717,9 @@ local config = {
 
 -- ------------------------------------------------------------------------
 -- write configuration to /ctl wmii file
---   setctl({ "var" = "val", ...})
---   setctl("var, "val")
-function setctl (first,second)
+--   wmii.set_ctl({ "var" = "val", ...})
+--   wmii.set_ctl("var, "val")
+function set_ctl (first,second)
         if type(first) == "table" and second == nil then
                 local x, y
                 for x, y in pairs(first) do
@@ -736,7 +736,7 @@ end
 
 -- ------------------------------------------------------------------------
 -- read a value from /ctl wmii file
-function getctl (name)
+function get_ctl (name)
         local s
         for s in iread("/ctl") do
                 local var,val = s:match("(%w+)%s+(.+)")
@@ -749,9 +749,9 @@ end
 
 -- ------------------------------------------------------------------------
 -- set an internal wmiirc.lua variable
---   setconf({ "var" = "val", ...})
---   setconf("var, "val")
-function setconf (first,second)
+--   wmii.set_conf({ "var" = "val", ...})
+--   wmii.set_conf("var, "val")
+function set_conf (first,second)
         if type(first) == "table" and second == nil then
                 local x, y
                 for x, y in pairs(first) do
@@ -768,7 +768,7 @@ end
 
 -- ------------------------------------------------------------------------
 -- read an internal wmiirc.lua variable
-function getconf (name)
+function get_conf (name)
         return config[name]
 end
 

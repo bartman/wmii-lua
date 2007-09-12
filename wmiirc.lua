@@ -24,7 +24,7 @@ require "wmii"
 wmii.write ("/event", "Start wmiirc")
 
 -- This is the base configuration of wmii, it writes to the /ctl file.
-wmii.setctl ({
+wmii.set_ctl ({
         view        = 1,
         border      = 1,
         font        = '-windows-proggytiny-medium-r-normal--10-80-96-96-c-60-iso8859-1',
@@ -40,7 +40,7 @@ wmii.setctl ({
 -- If you add your own actions, or key handlers you are encouraged to 
 -- use configuration values as appropriate with wmii.setconf("var", "val"), or
 -- as a table like the example below.
-wmii.setconf ({
+wmii.set_conf ({
         xterm = 'x-terminal-emulator'
 })
 
