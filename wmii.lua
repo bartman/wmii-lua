@@ -1,13 +1,51 @@
 --
--- Copyrigh (c) 2007, Bart Trojanowski <bart@jukie.net>
+-- Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
 --
--- Simple wmiir like interface.
+-- WMII event loop, in lua
 --
--- The current intent is to wrap around the wmiir executable.
--- This is just a proof of concept, and eventually this will 
--- be rewritten in C to use libixp.
--- 
 -- git://www.jukie.net/wmiirc-lua.git/
+--
+--[[
+=pod
+
+=head1 NAME 
+
+wmii.lua - WMII event-loop methods in lua
+
+=head1 SYNOPSIS
+
+    require "wmii"
+
+    -- Write something to the wmii filesystem, in this case a start message.
+    wmii.write ("/event", "Start wmiirc")
+
+    -- Set your wmii /ctl parameters
+    wmii.set_ctl({
+    	font = '....'
+    })
+
+    -- Configure wmii.lua parameters
+    wmii.set_conf ({
+        xterm = 'x-terminal-emulator'
+    })
+
+    -- Now start the event loop
+    wmii.run_event_loop()
+
+=head1 DESCRIPTION
+
+wmii.lua provides methods for replacing the stock sh-based wmiirc shipped with
+wmii 3.6 and newer with a lua-based event loop.
+
+It should be used by your wmiirc
+
+=head1 METHODS
+
+=over 4
+
+=cut
+--]]
+
 
 package.cpath = package.cpath .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/ixp/?.so"
 require "ixp"
@@ -56,8 +94,17 @@ local next_client_goes_to_tag = nil
 -- LOCAL HELPERS
 -- ========================================================================
 
--- ------------------------------------------------------------------------
--- log, right now write to stderr
+--[[
+=pod
+
+=item log ( str )
+
+Log the message provided in C<str>
+
+Currently just writes to io.stderr
+
+=cut
+--]]
 function log (str)
         io.stderr:write (str .. "\n")
 end
@@ -66,8 +113,18 @@ end
 -- MAIN ACCESS FUNCTIONS
 -- ========================================================================
 
--- ------------------------------------------------------------------------
--- returns an iterator
+--[[
+=pod
+
+=item ls ( dir, fmt )
+
+List the wmii filesystem directory provided in C<dir>, in the format specified
+by C<fmt>.  
+
+Returns an iterator of TODO
+
+=cut
+--]]
 function ls (dir, fmt)
         local verbose = fmt and fmt:match("l")
 
@@ -932,6 +989,39 @@ function timer:stop ()
         -- do magic to unschedule it
 end
 
+--[[
+=pod
+
+=back
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item WMII_ADDRESS
+
+Used to determine location of wmii's listen socket.
+
+=back
+
+=head1 SEE ALSO
+
+L<wmii(1)>, L<lua(1)>
+
+=head1 AUTHOR
+
+Bart Trojanowski B<< <bart@jukie.net> >>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
+
+This is free software.  You may redistribute copies of it under the terms of
+the GNU General Public License L<http://www.gnu.org/licenses/gpl.html>.  There
+is NO WARRANTY, to the extent permitted by law.
+
+=cut
+--]]
 
 
 -- ------------------------------------------------------------------------

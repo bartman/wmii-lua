@@ -14,3 +14,12 @@ install:
 	cp wmii.lua ~/.wmii-3.5/wmii.lua
 	chmod +x ~/.wmii-3.5/wmiirc
 	${MAKE} -C ixp install
+# TODO: install manpage somewhere
+
+man:
+	pod2man \
+		--name=wmii \
+		--center="WMII Lua Integration" \
+		--section=3lua \
+		--release="wmii 3.6" \
+		wmii.lua wmii.3lua
