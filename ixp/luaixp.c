@@ -303,20 +303,26 @@ static int l_ixp_iread (lua_State *L)
 static lua_State *l_ixp_iread_lua_state = NULL;
 static void l_ixp_iread_catcher (int sig)
 {
-	int rc, timeout;
+	int rc;
 	lua_State *L = l_ixp_iread_lua_state;
+
+fprintf (stderr, " **** catcher(%d)\n",sig);
+	//if (sig != SIGALRM)
+	//	return;
 
 	/*
 	 * attempt to call back into the lua context using the function that
 	 * is passed into the iterator
 	 */
 	if (L) {
-		timeout = luaL_optnumber (L, 1, 0);
+		int timeout = luaL_optnumber (L, 1, 0);
 		rc = lua_isfunction (L, 2);
+fprintf (stderr, "  **** timeout=%d isfunction=%d\n",timeout,rc);
 		if (timeout > 0 && rc) {
 			int new_timeout;
 
 fprintf (stderr, "  **** callback\n");
+			lua_pushvalue (L, 2);
 			lua_call (L, 0, 1);
 
 			new_timeout = luaL_checknumber (L, 1);
@@ -354,7 +360,7 @@ fprintf (stderr, "**** iter (%d)\n", timeout);
 
 		if (timeout > 0) {
 			sigemptyset (&sact.sa_mask);
-			sact.sa_flags = 0;
+			sact.sa_flags = SA_RESTART;
 			sact.sa_handler = l_ixp_iread_catcher;
 			l_ixp_iread_lua_state = L;
 
