@@ -199,6 +199,9 @@ function ievents ()
 
         return function ()
                 local seconds = time_before_next_timer_event()
+                if seconds == 0 then
+                        seconds = process_timers()
+                end
                 local line = it(
                         -- iterator gets told how long it can wait for the
                         -- next line to come from the other side
