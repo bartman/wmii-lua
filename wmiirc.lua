@@ -70,6 +70,8 @@ wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
                       .. "/.*/ -> 1\n")
 
 
+require "clock"
+
 -- ------------------------------------------------------------------------
 -- configuration is finished, run the event loop
 wmii.run_event_loop()

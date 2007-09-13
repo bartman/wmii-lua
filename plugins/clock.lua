@@ -41,9 +41,9 @@ local function clock_event_handler (ev)
                 -- something else
         elseif ev == "RightBarClick" then
                 -- and now something completely different
-                timer:stop()
+                timer:delete()
                 timer = nil
-                widget:hide()
+                widget:delete()
                 widget = nil
         end
 end

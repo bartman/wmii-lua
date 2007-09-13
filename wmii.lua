@@ -5,6 +5,10 @@
 --
 -- git://www.jukie.net/wmiirc-lua.git/
 --
+
+-- ========================================================================
+-- DOCUMENTATION
+-- ========================================================================
 --[[
 =pod
 
@@ -46,6 +50,9 @@ It should be used by your wmiirc
 =cut
 --]]
 
+-- ========================================================================
+-- MODULE SETUP
+-- ========================================================================
 
 package.cpath = package.cpath .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/ixp/?.so"
 require "ixp"
@@ -190,27 +197,22 @@ function ievents ()
         local it = iread("/event")
         local next_timers_on = 0
 
-log ("##### ievent")
         return function ()
-                while true do
-                        local now = tonumber(os.date("%s"))
-                        if next_timers_on <= now then
-                                local time_to_wait = process_timers ()
-                                next_timers_on = time_to_wait + now
-                        end
-
-                        local time_to_wait = next_timers_on - now
-                        local line = it(time_to_wait,
+                local seconds = time_before_next_timer_event()
+                local line = it(
+                        -- iterator gets told how long it can wait for the
+                        -- next line to come from the other side
+                        seconds,
+                        -- this function is executed in case of timeout
                         function ()
-                                local time_to_wait = process_timers ()
-                                next_timers_on = time_to_wait + now
-
-                                return time_to_wait
-                        end)
-                        if not (line == "timeout") then
-                                return string.match(line, "(%S+)%s(.+)")
+                                os.execute(wmiir .. " xwrite "
+                                        .. "/event ProcessTimerEvents")
+                                return time_before_next_timer_event()
                         end
-                end
+                )
+                local a,b = string.match(line, "(%S+)%s+(.+)") 
+                if a then return a,b end
+                return line
         end
 end
 
@@ -687,6 +689,11 @@ local ev_handlers = {
                 log ("ev: " .. ev .. " - " .. arg)
         end,
 
+        -- process timer events
+        ProcessTimerEvents = function (ev, arg)
+                process_timers()
+        end,
+
         -- exit if another wmiirc started up
         Start = function (ev, arg)
                 if arg == "wmiirc" then
@@ -909,6 +916,13 @@ function widget:new (name, fn)
 end
 
 -- ------------------------------------------------------------------------
+-- stop and destroy the timer
+function widget:delete ()
+        self:hide()
+        -- TBD
+end
+
+-- ------------------------------------------------------------------------
 -- displays or updates the widget text
 function widget:show (txt)
         local txt = txt or ""
@@ -933,6 +947,7 @@ end
 -- ------------------------------------------------------------------------
 -- timer template
 timer = {}
+local timers = {}
 
 -- ------------------------------------------------------------------------
 -- create a timer object and add it to the event loop
@@ -953,6 +968,9 @@ function timer:new (fn, seconds)
         self.__index = self
         self.__gc = function (o) o:stop() end
 
+        -- add the timer
+        timers[#timers+1] = o
+
         if seconds then
                 o:resched(seconds)
         end
@@ -960,34 +978,108 @@ function timer:new (fn, seconds)
 end
 
 -- ------------------------------------------------------------------------
--- run the timer given new interval
-function timer:resched (seconds)
-        if not (type(seconds) == "number") then
-                error ("expected number as argument")
-        end
-
-        o.interval = seconds
-
-        -- do magic to schedule it
-
-        -- for now we cheat... because to test it I just run it from a command line:
-        --   $ lua plugins/clock.lua
-        -- the scheduling requires changes to libixp that are not working yet
-
-        while true do
-                local rc = self.fn() or self.interval
-                if rc == -1 then
+-- stop and destroy the timer
+function timer:delete ()
+        self:stop()
+        local i,t
+        for i,t in pairs(timers) do
+                if t == timer then
+                        table.remove (timers,i)
                         return
                 end
-                posix.sleep (rc)
         end
 end
 
 -- ------------------------------------------------------------------------
--- destroy an existing widget and remove it from the event loop
-function timer:stop ()
-        -- do magic to unschedule it
+-- run the timer given new interval
+function timer:resched (seconds)
+        local seconds = seconds or self.interval
+        if not (type(seconds) == "number") then
+                error ("expected number as argument")
+        end
+
+        local now = tonumber(os.date("%s"))
+
+        self.interval = seconds
+        self.next_time = now + seconds
+
+        -- resort the timer list
+        table.sort (timers, timer.is_less_then)
 end
+
+function timer:is_less_then(another)
+        if not self then
+                return false    -- another is smaller, nil means infinity
+
+        elseif not another then
+                return true     -- self is smaller, nil means infinity
+
+        elseif self.next_time < another.next_time then
+                return true     -- self is smaller than another
+        end
+
+        return false            -- another is smaller then self
+end
+
+-- ------------------------------------------------------------------------
+-- stop the timer
+function timer:stop ()
+        self.next_time = nil
+
+        -- resort the timer list
+        table.sort (timers, timer.is_less_then)
+end
+
+-- ------------------------------------------------------------------------
+-- figure out how long before the next event
+function time_before_next_timer_event()
+        local timer = timers[1]
+        if timer and timer.next_time then
+                local now = tonumber(os.date("%s"))
+                local seconds = timer.next_time - now
+                if seconds > 0 then
+                        return seconds
+                end
+        end
+        return 0        -- sleep for ever
+end
+
+-- ------------------------------------------------------------------------
+-- handle outstanding events
+function process_timers ()
+        local now = tonumber(os.date("%s"))
+        local torun = {}
+        local i,timer
+
+        for i,timer in pairs (timers) do
+                if (not timer) or (not timer.next_time) then
+                        table.remove(timers,i)
+                        return 1
+                end
+
+                if timer.next_time > now then
+                        return timer.next_time - now
+                end
+
+                torun[#torun+1] = timer
+        end
+
+        for i,timer in pairs (torun) do
+                timer:stop()
+                local new_interval = timer:fn()
+                if not (new_interval == -1) then
+                        timer:resched(rc)
+                end
+        end
+
+        local sleep_for = time_before_next_timer_event()
+        return sleep_for
+end
+
+
+-- ========================================================================
+-- DOCUMENTATION
+-- ========================================================================
 
 --[[
 =pod
@@ -1022,11 +1114,3 @@ is NO WARRANTY, to the extent permitted by law.
 
 =cut
 --]]
-
-
--- ------------------------------------------------------------------------
--- function called from ievents() to process all timers
-function process_timers ()
-        log (">>>>>>>>>>> process_timers")
-        return 10
-end
