@@ -1011,10 +1011,10 @@ function timer:resched (seconds)
 end
 
 function timer:is_less_then(another)
-        if not self then
+        if not self.next_time then
                 return false    -- another is smaller, nil means infinity
 
-        elseif not another then
+        elseif not another.next_time then
                 return true     -- self is smaller, nil means infinity
 
         elseif self.next_time < another.next_time then
