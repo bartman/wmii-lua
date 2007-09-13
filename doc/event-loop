@@ -1,0 +1,69 @@
+Current event loop is a big mess and is begging for a rewrite.
+
+The plan is to ignore this need until after 0.1 is out.  I feel that the 
+plugin API will be clean enough to survive the rewirte and only the wmii.lua
+internals will be effected.
+
+== Why this is even here
+
+The problem is that the libixp interface does not permit a select() loop to
+be ran against the ixp socket w/o a major rewrite of the ixp library.  I
+am not interested in this.
+
+== Story for 0.1
+
+The solution taken for 0.1 was to use alarm() to interrupt the blocking ixp
+library read call and call a lua function from the signal handler.  This
+ends up being problematic because it's not possible to call into libixp
+from this state.  For each timer we have to fork off a wmiir process to
+inject an event that eventally causes the /event reader to unblock and
+return the event and permit for the timers to run.
+
+== Proposed solution
+
+The clenest way to handle multiple evnet sources is via a select() or
+poll() loop.  However the blocking nature of libixp is still a problem.
+To avoid this, we will create X number of processes that will be used 
+exclussively for blocking on the ixp interface.  The processes will be 
+connected to the main process via an anonymous fifo.  This will prmit
+the main process to execute a select loop while waiting for any read
+requests and thus be woken up by events from outside sources like dbus,
+socktes, etc.
+
+The propose solution will look something like this:
+
+    (1)                (2)                       (3)                   (4)
+  +------+  (ixp) +------------+    (fifo) +-------------+  iread() +--------+
+  | wmii | <----- |  blocking  |-+ <------ | select loop | <------- |  lua   |
+  +------+        | subprocess | |         | (luaixp.so) |          | wmiirc |
+                  +------------+ |         +-------------+          +--------+
+                    +------------+                |
+                                                  |
+                                                  v
+                                           +-------------+
+                                           |  other data | (6)
+                                           |   sources   |
+                                           +-------------+
+
+After invocation (4), the wmiirc.lua script, will attempt to read some
+data from wmii (1) via the ixp:read() or ixp:iread() functions in ixp.so (3).
+Any function that is expected to block for a long time will be passed onto 
+a subprocess (2) to execute.  The subprocess will actually block, while the
+main process will pass the connecting fifo to a select loop.
+
+The ixp.so (3) will create coroutines for each blocking call, and when
+select() decides data is available on one of the fifos it will read the
+data and wakeup the appropriate coroutine.
+
+Something like this is attempted in luaevent library.  I need to check
+if the library can be reused in the ixp.so code.
+
+Going further it's possible for plugins to open a file descriptor (6) from
+another source -- say a socket -- and have the event loop generate
+events when that needs processing.  If the event source does not give a
+file descriptor (like libixp) then a subprocess will have to be ran by
+the script.  the ixp.so (3) could provide a popen()-like call to make
+this easier.
+
+
+vim: set ts=8 noet sw=8 tw=72

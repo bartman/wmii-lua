@@ -1,0 +1,34 @@
+If you have any suggests I am happy to add them to the list.
+
+for 0.1 release
+    - core
+        - add api to register/unregister actions/keybindings/events
+
+    - bundled plugins
+        - cpu usage / load / uptime
+        - 'browser' and 'google' actions to go to a browser
+
+for 0.2 release
+    - core
+        - rewrite timer handling using select loop and coroutines 
+          and a subprocess to do iread() ... see doc/event-loop
+        - support for "raw mode" like win-space in wmii+ruby
+
+    - bundled plugins
+        - mpd: controls / volume
+        - acpi: battery life / thermal
+        - cpufreq: cpu freq / governor
+        - whereami: wireless / controls
+
+future
+    - core
+        -
+
+    - bundled plugins
+        - 
+
+
+
+
+
+vim: set ts=8 noet sw=8 tw=72
