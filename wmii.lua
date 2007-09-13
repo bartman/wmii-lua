@@ -700,7 +700,7 @@ local ev_handlers = {
         -- exit if another wmiirc started up
         Start = function (ev, arg)
                 if arg == "wmiirc" then
-                        posix.exit (0)
+                        os.exit (0)
                 end
         end,
 
