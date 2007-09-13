@@ -1,0 +1,28 @@
+This file describes the directory structure for ~/.wmii-3.5
+
+${HOME}/.wmii-3.5
+        |--- wmiirc                     <-- configuration file
+        |--- core
+        |    |--- wmii.lua              <-- core lua bits
+        |    `--- ixp.so                <-- core C bits
+        `--- plugins
+             |--- clock.lua             <-- lua-only plugin
+             |--- foo.lua               <-- another plugin
+             `--- foo_core.so           <-- support library for plugin
+
+In 0.2 the plugin directory will be extended to allow for plugins to
+have their own directory and they will be loaded using
+wmii.load_plugin("name") and not require "name".
+
+${HOME}/.wmii-3.5
+        ...
+        ...
+        `--- plugin
+             |--- clock.lua             <-- single-file lua-only plugin
+             `--- foo
+                  |--- foo.lua          <-- main file to load
+                  |--- bar.so           <-- support libraries
+                  |--- biz.so
+                  `--- data.file        <-- data file
+
+vim: set ts=8 et sw=8 tw=72
