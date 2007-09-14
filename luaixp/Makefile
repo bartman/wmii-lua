@@ -1,4 +1,4 @@
-SRCS = luaixp.c debug.c
+SRCS = lixp_main.c lixp_debug.c
 OBJS = $(SRCS:.c=.o)
 
 LUAINC := $(shell pkg-config --cflags lua5.1)

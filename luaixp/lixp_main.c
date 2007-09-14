@@ -11,10 +11,10 @@
 #define MYNAME		"ixp"
 #define MYVERSION	MYNAME " library for " LUA_VERSION " / Nov 2003"
 
-#include "lua.h"
-#include "lauxlib.h"
+#include <lua.h>
+#include <lauxlib.h>
 
-#include "debug.h"
+#include "lixp_debug.h"
 
 #define L_IXP_MT "ixp.ixp_mt"
 #define L_IXP_IDIR_MT "ixp.idir_mt"

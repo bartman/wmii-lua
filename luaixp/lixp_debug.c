@@ -1,6 +1,8 @@
 #include <stdio.h>
-#include "lua.h"
-#include "lauxlib.h"
+#include <lua.h>
+#include <lauxlib.h>
+
+#include "lixp_debug.h"
 
 void 
 l_stack_dump (lua_State *l) 
