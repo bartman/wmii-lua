@@ -60,7 +60,7 @@ output on the bar:
         widget = wmii.widget:new ("990_load")
         el.add_exec ("dstat --load --nocolor --noheaders --noupdate",
                         function (line)
-                                widget:sow (line)
+                                widget:show (line)
                         end)
 
 This will make it really clean to get events from other sources.  We can
