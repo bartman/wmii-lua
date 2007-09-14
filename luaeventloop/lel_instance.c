@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <time.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -163,7 +164,7 @@ int l_eventloop_run_loop (lua_State *L)
 {
 	struct eventloop *el;
 	int timeout;
-	fd_set rfds;
+	fd_set rfds, xfds;
 	struct timeval tv;
 	int rc;
 
@@ -184,7 +185,7 @@ l_stack_dump ("  ", L);
 	for (;;) {
 		struct program *prog;
 
-		rc = select (el->max_fd+1, &rfds, NULL, NULL, &tv);
+		rc = select (el->max_fd+1, &rfds, NULL, &xfds, &tv);
 		if (rc<0)
 			return lel_pusherror (L, "select failed");
 
@@ -195,6 +196,13 @@ l_stack_dump ("  ", L);
 		prog = el->prog;
 		if (!prog)
 			continue;
+#endif
+
+#if 1		// TODO hack hack hack
+		if (FD_ISSET (prog->fd, &xfds)) {
+			fprintf (stderr, "XXX: exception\n");
+			exit(1);
+		}
 #endif
 
 		if (FD_ISSET (prog->fd, &rfds)) {
@@ -216,12 +224,31 @@ static void loop_handle_event (lua_State *L, struct program *prog)
 	char buffer[4096];
 	int rc;
 
+
 	rc = read (prog->fd, buffer, 4096);
+
+#if 1	// TODO hack hack hack
+	if (!rc) {
+		fprintf (stderr, "XXX: EOF\n");
+		exit(1);
+	}
+#endif
+
+	printf ("event(%03d):  ", rc);
+	fflush (stdout);
+
 	if (rc>0) {
-		printf ("event:");
-		fflush (stdout);
+		char *p;
+
+		for (p = buffer + rc - 1; p >= buffer; p--) {
+			if (isgraph(*p))
+				break;
+			*p = '_';
+		}
+
 		write (1, buffer, rc);
 	}
+	printf ("\n");
 
 	// TODO call the callback function
 }
