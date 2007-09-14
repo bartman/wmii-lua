@@ -3,17 +3,19 @@
 
 #include <lua.h>
 
-#define L_EVENTLOOP_MT "lel.lel_mt"
+#define L_EVENTLOOP_MT "eventloop.eventloop_mt"
 
 /* the C representation of a eventloop instance object */
 struct lel_program;
 struct lel_eventloop {
-	// TODO fill in with table that tracks executables
-	struct lel_program *prog;	// support only one right now
+	struct lel_program **progs;	// array of programs, sorted by fd
+	size_t progs_size;		// number allocated entries
+	size_t progs_count;		// first unused entry
 
 	fd_set all_fds;
 	int max_fd;
 };
+#define LEL_PROGS_ARRAY_GROWS_BY 32
 
 struct lel_program {
 	char *cmd;
@@ -23,7 +25,7 @@ struct lel_program {
 	size_t buf_len;
 	char buf[0];		// this has to be last in the structure
 };
-#define PROGRAM_IO_BUF_SIZE 4096
+#define LEL_PROGRAM_IO_BUF_SIZE 4096
 
 extern struct lel_eventloop *lel_checkeventloop (lua_State *L, int narg);
 extern int l_eventloop_tostring (lua_State *L);

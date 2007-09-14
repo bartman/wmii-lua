@@ -4,10 +4,18 @@ require "eventloop"
 
 el = eventloop.new()
 
-io.stderr:write("---- adding dsat\n")
+io.stderr:write("---- adding dsat --load\n")
 el:add_exec ("dstat --load --nocolor --noheaders --noupdate",
                 function (line)
-                        print ("    ** callback: " .. line)
+                        local line = line:gsub("\n$","")
+                        print ("    ** load: " .. line)
+                end)
+
+io.stderr:write("---- adding dstat --int\n")
+el:add_exec ("dstat --int --nocolor --noheaders --noupdate",
+                function (line)
+                        local line = line:gsub("\n$","")
+                        print ("    ** int: " .. line)
                 end)
 
 io.stderr:write("---- running loop\n")

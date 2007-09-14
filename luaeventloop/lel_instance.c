@@ -6,6 +6,8 @@
 #include <time.h>
 #include <signal.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -34,6 +36,69 @@ int l_eventloop_tostring (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
+ * dealing with program list
+ */
+
+static int progs_compare (const void *_one, const void *_two)
+{
+	const struct lel_program *const*one = _one;
+	const struct lel_program *const*two = _two;
+
+	return (*one)->fd - (*two)->fd;
+}
+
+static void progs_add (struct lel_eventloop *el, struct lel_program *prog)
+{
+	// make more room
+	if (el->progs_size <= el->progs_count) {
+		size_t bytes;
+
+		el->progs_size += LEL_PROGS_ARRAY_GROWS_BY;
+		bytes = el->progs_size * sizeof(struct lel_program*);
+		
+		el->progs = realloc (el->progs, bytes);
+		if (!el->progs) {
+			// TODO: we could handle this better then blowing away
+			// all of our data if we run out of room.  For now exit.
+			perror ("malloc");
+			exit (1);
+		}
+	}
+
+	el->progs[el->progs_count++] = prog;
+
+	qsort (el->progs, el->progs_count, sizeof (struct lel_program*),
+			progs_compare);
+}
+
+static struct lel_program * progs_remove (struct lel_eventloop *el, int fd)
+{
+	struct lel_program key = {.fd = fd};
+	struct lel_program *pkey = &key;
+	struct lel_program *found;
+	struct lel_program **pfound;
+	size_t end_bytes;
+
+	// find the program
+	pfound = bsearch (&pkey, el->progs, el->progs_count,
+			sizeof (struct lel_program*), progs_compare);
+	if (!pfound)
+		return NULL;
+
+	found = *pfound;
+	if (!found)
+		return NULL;
+
+	// adjust remaining entries
+	el->progs_count --;
+	end_bytes = (char*)(el->progs + el->progs_count) - (char*)pfound;
+	memmove (pfound, pfound+1, end_bytes);
+
+	return found;
+}
+
+
+/* ------------------------------------------------------------------------
  * executes a new process to handle events from another source
  *
  * lua: fd = el:add_exec(cmd, function) 
@@ -57,14 +122,9 @@ int l_eventloop_add_exec (lua_State *L)
 
 	DBGF("** eventloop:add_exec (%s, ...) **\n", cmd);
 
-#if 1		// TODO fix me!
-if (el->prog)
-	return lel_pusherror (L, "only one at a time for now");
-#endif
-
 	// create a new program entry
 	prog = (struct lel_program*) malloc (sizeof (struct lel_program) 
-			+ PROGRAM_IO_BUF_SIZE);
+			+ LEL_PROGRAM_IO_BUF_SIZE);
 	if (!prog)
 		return lel_pusherror (L, "failed to allocate program structure");
 
@@ -106,7 +166,8 @@ if (el->prog)
 
 	FD_SET (prog->fd, &el->all_fds);
 
-	el->prog = prog;
+	// add to the list
+	progs_add (el, prog);
 
 	// everything is setup, but we need to get a hold of the function later;
 	// we add the function to the L_EVENTLOOP_MT with the fd as the key...
@@ -132,27 +193,34 @@ int l_eventloop_kill_exec (lua_State *L)
 {
 	struct lel_eventloop *el;
 	struct lel_program *prog;
-	int fd;
+	int fd, status;
 
 	el = lel_checkeventloop (L, 1);
 	fd = luaL_checknumber (L, 2);
 
 	DBGF("** eventloop:kill_exec (%d) **\n", fd);
 
-#if 1			// TODO this is a hack
-	prog = el->prog;
+	prog = progs_remove (el, fd);
 	if (! prog)
 		return 0;
 
-	el->prog = NULL;
-	el->max_fd = 0;
-#endif
+	if (el->max_fd == prog->fd) {
+		if (el->progs_count)
+			// last entry is the new max
+			el->max_fd = el->progs[el->progs_count-1]->fd;
+		else
+			// there are no more entries
+			el->max_fd = 0;
+	}
 
 	FD_CLR (prog->fd, &el->all_fds);
 
 	kill (prog->pid, SIGTERM);
 	close (prog->fd);
 	free (prog);
+
+	// catchup on programs that quit
+	while (waitpid (-1, &status, WNOHANG) > 0);
 
 	// and we still have to remove it from the table
 	luaL_getmetatable (L, L_EVENTLOOP_MT);	// [-3] = get the table
@@ -178,7 +246,6 @@ int l_eventloop_run_loop (lua_State *L)
 	int timeout;
 	fd_set rfds, xfds;
 	struct timeval tv;
-	int rc;
 
 	el = lel_checkeventloop (L, 1);
 	timeout = luaL_optnumber (L, 2, 0);
@@ -194,8 +261,12 @@ int l_eventloop_run_loop (lua_State *L)
 	// run the loop
 
 	for (;;) {
-		struct lel_program *prog;
+		int i, status, rc;
 
+		// catchup on programs that quit
+		while (waitpid (-1, &status, WNOHANG) > 0);
+
+		// wait for the next event
 		rc = select (el->max_fd+1, &rfds, NULL, &xfds, &tv);
 		if (rc<0)
 			return lel_pusherror (L, "select failed");
@@ -203,21 +274,22 @@ int l_eventloop_run_loop (lua_State *L)
 		if (!rc)
 			continue;
 
-#if 1		// TODO again, a hack, should go through all programs
-		prog = el->prog;
-		if (!prog)
-			continue;
-#endif
+		for (i=0; i < el->progs_count; i++) {
+			struct lel_program *prog;
+
+			prog = el->progs[i];
+
 
 #if 1		// TODO hack hack hack
-		if (FD_ISSET (prog->fd, &xfds)) {
-			fprintf (stderr, "XXX: exception\n");
-			exit(1);
-		}
+			if (FD_ISSET (prog->fd, &xfds)) {
+				fprintf (stderr, "XXX: exception\n");
+				exit(1);
+			}
 #endif
 
-		if (FD_ISSET (prog->fd, &rfds)) {
-			(void)loop_handle_event (L, prog);
+			if (FD_ISSET (prog->fd, &rfds)) {
+				(void)loop_handle_event (L, prog);
+			}
 		}
 
 		// get ready for next run...
@@ -237,7 +309,7 @@ static int loop_handle_event (lua_State *L, struct lel_program *prog)
 	top = lua_gettop (L);
 
 	// get some data
-	rc = read (prog->fd, prog->buf, PROGRAM_IO_BUF_SIZE);
+	rc = read (prog->fd, prog->buf, LEL_PROGRAM_IO_BUF_SIZE);
 	err = errno;
 
 	// find the call back function
