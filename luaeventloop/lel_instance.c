@@ -110,6 +110,13 @@ if (el->prog)
 
 	el->prog = prog;
 
+	// everything is setup, but we need to get a hold of the function later;
+	// we add the function to the L_EVENTLOOP_MT with the fd as the key...
+	luaL_getmetatable (L, L_EVENTLOOP_MT);	// [-3] = get the table
+	lua_pushinteger (L, prog->fd);		// [-2] = the key
+	lua_pushvalue (L, 3);			// [-1] = the function (3rd arg)
+	lua_settable (L, -3);			// eventloop[fd] = function
+
 	lua_pushinteger (L, pid);
 	return 1;
 }
@@ -150,6 +157,15 @@ l_stack_dump ("  ", L);
 	kill (prog->pid, SIGTERM);
 	close (prog->fd);
 	free (prog);
+
+	// and we still have to remove it from the table
+	luaL_getmetatable (L, L_EVENTLOOP_MT);	// [-3] = get the table
+	lua_pushinteger (L, prog->fd);		// [-2] = the key
+	lua_pushnil (L);			// [-1] = nil
+	lua_settable (L, -3);			// eventloop[fd] = function
+
+	// cleanup
+	lua_gc (L, LUA_GCSTEP, 10);
 	
 	return 0;
 }
@@ -159,7 +175,7 @@ l_stack_dump ("  ", L);
  *
  * lua: el.run_loop (timeout)
  */
-static void loop_handle_event (lua_State *L, struct program *prog);
+static int loop_handle_event (lua_State *L, struct program *prog);
 int l_eventloop_run_loop (lua_State *L)
 {
 	struct eventloop *el;
@@ -206,7 +222,7 @@ l_stack_dump ("  ", L);
 #endif
 
 		if (FD_ISSET (prog->fd, &rfds)) {
-			loop_handle_event (L, prog);
+			rc = loop_handle_event (L, prog);
 		}
 
 		// get ready for next run...
@@ -219,37 +235,43 @@ l_stack_dump ("  ", L);
 	return 0;
 }
 
-static void loop_handle_event (lua_State *L, struct program *prog)
+static int loop_handle_event (lua_State *L, struct program *prog)
 {
 	char buffer[4096];
-	int rc;
+	int top, rc, err;
 
+	// backup top of stack
+	top = lua_gettop (L);
 
+	// get some data
 	rc = read (prog->fd, buffer, 4096);
+	err = errno;
 
-#if 1	// TODO hack hack hack
-	if (!rc) {
-		fprintf (stderr, "XXX: EOF\n");
-		exit(1);
-	}
-#endif
+	// find the call back function
+	luaL_getmetatable (L, L_EVENTLOOP_MT);	// [-2] = get the table
+	lua_pushinteger (L, prog->fd);		// [-1] = the key
+	lua_gettable (L, -2);			// push (eventloop[fd])
 
-	printf ("event(%03d):  ", rc);
-	fflush (stdout);
+	// issue callback
+	if (rc > 0) {
+		// success
+		lua_pushstring (L, buffer);
+		lua_call (L, 1, 0);
 
-	if (rc>0) {
-		char *p;
-
-		for (p = buffer + rc - 1; p >= buffer; p--) {
-			if (isgraph(*p))
-				break;
-			*p = '_';
+	} else {
+		// no more data
+		lua_pushnil (L);
+		if (rc == 0) {
+			// stream ended
+			lua_pushstring (L, "EOF");
+		} else {
+			// error
+			lua_pushstring (L, strerror(err));
 		}
-
-		write (1, buffer, rc);
+		lua_call (L, 2, 0);
 	}
-	printf ("\n");
 
-	// TODO call the callback function
+	// restore top of stack
+	lua_settop (L, top);
 }
 
