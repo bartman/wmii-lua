@@ -3,6 +3,7 @@ If you have any suggests I am happy to add them to the list.
 for 0.1 release
     - core
         - add api to register/unregister actions/keybindings/events
+        - execute all handlers in pcall() to catch exceptions
 
     - bundled plugins
         - cpu usage / load / uptime
@@ -13,6 +14,8 @@ for 0.2 release
         - rewrite timer handling using select loop and coroutines 
           and a subprocess to do iread() ... see doc/event-loop
         - support for "raw mode" like win-space in wmii+ruby
+        - add wmii.load_plugin("name") which works harder to locate a
+          plugin file
 
     - bundled plugins
         - mpd: controls / volume
@@ -31,4 +34,4 @@ future
 
 
 
-vim: set ts=8 noet sw=8 tw=72
+vim: set ts=8 et sw=8 tw=72

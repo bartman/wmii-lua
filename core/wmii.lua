@@ -54,7 +54,11 @@ It should be used by your wmiirc
 -- MODULE SETUP
 -- ========================================================================
 
-package.cpath = package.cpath .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/ixp/?.so"
+package.path = package.path
+               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
+package.cpath = package.cpath
+                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/core/?.so"
+                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so"
 require "ixp"
 local ixp = ixp
 

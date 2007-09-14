@@ -66,4 +66,4 @@ the script.  the ixp.so (3) could provide a popen()-like call to make
 this easier.
 
 
-vim: set ts=8 noet sw=8 tw=72
+vim: set ts=8 et sw=8 tw=72
