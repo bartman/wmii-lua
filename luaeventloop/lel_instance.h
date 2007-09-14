@@ -19,7 +19,11 @@ struct program {
 	char *cmd;
 	int fd;
 	int pid;
+	size_t buf_pos;
+	size_t buf_len;
+	char buf[0];		// this has to be last in the structure
 };
+#define PROGRAM_IO_BUF_SIZE 4096
 
 extern struct eventloop *lel_checkeventloop (lua_State *L, int narg);
 extern int l_eventloop_tostring (lua_State *L);

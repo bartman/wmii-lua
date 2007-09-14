@@ -33,13 +33,6 @@ int l_eventloop_tostring (lua_State *L)
 	return 1;
 }
 
-#if 0
-static my_checkfunction (lua_State *L)
-{
-
-}
-#endif
-
 /* ------------------------------------------------------------------------
  * executes a new process to handle events from another source
  *
@@ -63,21 +56,28 @@ int l_eventloop_add_exec (lua_State *L)
 	(void)luaL_checktype (L, 3, LUA_TFUNCTION);
 
 	DBGF("** eventloop:add_exec (%s, ...) **\n", cmd);
-l_stack_dump ("  ", L);
 
 #if 1		// TODO fix me!
 if (el->prog)
 	return lel_pusherror (L, "only one at a time for now");
 #endif
 
-	// spawn off a worker process
+	// create a new program entry
+	prog = (struct program*) malloc (sizeof (struct program) 
+			+ PROGRAM_IO_BUF_SIZE);
+	if (!prog)
+		return lel_pusherror (L, "failed to allocate program structure");
 
+	// spawn off a worker process
 	rc = pipe(pfds);
-	if (rc<0)
+	if (rc<0) {
+		free (prog);
 		return lel_pusherror (L, "failed to create a pipe");
+	}
 
 	pid = vfork();
-	if (pid<0) {
+	if (pid<0) {			// fork failed...
+		free (prog);
 		close (pfds[0]);
 		close (pfds[1]);
 		return lel_pusherror (L, "failed to fork()");
@@ -94,10 +94,8 @@ if (el->prog)
 	// back in server...
 	close (pfds[1]);			// close the client end
 
-	// create a new program entry
-	prog = (struct program*) malloc (sizeof (struct program));
-	if (!prog)
-		return lel_pusherror (L, "failed to allocate program structure");
+	// time to setup the program entry
+	memset (prog, 0, sizeof(*prog));
 
 	prog->cmd = strdup (cmd);
 	prog->pid = pid;
@@ -139,9 +137,7 @@ int l_eventloop_kill_exec (lua_State *L)
 	el = lel_checkeventloop (L, 1);
 	fd = luaL_checknumber (L, 2);
 
-	// ...
 	DBGF("** eventloop:kill_exec (%d) **\n", fd);
-l_stack_dump ("  ", L);
 
 #if 1			// TODO this is a hack
 	prog = el->prog;
@@ -188,7 +184,6 @@ int l_eventloop_run_loop (lua_State *L)
 	timeout = luaL_optnumber (L, 2, 0);
 
 	DBGF("** eventloop:run_loop (%d) **\n", timeout);
-l_stack_dump ("  ", L);
 
 	// init for select
 
@@ -222,11 +217,10 @@ l_stack_dump ("  ", L);
 #endif
 
 		if (FD_ISSET (prog->fd, &rfds)) {
-			rc = loop_handle_event (L, prog);
+			(void)loop_handle_event (L, prog);
 		}
 
 		// get ready for next run...
-
 		rfds = el->all_fds;
 		tv.tv_sec = timeout;
 		tv.tv_usec = 0;
@@ -237,14 +231,13 @@ l_stack_dump ("  ", L);
 
 static int loop_handle_event (lua_State *L, struct program *prog)
 {
-	char buffer[4096];
 	int top, rc, err;
 
 	// backup top of stack
 	top = lua_gettop (L);
 
 	// get some data
-	rc = read (prog->fd, buffer, 4096);
+	rc = read (prog->fd, prog->buf, PROGRAM_IO_BUF_SIZE);
 	err = errno;
 
 	// find the call back function
@@ -255,7 +248,7 @@ static int loop_handle_event (lua_State *L, struct program *prog)
 	// issue callback
 	if (rc > 0) {
 		// success
-		lua_pushstring (L, buffer);
+		lua_pushstring (L, prog->buf);
 		lua_call (L, 1, 0);
 
 	} else {
@@ -273,5 +266,7 @@ static int loop_handle_event (lua_State *L, struct program *prog)
 
 	// restore top of stack
 	lua_settop (L, top);
+
+	return rc;
 }
 
