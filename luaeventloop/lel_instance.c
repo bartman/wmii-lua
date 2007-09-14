@@ -32,12 +32,19 @@ int l_eventloop_tostring (lua_State *L)
 	return 1;
 }
 
+#if 0
+static my_checkfunction (lua_State *L)
+{
+
+}
+#endif
+
 /* ------------------------------------------------------------------------
  * executes a new process to handle events from another source
  *
- * lua: fd = el:add_exec(program, function) 
+ * lua: fd = el:add_exec(cmd, function) 
  *
- *    program - a string with program to execute
+ *    cmd - a string with program and parameters for execution
  *    function - a function to call back with data read
  *    fd - returned is the file descriptor or nil on error
  */
@@ -45,16 +52,65 @@ int l_eventloop_tostring (lua_State *L)
 int l_eventloop_add_exec (lua_State *L)
 {
 	struct eventloop *el;
-	const char *program;
-	//int rc;
+	struct program *prog;
+	const char *cmd;
+	int pfds[2];			// 0 is server, 1 is client
+	int rc, pid;
 
 	el = lel_checkeventloop (L, 1);
-	program = luaL_checkstring (L, 2);
-	//function = luaL_checklstring (L, 3, &data_len);
+	cmd = luaL_checkstring (L, 2);
+	(void)luaL_checktype (L, 3, LUA_TFUNCTION);
 
-	// ...
+	DBGF("** eventloop:add_exec (%s, ...) **\n", cmd);
+l_stack_dump ("  ", L);
 
-	return 0;
+#if 1		// TODO fix me!
+if (el->prog)
+	return lel_pusherror (L, "only one at a time for now");
+#endif
+
+	// spawn off a worker process
+
+	rc = pipe(pfds);
+	if (rc<0)
+		return lel_pusherror (L, "failed to create a pipe");
+
+	pid = vfork();
+	if (pid<0) {
+		close (pfds[0]);
+		close (pfds[1]);
+		return lel_pusherror (L, "failed to fork()");
+	}
+
+	if (! pid) {			// client...
+		close (pfds[0]);	// close the server end
+		dup2(pfds[1], 1);	// stdout to client's end of pipe
+		close (pfds[1]);	// close the client end
+		execlp ("sh", "sh", "-c", cmd, NULL);
+		exit (1);
+	}
+
+	// back in server...
+	close (pfds[1]);			// close the client end
+
+	// create a new program entry
+	prog = (struct program*) malloc (sizeof (struct program));
+	if (!prog)
+		return lel_pusherror (L, "failed to allocate program structure");
+
+	prog->cmd = strdup (cmd);
+	prog->pid = pid;
+	prog->fd = pfds[0];
+
+	if (el->max_fd < prog->fd)
+		el->max_fd = prog->fd;
+
+	FD_SET (prog->fd, &el->all_fds);
+
+	el->prog = prog;
+
+	lua_pushinteger (L, pid);
+	return 1;
 }
 
 /* ------------------------------------------------------------------------
@@ -69,13 +125,30 @@ int l_eventloop_add_exec (lua_State *L)
 int l_eventloop_kill_exec (lua_State *L)
 {
 	struct eventloop *el;
+	struct program *prog;
 	int fd;
-	//int rc;
 
 	el = lel_checkeventloop (L, 1);
 	fd = luaL_checknumber (L, 2);
 
 	// ...
+	DBGF("** eventloop:kill_exec (%d) **\n", fd);
+l_stack_dump ("  ", L);
+
+#if 1			// TODO this is a hack
+	prog = el->prog;
+	if (! prog)
+		return 0;
+
+	el->prog = NULL;
+	el->max_fd = 0;
+#endif
+
+	FD_CLR (prog->fd, &el->all_fds);
+
+	kill (prog->pid, SIGTERM);
+	close (prog->fd);
+	free (prog);
 	
 	return 0;
 }
@@ -85,16 +158,71 @@ int l_eventloop_kill_exec (lua_State *L)
  *
  * lua: el.run_loop (timeout)
  */
+static void loop_handle_event (lua_State *L, struct program *prog);
 int l_eventloop_run_loop (lua_State *L)
 {
 	struct eventloop *el;
 	int timeout;
+	fd_set rfds;
+	struct timeval tv;
+	int rc;
 
 	el = lel_checkeventloop (L, 1);
 	timeout = luaL_optnumber (L, 2, 0);
 
-	// ...
+	DBGF("** eventloop:run_loop (%d) **\n", timeout);
+l_stack_dump ("  ", L);
+
+	// init for select
+
+	rfds = el->all_fds;
+	tv.tv_sec = timeout;
+	tv.tv_usec = 0;
+
+	// run the loop
+
+	for (;;) {
+		struct program *prog;
+
+		rc = select (el->max_fd+1, &rfds, NULL, NULL, &tv);
+		if (rc<0)
+			return lel_pusherror (L, "select failed");
+
+		if (!rc)
+			continue;
+
+#if 1		// TODO again, a hack, should go through all programs
+		prog = el->prog;
+		if (!prog)
+			continue;
+#endif
+
+		if (FD_ISSET (prog->fd, &rfds)) {
+			loop_handle_event (L, prog);
+		}
+
+		// get ready for next run...
+
+		rfds = el->all_fds;
+		tv.tv_sec = timeout;
+		tv.tv_usec = 0;
+	}
 	
 	return 0;
+}
+
+static void loop_handle_event (lua_State *L, struct program *prog)
+{
+	char buffer[4096];
+	int rc;
+
+	rc = read (prog->fd, buffer, 4096);
+	if (rc>0) {
+		printf ("event:");
+		fflush (stdout);
+		write (1, buffer, rc);
+	}
+
+	// TODO call the callback function
 }
 

@@ -9,6 +9,6 @@
 #define DBGF(fmt,args...) ({})
 #endif
 
-extern void l_stack_dump (lua_State *l);
+extern void l_stack_dump (const char *prefix, lua_State *l);
 
 #endif // __LUAIXP_DEBUG_H__

@@ -7,6 +7,8 @@ LUALIB := $(shell pkg-config --libs lua5.1)
 CFLAGS += ${LUAINC} -ggdb -O0 -fPIC
 LIBS   += ${LUALIB}
 
+CFLAGS += -DDBG
+
 TARGET = eventloop.so
 
 .PHONY: all test clean install

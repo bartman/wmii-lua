@@ -22,13 +22,15 @@ static int l_new (lua_State *L)
 	struct eventloop *el;
 
 	DBGF("** eventloop.new () **\n");
+l_stack_dump ("  ", L);
 
 	el = (struct eventloop*)lua_newuserdata(L, sizeof (struct eventloop));
 
 	luaL_getmetatable (L, L_EVENTLOOP_MT);
 	lua_setmetatable (L, -2);
 
-	// TODO init el
+	el->prog = NULL;
+	FD_ZERO (&el->all_fds);
 
 	return 1;
 }
@@ -40,6 +42,7 @@ static int l_eventloop_gc (lua_State *L)
 	el = lel_checkeventloop (L, 1);
 
 	DBGF("** eventloop:__gc (%p) **\n", el);
+l_stack_dump ("  ", L);
 
 	return 0;
 }

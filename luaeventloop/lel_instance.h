@@ -6,8 +6,19 @@
 #define L_EVENTLOOP_MT "lel.lel_mt"
 
 /* the C representation of a eventloop instance object */
+struct program;
 struct eventloop {
-	// ...
+	// TODO fill in with table that tracks executables
+	struct program *prog;	// support only one right now
+
+	fd_set all_fds;
+	int max_fd;
+};
+
+struct program {
+	char *cmd;
+	int fd;
+	int pid;
 };
 
 extern struct eventloop *lel_checkeventloop (lua_State *L, int narg);

@@ -5,7 +5,7 @@
 #include "lel_debug.h"
 
 void 
-l_stack_dump (lua_State *l) 
+l_stack_dump (const char *prefix, lua_State *l) 
 {
 	int i, rc;
 	int top = lua_gettop(l);
@@ -13,7 +13,7 @@ l_stack_dump (lua_State *l)
 	char *e = buf+sizeof(buf);
 
 	fflush (stdout);
-	fprintf (stderr, "--- stack ---\n");
+	fprintf (stderr, "%s--- stack ---\n", prefix);
 
 	p = buf;
 	*buf = 0;
@@ -57,8 +57,9 @@ l_stack_dump (lua_State *l)
 
 		}
 	}
-	fprintf (stderr, "%s\n", buf);  /* end the listing */
+	if (p!=buf)
+		fprintf (stderr, "%s%s\n", prefix, buf);  /* end the listing */
 
-	fprintf (stderr, "-------------\n");
+	fprintf (stderr, "%s-------------\n", prefix);
 }
 
