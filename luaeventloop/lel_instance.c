@@ -19,16 +19,16 @@
  * utility functions
  */
 
-struct eventloop *lel_checkeventloop (lua_State *L, int narg)
+struct lel_eventloop *lel_checkeventloop (lua_State *L, int narg)
 {
 	void *ud = luaL_checkudata (L, narg, L_EVENTLOOP_MT);
 	luaL_argcheck (L, ud != NULL, 1, "`eventloop' expected");
-	return (struct eventloop*)ud;
+	return (struct lel_eventloop*)ud;
 }
 
 int l_eventloop_tostring (lua_State *L)
 {
-	struct eventloop *el = lel_checkeventloop (L, 1);
+	struct lel_eventloop *el = lel_checkeventloop (L, 1);
 	lua_pushfstring (L, "eventloop instance %p", el);
 	return 1;
 }
@@ -45,8 +45,8 @@ int l_eventloop_tostring (lua_State *L)
 
 int l_eventloop_add_exec (lua_State *L)
 {
-	struct eventloop *el;
-	struct program *prog;
+	struct lel_eventloop *el;
+	struct lel_program *prog;
 	const char *cmd;
 	int pfds[2];			// 0 is server, 1 is client
 	int rc, pid;
@@ -63,7 +63,7 @@ if (el->prog)
 #endif
 
 	// create a new program entry
-	prog = (struct program*) malloc (sizeof (struct program) 
+	prog = (struct lel_program*) malloc (sizeof (struct lel_program) 
 			+ PROGRAM_IO_BUF_SIZE);
 	if (!prog)
 		return lel_pusherror (L, "failed to allocate program structure");
@@ -130,8 +130,8 @@ if (el->prog)
 
 int l_eventloop_kill_exec (lua_State *L)
 {
-	struct eventloop *el;
-	struct program *prog;
+	struct lel_eventloop *el;
+	struct lel_program *prog;
 	int fd;
 
 	el = lel_checkeventloop (L, 1);
@@ -171,10 +171,10 @@ int l_eventloop_kill_exec (lua_State *L)
  *
  * lua: el.run_loop (timeout)
  */
-static int loop_handle_event (lua_State *L, struct program *prog);
+static int loop_handle_event (lua_State *L, struct lel_program *prog);
 int l_eventloop_run_loop (lua_State *L)
 {
-	struct eventloop *el;
+	struct lel_eventloop *el;
 	int timeout;
 	fd_set rfds, xfds;
 	struct timeval tv;
@@ -194,7 +194,7 @@ int l_eventloop_run_loop (lua_State *L)
 	// run the loop
 
 	for (;;) {
-		struct program *prog;
+		struct lel_program *prog;
 
 		rc = select (el->max_fd+1, &rfds, NULL, &xfds, &tv);
 		if (rc<0)
@@ -229,7 +229,7 @@ int l_eventloop_run_loop (lua_State *L)
 	return 0;
 }
 
-static int loop_handle_event (lua_State *L, struct program *prog)
+static int loop_handle_event (lua_State *L, struct lel_program *prog)
 {
 	int top, rc, err;
 

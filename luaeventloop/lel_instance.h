@@ -6,16 +6,16 @@
 #define L_EVENTLOOP_MT "lel.lel_mt"
 
 /* the C representation of a eventloop instance object */
-struct program;
-struct eventloop {
+struct lel_program;
+struct lel_eventloop {
 	// TODO fill in with table that tracks executables
-	struct program *prog;	// support only one right now
+	struct lel_program *prog;	// support only one right now
 
 	fd_set all_fds;
 	int max_fd;
 };
 
-struct program {
+struct lel_program {
 	char *cmd;
 	int fd;
 	int pid;
@@ -25,7 +25,7 @@ struct program {
 };
 #define PROGRAM_IO_BUF_SIZE 4096
 
-extern struct eventloop *lel_checkeventloop (lua_State *L, int narg);
+extern struct lel_eventloop *lel_checkeventloop (lua_State *L, int narg);
 extern int l_eventloop_tostring (lua_State *L);
 
 /* exported api */
