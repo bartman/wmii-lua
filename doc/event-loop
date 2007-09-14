@@ -21,49 +21,72 @@ return the event and permit for the timers to run.
 
 == Proposed solution
 
-The clenest way to handle multiple evnet sources is via a select() or
+The cleanest way to handle multiple event sources is via a select() or
 poll() loop.  However the blocking nature of libixp is still a problem.
-To avoid this, we will create X number of processes that will be used 
-exclussively for blocking on the ixp interface.  The processes will be 
-connected to the main process via an anonymous fifo.  This will prmit
-the main process to execute a select loop while waiting for any read
-requests and thus be woken up by events from outside sources like dbus,
-socktes, etc.
+Fortunately, there is only one file in wmii's ixp filesystem that
+would cause blocking... the /event file.  This is a magic file that
+never stops generating content; at least not while wmii is running.
 
-The propose solution will look something like this:
+To handle IO on all wmii files we will use the libixp.so library.  It's
+already good at what it does... accessing readily available content.
+For handling the read of the /event file we will fork off a wmiir
+process to read it.  This process will be connected to the main program
+via an anonymous fifo.  One side of the fifo will be fed by wmiir, and
+the other will be used on the lua side in a select() loop.
 
-    (1)                (2)                       (3)                   (4)
-  +------+  (ixp) +------------+    (fifo) +-------------+  iread() +--------+
-  | wmii | <----- |  blocking  |-+ <------ | select loop | <------- |  lua   |
-  +------+        | subprocess | |         | (luaixp.so) |          | wmiirc |
-                  +------------+ |         +-------------+          +--------+
-                    +------------+                |
+The select loop will be implemented in C.  There will be a new library
+implementing the eventloop module.  wmii.lua will create an eventloop
+and add a wmiir process to it via an api call.  It will then call a
+run_loop() function with a duration which will cause the select loop to
+run for that much time.  On return from the run_loop() function,
+wmii.lua will execute the next timer that's queued up.
+
+Here is what it will look like:
+
+        el = eventloop.new()
+        el.add_exec ("wmiir read /events",
+                        function (line)
+                                ... process event ...
+                        end)
+        ...
+        while true do
+                local next_timer = handle_timers()
+                el.run_loop(next_timer)
+        end
+
+The nice thing about this is that plugins can use this to generate
+output on the bar:
+
+        widget = wmii.widget:new ("990_load")
+        el.add_exec ("dstat --load --nocolor --noheaders --noupdate",
+                        function (line)
+                                widget:sow (line)
+                        end)
+
+This will make it really clean to get events from other sources.  We can
+fork off netcat or tail to get other events.  Best of all no threads or
+alarm hacks.
+
+And the ASCII diagram looks like this.
+
+    (1)                (3)                      (4)
+  +------+  (ixp) +--------+   read/write() +------------+
+  | wmii | <----- | ixp.so | <------------- | wmiirc.lua |
+  +------+        +--------+                +------------+
+        ^                                         |
+        |                                         v 
+        | (ixp)       (6)                  +--------------+
+     +-------------------+     (fifo)      | eventloop.so | (5)
+     | wmiir read /event | --------------> |   select()   |
+     +-------------------+                 +--------------+
                                                   |
+                                                  | (fifo)
                                                   v
                                            +-------------+
-                                           |  other data | (6)
+                                           |  other data | (7)
                                            |   sources   |
                                            +-------------+
 
-After invocation (4), the wmiirc.lua script, will attempt to read some
-data from wmii (1) via the ixp:read() or ixp:iread() functions in ixp.so (3).
-Any function that is expected to block for a long time will be passed onto 
-a subprocess (2) to execute.  The subprocess will actually block, while the
-main process will pass the connecting fifo to a select loop.
-
-The ixp.so (3) will create coroutines for each blocking call, and when
-select() decides data is available on one of the fifos it will read the
-data and wakeup the appropriate coroutine.
-
-Something like this is attempted in luaevent library.  I need to check
-if the library can be reused in the ixp.so code.
-
-Going further it's possible for plugins to open a file descriptor (6) from
-another source -- say a socket -- and have the event loop generate
-events when that needs processing.  If the event source does not give a
-file descriptor (like libixp) then a subprocess will have to be ran by
-the script.  the ixp.so (3) could provide a popen()-like call to make
-this easier.
 
 
 vim: set ts=8 et sw=8 tw=72
