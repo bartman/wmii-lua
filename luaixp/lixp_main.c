@@ -15,36 +15,11 @@
 #include <lauxlib.h>
 
 #include "lixp_debug.h"
+#include "lixp_util.h"
 
 #define L_IXP_MT "ixp.ixp_mt"
 #define L_IXP_IDIR_MT "ixp.idir_mt"
 #define L_IXP_IREAD_MT "ixp.iread_mt"
-
-#ifdef DBG
-#define DBGF(fmt,args...) fprintf(stderr,fmt,##args)
-#else
-#define DBGF(fmt,args...) ({})
-#endif
-
-/* ------------------------------------------------------------------------
- * error helper
- */
-static int pusherror(lua_State *L, const char *info)
-{
-	lua_pushnil(L);
-	if (info==NULL) {
-		lua_pushstring(L, strerror(errno));
-		lua_pushnumber(L, errno);
-		return 3;
-	} else if (errno) {
-		lua_pushfstring(L, "%s: %s", info, strerror(errno));
-		lua_pushnumber(L, errno);
-		return 3;
-	} else {
-		lua_pushfstring(L, "%s", info);
-		return 2;
-	}
-}
 
 /* ------------------------------------------------------------------------
  * the C representation of a ixp instance object
@@ -69,27 +44,8 @@ static int l_ixp_tostring (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * lua: ixptest() 
- */
-#ifdef DBG
-static int l_test (lua_State *L)
-{
-	DBGF("** ixp.test **\n");
-	return pusherror (L, "some error occurred");
-}
-static int l_ixp_test (lua_State *L)
-{
-	struct ixp *ixp = checkixp (L, 1);
-	DBGF("** ixp:test (%p [%s]) **\n", ixp, ixp->address);
-	return pusherror (L, "some error occurred");
-}
-#endif
-
-/* ------------------------------------------------------------------------
  * lua: write(file, data) -- writes data to a file 
  */
-
-static int write_data (IxpCFid *fid, const char *data, size_t data_len);
 
 static int l_ixp_write (lua_State *L)
 {
@@ -106,41 +62,19 @@ static int l_ixp_write (lua_State *L)
 
 	fid = ixp_open(ixp->client, (char*)file, P9_OWRITE);
 	if(fid == NULL)
-		return pusherror (L, "count not open p9 file");
+		return lixp_pusherror (L, "count not open p9 file");
 
 	DBGF("** ixp.write (%s,%s) **\n", file, data);
 	
-	rc = write_data (fid, data, data_len);
+	rc = lixp_write_data (fid, data, data_len);
 	if (rc < 0) {
 		ixp_close(fid);
-		return pusherror (L, "failed to write to p9 file");
+		return lixp_pusherror (L, "failed to write to p9 file");
 	}
 
 	ixp_close(fid);
 	return 0;
 }
-
-static int write_data (IxpCFid *fid, const char *data, size_t data_len)
-{
-	size_t left;
-	off_t ofs = 0;
-
-	left = data_len;
-	while (left) {
-		int rc = ixp_write(fid, (char*)data + ofs, left);
-		if (rc < 0)
-			return rc;
-
-		else if (rc > left)
-			return -ENXIO;
-
-		left -= rc;
-		ofs += rc;
-	}
-
-	return data_len;
-}
-
 
 /* ------------------------------------------------------------------------
  * lua: data = read(file) -- returns all contents (upto 4k) 
@@ -158,12 +92,12 @@ static int l_ixp_read (lua_State *L)
 
 	fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
 	if(fid == NULL)
-		return pusherror (L, "count not open p9 file");
+		return lixp_pusherror (L, "count not open p9 file");
 
 	buf = malloc (fid->iounit);
 	if (!buf) {
 		ixp_close(fid);
-		return pusherror (L, "count not allocate memory");
+		return lixp_pusherror (L, "count not allocate memory");
 	}
 	buf_ofs = 0;
 	buf_size = buf_left = fid->iounit;
@@ -176,14 +110,14 @@ static int l_ixp_read (lua_State *L)
 			break;
 		else if (rc<0) {
 			ixp_close(fid);
-			return pusherror (L, "failed to read from p9 file");
+			return lixp_pusherror (L, "failed to read from p9 file");
 		}
 
 		buf_ofs += rc;
 		buf_left -= rc;
 
 		if (buf_ofs >= buf_size)
-			return pusherror (L, "internal error while reading");
+			return lixp_pusherror (L, "internal error while reading");
 
 		if (buf_size >= 4096)
 			break;
@@ -191,7 +125,7 @@ static int l_ixp_read (lua_State *L)
 		buf = realloc (buf, 4096);
 		if (!buf) {
 			ixp_close(fid);
-			return pusherror (L, "count not allocate memory");
+			return lixp_pusherror (L, "count not allocate memory");
 		}
 		buf_size = 4096;
 	}
@@ -221,14 +155,14 @@ static int l_ixp_create (lua_State *L)
 	
 	fid = ixp_create (ixp->client, (char*)file, 0777, P9_OWRITE);
 	if (!fid)
-		return pusherror (L, "count not create file");
+		return lixp_pusherror (L, "count not create file");
 
 	if (data && data_len
 			&& !(fid->qid.type & P9_DMDIR)) {
-		int rc = write_data (fid, data, data_len);
+		int rc = lixp_write_data (fid, data, data_len);
 		if (rc < 0) {
 			ixp_close(fid);
-			return pusherror (L, "failed to write to p9 file");
+			return lixp_pusherror (L, "failed to write to p9 file");
 		}
 	}
 
@@ -252,7 +186,7 @@ static int l_ixp_remove (lua_State *L)
 	
 	rc = ixp_remove (ixp->client, (char*)file);
 	if (!rc)
-		return pusherror (L, "failed to remove p9 file");
+		return lixp_pusherror (L, "failed to remove p9 file");
 
 	return 0;
 }
@@ -282,7 +216,7 @@ static int l_ixp_iread (lua_State *L)
 
 	ctx = (struct l_ixp_iread_s*)lua_newuserdata (L, sizeof(*ctx));
 	if (!ctx)
-		return pusherror (L, "count not allocate context");
+		return lixp_pusherror (L, "count not allocate context");
 	memset (ctx, 0, sizeof (*ctx));
 
 	// set the metatable for the new userdata
@@ -291,7 +225,7 @@ static int l_ixp_iread (lua_State *L)
 
 	ctx->fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
 	if(ctx->fid == NULL) {
-		return pusherror (L, "count not open p9 file");
+		return lixp_pusherror (L, "count not open p9 file");
 	}
 
 	DBGF("** ixp.iread (%s) **\n", file);
@@ -349,7 +283,7 @@ static int l_ixp_iread_iter (lua_State *L)
 	if (!ctx->buf) {
 		ctx->buf = malloc (ctx->fid->iounit);
 		if (!ctx->buf)
-			return pusherror (L, "count not allocate memory");
+			return lixp_pusherror (L, "count not allocate memory");
 		ctx->buf_size = ctx->fid->iounit;
 		ctx->buf_len = 0;
 	}
@@ -440,8 +374,6 @@ static void init_iread_mt (lua_State *L)
  * lua: stat = stat(file) -- returns a status table 
  */
 
-static int pushstat (lua_State *L, const struct IxpStat *stat);
-
 static int l_ixp_stat (lua_State *L)
 {
 	struct ixp *ixp;
@@ -456,72 +388,13 @@ static int l_ixp_stat (lua_State *L)
 
 	stat = ixp_stat(ixp->client, (char*)file);
 	if(!stat)
-		return pusherror(L, "cannot stat file");
+		return lixp_pusherror(L, "cannot stat file");
 
-	rc = pushstat (L, stat);
+	rc = lixp_pushstat (L, stat);
 
 	ixp_freestat (stat);
 
 	return rc;
-}
-
-static void setrwx(long m, char *s)
-{
-	static char *modes[] = {
-		"---", "--x", "-w-",
-		"-wx", "r--", "r-x",
-		"rw-", "rwx",
-	};
-	strncpy(s, modes[m], 3);
-}
-
-static void build_modestr(char *buf, const struct IxpStat *stat)
-{
-	buf[0]='-';
-	if(stat->mode & P9_DMDIR)
-		buf[0]='d';
-	buf[1]='-';
-	setrwx((stat->mode >> 6) & 7, &buf[2]);
-	setrwx((stat->mode >> 3) & 7, &buf[5]);
-	setrwx((stat->mode >> 0) & 7, &buf[8]);
-	buf[11] = 0;
-}
-
-static void build_timestr(char *buf, const struct IxpStat *stat)
-{
-	ctime_r((time_t*)&stat->mtime, buf);
-	buf[strlen(buf) - 1] = '\0';
-}
-
-
-#define setfield(type,name,value) \
-	lua_pushstring (L, name); \
-	lua_push##type (L, value); \
-	lua_settable (L, -3);
-static int pushstat (lua_State *L, const struct IxpStat *stat)
-{
-	static char buf[32];
-	lua_newtable (L);
-
-	setfield(number, "type", stat->type);
-	setfield(number, "dev", stat->dev);
-	//setfield(Qid,    "qid", stat->qid);
-	setfield(number, "mode", stat->mode);
-	setfield(number, "atime", stat->atime);
-	setfield(number, "mtime", stat->mtime);
-	setfield(number, "length", stat->length);
-	setfield(string, "name", stat->name);
-	setfield(string, "uid", stat->uid);
-	setfield(string, "gid", stat->gid);
-	setfield(string, "muid", stat->muid);
-
-	build_modestr(buf, stat);
-	setfield(string, "modestr", buf);
-
-	build_timestr(buf, stat);
-	setfield(string, "timestr", buf);
-
-	return 1;
 }
 
 /* ------------------------------------------------------------------------
@@ -547,7 +420,7 @@ static int l_ixp_idir (lua_State *L)
 
 	ctx = (struct l_ixp_idir_s*)lua_newuserdata (L, sizeof(*ctx));
 	if (!ctx)
-		return pusherror (L, "count not allocate context");
+		return lixp_pusherror (L, "count not allocate context");
 	memset(ctx, 0, sizeof (*ctx));
 
 	// set the metatable for the new userdata
@@ -556,14 +429,14 @@ static int l_ixp_idir (lua_State *L)
 
 	ctx->fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
 	if(ctx->fid == NULL) {
-		return pusherror (L, "count not open p9 file");
+		return lixp_pusherror (L, "count not open p9 file");
 	}
 
 	ctx->buf = malloc (ctx->fid->iounit);
 	if (!ctx->buf) {
 		ixp_close (ctx->fid);
 		ctx->fid = NULL;
-		return pusherror (L, "count not allocate memory");
+		return lixp_pusherror (L, "count not allocate memory");
 	}
 
 	DBGF("** ixp.idir (%s) **\n", file);
@@ -596,7 +469,7 @@ static int l_ixp_idir_iter (lua_State *L)
 
 	ixp_pstat(&ctx->m, &stat);
 
-	return pushstat (L, &stat);
+	return lixp_pushstat (L, &stat);
 }
 
 static int l_ixp_idir_gc (lua_State *L)
@@ -639,7 +512,7 @@ static int l_new (lua_State *L)
 
 	cli = ixp_mount((char*)adr);
 	if (!cli)
-		return pusherror (L, "could not open ixp connection");
+		return lixp_pusherror (L, "could not open ixp connection");
 
 	ixp = (struct ixp*)lua_newuserdata(L, sizeof (struct ixp));
 
@@ -669,10 +542,6 @@ static int l_ixp_gc (lua_State *L)
  */
 static const luaL_reg class_table[] =
 {
-#ifdef DBG
-	{ "test",		l_test },
-#endif
-
 	{ "new",		l_new },
 	
 	{ NULL,			NULL },
@@ -683,10 +552,6 @@ static const luaL_reg class_table[] =
  */
 static const luaL_reg instance_table[] =
 {
-#ifdef DBG
-	{ "test",		l_ixp_test },
-#endif
-
 	{ "__tostring",		l_ixp_tostring },
 	{ "__gc",		l_ixp_gc },
 
