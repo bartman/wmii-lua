@@ -1,4 +1,4 @@
-.PHONY: all luaixp clean tags install
+.PHONY: all luaixp luaeventloop clean tags install
 all: luaixp luaeventloop
 
 luaixp luaeventloop:
