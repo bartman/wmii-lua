@@ -3,6 +3,7 @@
 --
 -- WMII event loop, in lua
 --
+-- http://www.jukie.net/~bart/blog/tag/wmiirc-lua
 -- git://www.jukie.net/wmiirc-lua.git/
 --
 
@@ -75,6 +76,7 @@ local math = require("math")
 local type = type
 local error = error
 local print = print
+local pcall = pcall
 local pairs = pairs
 local tostring = tostring
 local tonumber = tonumber
@@ -195,9 +197,13 @@ end
 -- return an iterator which walks all the lines in the file
 --
 -- example:
---     for event in wmii.iread("/event")
+--     for event in wmii.iread("/ctl")
 --         ...
 --     end
+--
+-- NOTE: don't use iread for files that could block, as this will interfere
+-- with timer processing and event delivery.  Instead fork off a process to
+-- execute wmiir and read back the responses via callback.
 function iread (file)
         return wmixp:iread(file)
 end
@@ -446,10 +452,12 @@ local action_handlers = {
 
         exec = function (act, args)
                 local what = args or wmiirc
+                cleanup()
                 write ("/ctl", "exec " .. what)
         end,
 
         wmiirc = function ()
+                cleanup()
                 posix.exec ("lua", wmiirc)
         end,
 
@@ -704,6 +712,7 @@ local ev_handlers = {
                 if arg then
                         if arg == "wmiirc" then
                                 -- backwards compatibility with bash version
+                                cleanup()
                                 os.exit (0)
                         else
                                 -- ignore if it came from us
@@ -711,6 +720,7 @@ local ev_handlers = {
                                 if pid then
                                         local pid = tonumber (pid)
                                         if not (pid == mypid) then
+                                                cleanup()
                                                 os.exit (0)
                                         end
                                 end
@@ -910,6 +920,10 @@ function run_event_loop ()
 
         update_displayed_tags ()
 
+        log("wmii: updating rbar")
+
+        update_displayed_widgets ()
+
         log("wmii: updating active keys")
 
         update_active_keys ()
@@ -928,6 +942,7 @@ end
 -- ------------------------------------------------------------------------
 -- widget template
 widget = {}
+widgets = {}
 
 -- ------------------------------------------------------------------------
 -- create a widget object and add it to the wmii /rbar
@@ -951,6 +966,8 @@ function widget:new (name, fn)
         self.__index = self
         self.__gc = function (o) o:hide() end
 
+        widgets[name] = o
+
         o:show()
         return o
 end
@@ -958,19 +975,25 @@ end
 -- ------------------------------------------------------------------------
 -- stop and destroy the timer
 function widget:delete ()
+        widgets[self.name] = nil
         self:hide()
-        -- TBD
 end
 
 -- ------------------------------------------------------------------------
 -- displays or updates the widget text
-function widget:show (txt)
+--
+-- examples:
+--   w:show("foo")
+--   w:show("foo", "#888888 #222222 #333333")
+--   w:show("foo", cell_fg .. " " .. cell_bg .. " " .. border)
+--
+function widget:show (txt, colors)
         local txt = txt or ""
-        local color = get_ctl("normcolors") or ""
+        local colors = colors or get_ctl("normcolors") or ""
         if not self.txt then
-                create ("/rbar/" .. self.name, color .. " " .. txt)
+                create ("/rbar/" .. self.name, colors .. " " .. txt)
         else
-                write ("/rbar/" .. self.name, color .. " " .. txt)
+                write ("/rbar/" .. self.name, txt)
         end
         self.txt = txt
 end
@@ -981,6 +1004,33 @@ function widget:hide ()
         if self.txt then
                 remove ("/lbar/" .. self.name)
                 self.txt = nil
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- remove all /rbar entries that we don't have widget objects for
+function update_displayed_widgets ()
+        -- colours for /rbar
+        local nc = get_ctl("normcolors") or ""
+
+        -- build up a table of existing tags in the /lbar
+        local old = {}
+        local s
+        for s in wmixp:idir ("/rbar") do
+                old[s.name] = 1
+        end
+
+        -- for all actual widgets in use we want to remove them from the old list
+        local i,v
+        for i,v in pairs(widgets) do
+                old[v.name] = nil
+        end
+
+        -- anything left in the old table should be removed now
+        for i,v in pairs(old) do
+                if v then
+                        remove("/rbar/"..i)
+                end
         end
 end
 
@@ -1036,7 +1086,7 @@ function timer:delete ()
         self:stop()
         local i,t
         for i,t in pairs(timers) do
-                if t == timer then
+                if t == self then
                         table.remove (timers,i)
                         return
                 end
@@ -1060,6 +1110,7 @@ function timer:resched (seconds)
         table.sort (timers, timer.is_less_then)
 end
 
+-- helper for sorting timers
 function timer:is_less_then(another)
         if not self.next_time then
                 return false    -- another is smaller, nil means infinity
@@ -1086,10 +1137,10 @@ end
 -- ------------------------------------------------------------------------
 -- figure out how long before the next event
 function time_before_next_timer_event()
-        local timer = timers[1]
-        if timer and timer.next_time then
+        local tmr = timers[1]
+        if tmr and tmr.next_time then
                 local now = tonumber(os.date("%s"))
-                local seconds = timer.next_time - now
+                local seconds = tmr.next_time - now
                 if seconds > 0 then
                         return seconds
                 end
@@ -1102,26 +1153,26 @@ end
 function process_timers ()
         local now = tonumber(os.date("%s"))
         local torun = {}
-        local i,timer
+        local i,tmr
 
-        for i,timer in pairs (timers) do
-                if (not timer) or (not timer.next_time) then
+        for i,tmr in pairs (timers) do
+                if (not tmr) or (not tmr.next_time) then
                         table.remove(timers,i)
                         return 1
                 end
 
-                if timer.next_time > now then
-                        return timer.next_time - now
+                if tmr.next_time > now then
+                        return tmr.next_time - now
                 end
 
-                torun[#torun+1] = timer
+                torun[#torun+1] = tmr
         end
 
-        for i,timer in pairs (torun) do
-                timer:stop()
-                local new_interval = timer:fn()
+        for i,tmr in pairs (torun) do
+                tmr:stop()
+                local new_interval = tmr:fn()
                 if not (new_interval == -1) then
-                        timer:resched(rc)
+                        tmr:resched(rc)
                 end
         end
 
@@ -1129,6 +1180,31 @@ function process_timers ()
         return sleep_for
 end
 
+-- ------------------------------------------------------------------------
+-- cleanup everything in preparation for exit() or exec()
+function cleanup ()
+
+        log ("wmii: stopping timer events")
+
+        local i,tmr
+        for i,tmr in pairs (timers) do
+                pcall (tmr.delete, tmr)
+        end
+
+        log ("wmii: terminating eventloop")
+
+        pcall(el.kill_all,el)
+
+        log ("wmii: disposing of widgets")
+
+        -- dispose of all widgets
+        local i,v
+        for i,v in pairs(widgets) do
+                pcall(v.delete,v)
+        end
+
+        log ("wmii: dormant")
+end
 
 -- ========================================================================
 -- DOCUMENTATION

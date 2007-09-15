@@ -36,5 +36,6 @@ extern int l_eventloop_tostring (lua_State *L);
 extern int l_eventloop_add_exec (lua_State *L);
 extern int l_eventloop_kill_exec (lua_State *L);
 extern int l_eventloop_run_loop (lua_State *L);
+extern int l_eventloop_kill_all (lua_State *L);
 
 #endif // __LUAIXP_INSTANCE_H__

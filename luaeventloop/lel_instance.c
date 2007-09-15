@@ -18,6 +18,9 @@
 #include "lel_util.h"
 #include "lel_instance.h"
 
+// local hepers
+static int loop_handle_event (lua_State *L, struct lel_program *prog);
+static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd);
 
 /* ------------------------------------------------------------------------
  * utility functions
@@ -192,8 +195,6 @@ int l_eventloop_add_exec (lua_State *L)
  *    fd - return from add_exec()
  */
 
-static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd);
-
 int l_eventloop_kill_exec (lua_State *L)
 {
 	struct lel_eventloop *el;
@@ -251,7 +252,6 @@ static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd)
  *
  * lua: el.run_loop (timeout)
  */
-static int loop_handle_event (lua_State *L, struct lel_program *prog);
 int l_eventloop_run_loop (lua_State *L)
 {
 	struct lel_eventloop *el;
@@ -297,6 +297,10 @@ int l_eventloop_run_loop (lua_State *L)
 				rc = loop_handle_event (L, prog);
 				if (rc<=0)
 					dead = true;
+
+				// count could have changed in callback
+				if (i >= el->progs_count)
+					break;
 			}
 
 			if (dead || FD_ISSET (prog->fd, &xfds)) {
@@ -307,6 +311,26 @@ int l_eventloop_run_loop (lua_State *L)
 		}
 	}
 	
+	return 0;
+}
+
+/* ------------------------------------------------------------------------
+ * terminates all executables
+ */
+int l_eventloop_kill_all (lua_State *L)
+{
+	struct lel_eventloop *el;
+	int i;
+
+	el = lel_checkeventloop (L, 1);
+
+	for (i=(el->progs_count-1); i>=0; i--) {
+		struct lel_program *prog;
+
+		prog = el->progs[i];
+		kill_exec (L, el, prog->fd);
+	}
+
 	return 0;
 }
 
