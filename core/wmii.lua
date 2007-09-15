@@ -865,7 +865,6 @@ local el = eventloop.new()
 el:add_exec (wmiir .. " read /event",
         function (line)
                 local line = line or "nil"
-                local line = line:gsub("\n$","")
                 log ("*** event: "..line)
 
                 -- try to split off the argument(s)

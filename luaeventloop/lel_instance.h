@@ -21,6 +21,8 @@ struct lel_program {
 	char *cmd;
 	int fd;
 	int pid;
+	int read_rc;
+	int read_errno;
 	size_t buf_pos;
 	size_t buf_len;
 	char buf[0];		// this has to be last in the structure

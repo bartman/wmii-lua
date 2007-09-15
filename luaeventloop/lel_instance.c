@@ -126,7 +126,8 @@ int l_eventloop_add_exec (lua_State *L)
 
 	// create a new program entry
 	prog = (struct lel_program*) malloc (sizeof (struct lel_program) 
-			+ LEL_PROGRAM_IO_BUF_SIZE);
+			// we allocate the buffer and room for a terminator at the end
+			+ LEL_PROGRAM_IO_BUF_SIZE + 1);
 	if (!prog)
 		return lel_pusherror (L, "failed to allocate program structure");
 
@@ -309,51 +310,123 @@ int l_eventloop_run_loop (lua_State *L)
 	return 0;
 }
 
-static int loop_handle_event (lua_State *L, struct lel_program *prog)
+/* ------------------------------------------------------------------------
+ * read more data and call callbacks
+ */
+
+static void prog_read_more (lua_State *L, struct lel_program *prog)
 {
-	int top, rc, err;
+	int rc;
+	char *buf;
+	ssize_t len;
+
+	if (!prog->buf_len) {
+		// reset pos to beginning
+		prog->buf_pos = 0;
+	}
+
+	buf = prog->buf + prog->buf_pos;
+	len = LEL_PROGRAM_IO_BUF_SIZE - prog->buf_pos - prog->buf_len;
+
+	if (len<=0) {
+		// reached the end
+		if (! prog->buf_pos) {
+			// cannot shift data down
+			prog->read_rc = -1;
+			prog->read_errno = EBUSY;
+			return;
+		}
+
+		// shift data down to make some more room
+		memmove (prog->buf, buf, prog->buf_len);
+		prog->buf_pos = 0;
+		buf = prog->buf;
+	}
+
+	// get some data
+	rc = read (prog->fd, buf, len);
+
+	prog->read_rc = rc;
+	prog->read_errno = errno;
+
+	if (rc>0) {
+		prog->buf_len = rc;
+		buf[rc] = 0;
+	}
+
+}
+
+static void lua_issue_callback (lua_State *L, struct lel_program *prog,
+		char *string)
+{
+	int top;
 
 	// backup top of stack
 	top = lua_gettop (L);
-
-fprintf (stderr, "\n------------------------\nread %d (fd=%d)\n", prog->pid, prog->fd);
-
-	// get some data
-	rc = read (prog->fd, prog->buf, LEL_PROGRAM_IO_BUF_SIZE);
-	err = errno;
 
 	// find the call back function
 	luaL_getmetatable (L, L_EVENTLOOP_MT);	// [-2] = get the table
 	lua_pushinteger (L, prog->fd);		// [-1] = the key
 	lua_gettable (L, -2);			// push (eventloop[fd])
 
-	// issue callback
-	if (rc > 0) {
-prog->buf[rc] = 0;
-fprintf (stderr, "---[[%s]]---\n", prog->buf);
-
+	if (string) {
 		// success
-		lua_pushstring (L, prog->buf);
+		lua_pushstring (L, string);
 		lua_call (L, 1, 0);
 
-	} else {
-		// no more data
+	} else if (prog->read_rc == 0) {
+		// stream ended
 		lua_pushnil (L);
-		if (rc == 0) {
-			// stream ended
-			lua_pushstring (L, "EOF");
-		} else {
-			// error
-			lua_pushstring (L, strerror(err));
-		}
+		lua_pushstring (L, "EOF");
+		lua_call (L, 2, 0);
+
+	} else if (prog->read_rc < 0) {
+		// error reading
+		lua_pushnil (L);
+		lua_pushstring (L, strerror(prog->read_errno));
 		lua_call (L, 2, 0);
 	}
 
 	// restore top of stack
 	lua_settop (L, top);
+}
 
-fprintf (stderr, "...read %d\n", rc);
+static int loop_handle_event (lua_State *L, struct lel_program *prog)
+{
+	char *s, *e, *cr;
 
-	return rc;
+	prog_read_more (L, prog);
+
+	while (prog->buf_len) {
+		// as long as we have some data we try to find a full line 
+		s = prog->buf + prog->buf_pos;
+		e = s + prog->buf_len;
+
+		cr = strchr (s, '\n');
+		if (cr) {
+			// we have a match: s..cr is our substring
+			int len = (cr-s) + 1;
+			*cr = 0;
+
+			lua_issue_callback (L, prog, s);
+
+			prog->buf_pos += len;
+			prog->buf_len -= len;
+
+		} else if (!prog->buf_pos) {
+			// no match and we cannot even read more out of 
+			// the buffer; we have to return the partial buffer
+			lua_issue_callback (L, prog, s);
+
+			prog->buf_len = 0;
+
+		} else {
+			// no match, we will try to read more on next select()
+			// read event
+			break;
+		}
+	}
+
+	return prog->read_rc;
 }
 
