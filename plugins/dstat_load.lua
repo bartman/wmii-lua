@@ -13,5 +13,7 @@ module("dstat_load")
 widget = wmii.widget:new ("800_dstat_load")
 wmii.add_exec ("dstat --load --nocolor --noheaders --noupdate 1",
                 function (line)
-                        widget:show (line)
+                        if line and line:len() then
+                                widget:show (line)
+                        end
                 end)
