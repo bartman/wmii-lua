@@ -29,10 +29,10 @@ else
 	if test -f ~/.wmii-3.5/wmiirc ; then \
 		cp wmiirc.lua ~/.wmii-3.5/wmiirc.dist ; \
 		chmod +x ~/.wmii-3.5/wmiirc.dist ; \
-	else ; \
+	else \
 		cp wmiirc.lua ~/.wmii-3.5/wmiirc ; \
 		chmod +x ~/.wmii-3.5/wmiirc ; \
-	end
+	fi
 	cp plugins/*.lua ~/.wmii-3.5/plugins/
 	${MAKE} -C luaixp install
 	${MAKE} -C luaeventloop install
