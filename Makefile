@@ -6,6 +6,7 @@ luaixp luaeventloop:
 
 clean:
 	-rm -f *~ */*~
+	-rm -f wmii.3lua
 	-${MAKE} -C luaixp clean
 	-${MAKE} -C luaeventloop clean
 
