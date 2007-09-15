@@ -316,6 +316,8 @@ static int loop_handle_event (lua_State *L, struct lel_program *prog)
 	// backup top of stack
 	top = lua_gettop (L);
 
+fprintf (stderr, "\n------------------------\nread %d (fd=%d)\n", prog->pid, prog->fd);
+
 	// get some data
 	rc = read (prog->fd, prog->buf, LEL_PROGRAM_IO_BUF_SIZE);
 	err = errno;
@@ -327,6 +329,9 @@ static int loop_handle_event (lua_State *L, struct lel_program *prog)
 
 	// issue callback
 	if (rc > 0) {
+prog->buf[rc] = 0;
+fprintf (stderr, "---[[%s]]---\n", prog->buf);
+
 		// success
 		lua_pushstring (L, prog->buf);
 		lua_call (L, 1, 0);
@@ -346,6 +351,8 @@ static int loop_handle_event (lua_State *L, struct lel_program *prog)
 
 	// restore top of stack
 	lua_settop (L, top);
+
+fprintf (stderr, "...read %d\n", rc);
 
 	return rc;
 }

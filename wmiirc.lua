@@ -9,8 +9,6 @@
 --
 -- git://www.jukie.net/wmiirc-lua.git/
 
-require "posix"
-
 io.stderr:write ("----------------------------------------------\n")
 
 -- load wmii.lua
@@ -18,9 +16,6 @@ package.path = package.path
                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/core/?.lua"
                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
 require "wmii" 
-
--- stop any other instance of wmiirc
-wmii.write ("/event", "Start wmiirc")
 
 -- This is the base configuration of wmii, it writes to the /ctl file.
 wmii.set_ctl ({

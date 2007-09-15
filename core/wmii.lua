@@ -20,8 +20,8 @@ wmii.lua - WMII event-loop methods in lua
 
     require "wmii"
 
-    -- Write something to the wmii filesystem, in this case a start message.
-    wmii.write ("/event", "Start wmiirc")
+    -- Write something to the wmii filesystem, in this case a key event.
+    wmii.write ("/event", "Key Mod1-j")
 
     -- Set your wmii /ctl parameters
     wmii.set_ctl({
@@ -59,8 +59,9 @@ package.path = package.path
 package.cpath = package.cpath
                 .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/core/?.so"
                 .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so"
-require "ixp"
-local ixp = ixp
+
+local ixp =require "ixp"
+local eventloop = require "eventloop"
 
 local base = _G
 local io = require("io")
@@ -79,11 +80,15 @@ local setmetatable = setmetatable
 
 module("wmii")
 
+-- get the process id
+local mypid = posix.getprocessid("pid")
+
 -- ========================================================================
 -- MODULE VARIABLES
 -- ========================================================================
 
 -- wmiir points to the wmiir executable
+-- TODO: need to make sure that wmiir is in path, and if not find it
 local wmiir = "wmiir"
 
 -- wmii_adr is the address we use when connecting using ixp
@@ -193,34 +198,6 @@ end
 --     end
 function iread (file)
         return wmixp:iread(file)
-end
-
--- ------------------------------------------------------------------------
--- returns an events iterator
-function ievents ()
-        local it = iread("/event")
-        local next_timers_on = 0
-
-        return function ()
-                local seconds = time_before_next_timer_event()
-                if seconds == 0 then
-                        seconds = process_timers()
-                end
-                local line = it(
-                        -- iterator gets told how long it can wait for the
-                        -- next line to come from the other side
-                        seconds,
-                        -- this function is executed in case of timeout
-                        function ()
-                                os.execute(wmiir .. " xwrite "
-                                        .. "/event ProcessTimerEvents")
-                                return time_before_next_timer_event()
-                        end
-                )
-                local a,b = string.match(line, "(%S+)%s+(.+)") 
-                if a then return a,b end
-                return line
-        end
 end
 
 -- ------------------------------------------------------------------------
@@ -693,7 +670,7 @@ end
 
 local ev_handlers = {
         ["*"] = function (ev, arg)
-                log ("ev: " .. ev .. " - " .. arg)
+                log ("ev: " .. tostring(ev) .. " - " .. tostring(arg))
         end,
 
         -- process timer events
@@ -703,8 +680,20 @@ local ev_handlers = {
 
         -- exit if another wmiirc started up
         Start = function (ev, arg)
-                if arg == "wmiirc" then
-                        os.exit (0)
+                if arg then
+                        if arg == "wmiirc" then
+                                -- backwards compatibility with bash version
+                                os.exit (0)
+                        else
+                                -- ignore if it came from us
+                                local pid = string.match(arg, "wmiirc (%d+)")
+                                if pid then
+                                        local pid = tonumber (pid)
+                                        if not (pid == mypid) then
+                                                os.exit (0)
+                                        end
+                                end
+                        end
                 end
         end,
 
@@ -865,9 +854,39 @@ function get_conf (name)
         return config[name]
 end
 
+-- ========================================================================
+-- THE EVENT LOOP
+-- ========================================================================
+
+-- the event loop instance
+local el = eventloop.new()
+
+-- add the core event handler for events
+el:add_exec (wmiir .. " read /event",
+        function (line)
+                local line = line or "nil"
+                local line = line:gsub("\n$","")
+                log ("*** event: "..line)
+
+                -- try to split off the argument(s)
+                local ev,arg = string.match(line, "(%S+)%s+(.+)")
+                if not ev then
+                        ev = line
+                end
+
+                -- now locate the handler function and call it
+                local fn = ev_handlers[ev] or ev_handlers["*"]
+                if fn then
+                        fn (ev, arg)
+                end
+        end)
+
 -- ------------------------------------------------------------------------
 -- run the event loop and process events, this function does not exit
 function run_event_loop ()
+        -- stop any other instance of wmiirc
+        wmixp:write ("/event", "Start wmiirc " .. tostring(mypid))
+
         log("wmii: updating lbar")
 
         update_displayed_tags ()
@@ -877,15 +896,10 @@ function run_event_loop ()
         update_active_keys ()
 
         log("wmii: starting event loop")
-        local ev, arg
-        for ev, arg in ievents() do
-
-                local fn = ev_handlers[ev] or ev_handlers["*"]
-                if fn then
-                        fn (ev, arg)
-                end
+        while true do
+                local sleep_for = process_timers()
+                el:run_loop(sleep_for)
         end
-        log("wmii: event loop exited")
 end
 
 -- ========================================================================
