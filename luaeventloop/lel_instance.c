@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -189,20 +191,31 @@ int l_eventloop_add_exec (lua_State *L)
  *    fd - return from add_exec()
  */
 
+static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd);
+
 int l_eventloop_kill_exec (lua_State *L)
 {
 	struct lel_eventloop *el;
-	struct lel_program *prog;
-	int fd, status;
+	int fd;
 
 	el = lel_checkeventloop (L, 1);
 	fd = luaL_checknumber (L, 2);
 
 	DBGF("** eventloop:kill_exec (%d) **\n", fd);
 
+	kill_exec (L, el, fd);
+
+	return 0;
+}
+
+static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd)
+{
+	struct lel_program *prog;
+	int status;
+
 	prog = progs_remove (el, fd);
 	if (! prog)
-		return 0;
+		return;
 
 	if (el->max_fd == prog->fd) {
 		if (el->progs_count)
@@ -230,8 +243,6 @@ int l_eventloop_kill_exec (lua_State *L)
 
 	// cleanup
 	lua_gc (L, LUA_GCSTEP, 10);
-	
-	return 0;
 }
 
 /* ------------------------------------------------------------------------
@@ -252,19 +263,19 @@ int l_eventloop_run_loop (lua_State *L)
 
 	DBGF("** eventloop:run_loop (%d) **\n", timeout);
 
-	// init for select
-
-	rfds = el->all_fds;
+	// init for timeout
 	tv.tv_sec = timeout;
 	tv.tv_usec = 0;
 
 	// run the loop
-
 	for (;;) {
 		int i, status, rc;
 
 		// catchup on programs that quit
 		while (waitpid (-1, &status, WNOHANG) > 0);
+
+		// init for select
+		rfds = el->all_fds;
 
 		// wait for the next event
 		rc = select (el->max_fd+1, &rfds, NULL, &xfds, &tv);
@@ -272,30 +283,27 @@ int l_eventloop_run_loop (lua_State *L)
 			return lel_pusherror (L, "select failed");
 
 		if (!rc)
-			continue;
+			// timeout
+			break;
 
-		for (i=0; i < el->progs_count; i++) {
+		for (i=(el->progs_count-1); i>=0; i--) {
 			struct lel_program *prog;
+			bool dead = false;
 
 			prog = el->progs[i];
 
-
-#if 1		// TODO hack hack hack
-			if (FD_ISSET (prog->fd, &xfds)) {
-				fprintf (stderr, "XXX: exception\n");
-				exit(1);
-			}
-#endif
-
 			if (FD_ISSET (prog->fd, &rfds)) {
-				(void)loop_handle_event (L, prog);
+				rc = loop_handle_event (L, prog);
+				if (rc<=0)
+					dead = true;
+			}
+
+			if (dead || FD_ISSET (prog->fd, &xfds)) {
+				DBGF("** killing %d (fd=%d) **\n",
+						prog->pid, prog->fd);
+				kill_exec(L, el, prog->fd);
 			}
 		}
-
-		// get ready for next run...
-		rfds = el->all_fds;
-		tv.tv_sec = timeout;
-		tv.tv_usec = 0;
 	}
 	
 	return 0;
