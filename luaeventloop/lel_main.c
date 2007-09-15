@@ -68,6 +68,8 @@ static const luaL_reg instance_table[] =
 
 	{ "run_loop",		l_eventloop_run_loop },
 
+	{ "kill_all",		l_eventloop_kill_all },
+
 	{ NULL,			NULL },
 };
 

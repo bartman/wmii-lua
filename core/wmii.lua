@@ -75,6 +75,7 @@ local math = require("math")
 local type = type
 local error = error
 local print = print
+local pcall = pcall
 local pairs = pairs
 local tostring = tostring
 local tonumber = tonumber
@@ -446,10 +447,12 @@ local action_handlers = {
 
         exec = function (act, args)
                 local what = args or wmiirc
+                cleanup()
                 write ("/ctl", "exec " .. what)
         end,
 
         wmiirc = function ()
+                cleanup()
                 posix.exec ("lua", wmiirc)
         end,
 
@@ -704,6 +707,7 @@ local ev_handlers = {
                 if arg then
                         if arg == "wmiirc" then
                                 -- backwards compatibility with bash version
+                                cleanup()
                                 os.exit (0)
                         else
                                 -- ignore if it came from us
@@ -711,6 +715,7 @@ local ev_handlers = {
                                 if pid then
                                         local pid = tonumber (pid)
                                         if not (pid == mypid) then
+                                                cleanup()
                                                 os.exit (0)
                                         end
                                 end
@@ -1163,6 +1168,18 @@ function process_timers ()
         return sleep_for
 end
 
+-- ------------------------------------------------------------------------
+-- cleanup everything in preparation for exit() or exec()
+function cleanup ()
+        -- disable all event sources
+        pcall(eventloop.kill_all,el)
+
+        -- dispose of all widgets
+        local i,v
+        for i,v in pairs(widgets) do
+                pcall(widget.delete,v)
+        end
+end
 
 -- ========================================================================
 -- DOCUMENTATION
