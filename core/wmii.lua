@@ -197,9 +197,13 @@ end
 -- return an iterator which walks all the lines in the file
 --
 -- example:
---     for event in wmii.iread("/event")
+--     for event in wmii.iread("/ctl")
 --         ...
 --     end
+--
+-- NOTE: don't use iread for files that could block, as this will interfere
+-- with timer processing and event delivery.  Instead fork off a process to
+-- execute wmiir and read back the responses via callback.
 function iread (file)
         return wmixp:iread(file)
 end
