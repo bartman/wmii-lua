@@ -910,6 +910,10 @@ function run_event_loop ()
 
         update_displayed_tags ()
 
+        log("wmii: updating rbar")
+
+        update_displayed_widgets ()
+
         log("wmii: updating active keys")
 
         update_active_keys ()
@@ -928,6 +932,7 @@ end
 -- ------------------------------------------------------------------------
 -- widget template
 widget = {}
+widgets = {}
 
 -- ------------------------------------------------------------------------
 -- create a widget object and add it to the wmii /rbar
@@ -951,6 +956,8 @@ function widget:new (name, fn)
         self.__index = self
         self.__gc = function (o) o:hide() end
 
+        widgets[name] = o
+
         o:show()
         return o
 end
@@ -958,8 +965,8 @@ end
 -- ------------------------------------------------------------------------
 -- stop and destroy the timer
 function widget:delete ()
+        widgets[self.name] = nil
         self:hide()
-        -- TBD
 end
 
 -- ------------------------------------------------------------------------
@@ -981,6 +988,33 @@ function widget:hide ()
         if self.txt then
                 remove ("/lbar/" .. self.name)
                 self.txt = nil
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- remove all /rbar entries that we don't have widget objects for
+function update_displayed_widgets ()
+        -- colours for /rbar
+        local nc = get_ctl("normcolors") or ""
+
+        -- build up a table of existing tags in the /lbar
+        local old = {}
+        local s
+        for s in wmixp:idir ("/rbar") do
+                old[s.name] = 1
+        end
+
+        -- for all actual widgets in use we want to remove them from the old list
+        local i,v
+        for i,v in pairs(widgets) do
+                old[v.name] = nil
+        end
+
+        -- anything left in the old table should be removed now
+        for i,v in pairs(old) do
+                if v then
+                        remove("/rbar/"..i)
+                end
         end
 end
 
