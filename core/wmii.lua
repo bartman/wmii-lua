@@ -54,6 +54,8 @@ It should be used by your wmiirc
 -- MODULE SETUP
 -- ========================================================================
 
+local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"
+
 package.path = package.path
                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
 package.cpath = package.cpath
