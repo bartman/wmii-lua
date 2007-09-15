@@ -7,7 +7,9 @@
 -- wmiirc-config.  For now I just want to get the feel of how things will 
 -- work in lua.
 --
+-- http://www.jukie.net/~bart/blog/tag/wmiirc-lua
 -- git://www.jukie.net/wmiirc-lua.git/
+--
 
 io.stderr:write ("----------------------------------------------\n")
 

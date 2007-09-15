@@ -315,9 +315,7 @@ int l_eventloop_run_loop (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * runs the select loop over all registered execs with timeout
- *
- * lua: el.run_loop (timeout)
+ * terminates all executables
  */
 int l_eventloop_kill_all (lua_State *L)
 {

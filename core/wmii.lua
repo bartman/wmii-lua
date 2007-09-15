@@ -3,6 +3,7 @@
 --
 -- WMII event loop, in lua
 --
+-- http://www.jukie.net/~bart/blog/tag/wmiirc-lua
 -- git://www.jukie.net/wmiirc-lua.git/
 --
 
@@ -1177,19 +1178,19 @@ function cleanup ()
 
         local i,tmr
         for i,tmr in pairs (timers) do
-                pcall (timer.delete, tmr)
+                pcall (tmr.delete, tmr)
         end
 
         log ("wmii: terminating eventloop")
 
-        pcall(eventloop.kill_all,el)
+        pcall(el.kill_all,el)
 
         log ("wmii: disposing of widgets")
 
         -- dispose of all widgets
         local i,v
         for i,v in pairs(widgets) do
-                pcall(widget.delete,v)
+                pcall(v.delete,v)
         end
 
         log ("wmii: dormant")
