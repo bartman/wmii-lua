@@ -30,5 +30,5 @@ clean:
 	-rm -f *.o *.so *~
 
 install: ${TARGET}
-	mkdir -p ~/.wmii-3.5/ixp/
-	cp ${TARGET} ~/.wmii-3.5/ixp/
+	mkdir -p ~/.wmii-3.5/core/
+	cp ${TARGET} ~/.wmii-3.5/core/
