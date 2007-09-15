@@ -977,13 +977,19 @@ end
 
 -- ------------------------------------------------------------------------
 -- displays or updates the widget text
-function widget:show (txt)
+--
+-- examples:
+--   w:show("foo")
+--   w:show("foo", "#888888 #222222 #333333")
+--   w:show("foo", cell_fg .. " " .. cell_bg .. " " .. border)
+--
+function widget:show (txt, colors)
         local txt = txt or ""
-        local color = get_ctl("normcolors") or ""
+        local colors = colors or get_ctl("normcolors") or ""
         if not self.txt then
-                create ("/rbar/" .. self.name, color .. " " .. txt)
+                create ("/rbar/" .. self.name, colors .. " " .. txt)
         else
-                write ("/rbar/" .. self.name, color .. " " .. txt)
+                write ("/rbar/" .. self.name, txt)
         end
         self.txt = txt
 end
