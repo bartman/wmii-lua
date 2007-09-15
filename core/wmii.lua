@@ -1225,6 +1225,21 @@ function widget:hide ()
         end
 end
 
+--[[
+=pod
+
+=item widget:add_event_handler (ev, fn)
+
+Add an event handler callback for this widget, using I<fn> for event I<ev>
+
+=cut
+--]]
+
+function widget:add_event_handler (ev, fn)
+	add_widget_event_handler( self.name, ev, fn) 
+end
+
+
 -- ------------------------------------------------------------------------
 -- remove all /rbar entries that we don't have widget objects for
 function update_displayed_widgets ()

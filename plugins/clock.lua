@@ -19,36 +19,30 @@ wmii.set_conf ("clock.format", "%Y/%m/%d %H:%M:%S")
 -- ------------------------------------------------------------
 -- MODULE VARIABLES
 
-local widet = nil       -- the display on the bar
+local widget = nil       -- the display on the bar
 local timer = nil       -- the 1/second tick timer
 
 -- ------------------------------------------------------------
 -- THE TIMER WIDGET
---
--- First, we create a function to handle the Left|Middle|Right 
--- events.
 --
 -- Note that widgets are sorted in ascending order from left to
 -- right on wmii's bar.  By convention this is a 3 digit number
 -- and is prefixed to the widget name. There is currently no 
 -- way to reorder a widget, but it is planed for a future release.
 --
+widget = wmii.widget:new ("999_clock")
 
-local function clock_event_handler (ev)
-        if ev == "LeftBarClick" then
-                -- something
-        elseif ev == "MiddleBarClick" then
-                -- something else
-        elseif ev == "RightBarClick" then
-                -- and now something completely different
-                timer:delete()
-                timer = nil
-                widget:delete()
-                widget = nil
-        end
+local xmessagebox = "xmessage -center -buttons quit:0 -default quit -file -"
+local function button_handler (ev, button)
+	-- 3 is right button
+	if button == 3 then
+		os.execute("ncal -y | wmiisetsid " .. xmessagebox .. "&")
+	end
 end
 
-widget = wmii.widget:new ("999_clock", clock_event_handler)
+widget:add_event_handler("RightBarClick", button_handler)
+
+
 
 -- ------------------------------------------------------------
 -- THE TIMER FUNCTION
