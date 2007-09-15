@@ -35,6 +35,7 @@ else
 	end
 	cp plugins/*.lua ~/.wmii-3.5/plugins/
 	${MAKE} -C luaixp install
+	${MAKE} -C luaeventloop install
 	# TODO: install manpage somewhere (~/usr/share/man/man3lua/ ?)
 endif
 
