@@ -890,6 +890,102 @@ local ev_handlers = {
         end
 
 }
+
+local widget_ev_handlers = {
+}
+
+--[[
+=pod
+
+=item _handle_widget_event (ev, arg)
+
+Top-level event handler for redispatching events to widgets.  This event
+handler is added for any widget event that currently has a widget registered
+for it.
+
+Valid widget events are currently
+
+	RightBarMouseDown <buttonnumber> <widgetname>
+	RightBarClick <buttonnumber> <widgetname>
+
+the "Click" event is sent on mouseup.
+
+The callbacks are given only the button number as their argument, to avoid the
+need to reparse.
+
+=cut
+--]]
+
+function _handle_widget_event (ev, arg)
+	-- parse arg to strip out our widget name
+	local number,wname = string.match(arg, "(%d+)%s+(.+)")
+
+	-- check our dispatch table for that widget
+	if not wname then
+		return
+	end
+
+	local wtable = widget_ev_handlers[wname]
+	if not wtable then
+		return
+	end
+
+	local fn = wtable[ev] or wtable["*"]
+	if fn then
+		fn (ev, tonumber(number))
+	end
+end
+
+--[[
+=pod
+
+=item add_widget_event_handler (wname, ev, fn)
+
+Add an event handler callback for the I<ev> event on the widget named I<wname>
+
+=cut
+--]]
+--
+function add_widget_event_handler (wname, ev, fn)
+	if type(wname) ~= "string" or type(ev) ~= "string" or type(fn) ~= "function" then
+		error ("expecting string for widget name, string for event name and a function callback")
+	end
+
+	-- Make sure the widget event handler is present
+	if not ev_handlers[ev] then
+		ev_handlers[ev] = _handle_widget_event
+	end
+
+	if not widget_ev_handlers[wname] then
+		widget_ev_handlers[wname] = { }
+	end
+
+	if widget_ev_handlers[wname][ev] then
+		-- TODO: we may wish to allow multiple handlers for one event
+		error ("event handler already exists on widget '" .. wname .. "' for '" .. ev .. "'")
+	end
+
+	widget_ev_handlers[wname][ev] = fn
+end
+
+--[[
+=pod
+
+=item remove_widget_event_handler (wname, ev)
+
+Remove an event handler callback function for the I<ev> on the widget named I<wname>.
+
+=cut
+--]]
+function remove_event_handler (wname, ev)
+
+	if not widget_ev_handlers[wname] then
+		return
+	end
+
+	widget_ev_handlers[wname][ev] = nil
+end
+
 --[[
 =pod
 
