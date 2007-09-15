@@ -5,7 +5,7 @@ luaixp luaeventloop:
 	${MAKE} -C $@
 
 clean:
-	-rm *~
+	-rm *~ */*~
 	-${MAKE} -C luaixp clean
 	-${MAKE} -C luaeventloop clean
 
