@@ -473,6 +473,42 @@ local action_handlers = {
         end
 }
 
+--[[
+=pod
+
+=item add_action_handler (action, fn)
+
+Add an Alt-a action handler callback function, I<fn>, for the given action string I<action>.
+
+=cut
+--]]
+function add_action_handler (action, fn)
+
+	if type(action) ~= "string" or type(fn) ~= "function" then
+		error ("expecting a string and a function")
+	end
+
+	if action_handlers[action] then
+		error ("action handler already exists for '" .. action .. "'")
+	end
+
+	action_handlers[action] = fn
+end
+
+--[[
+=pod
+
+=item remove_action_handler (action)
+
+Remove an action handler callback function for the given action string I<action>.
+
+=cut
+--]]
+function remove_action_handler (action)
+
+	action_handlers[action] = nil
+end
+
 -- ========================================================================
 -- KEY HANDLERS
 -- ========================================================================
@@ -628,6 +664,43 @@ local key_handlers = {
 		write("/tag/sel/ctl", "colmode sel max")
         end
 }
+
+--[[
+=pod
+
+=item add_key_handler (key, fn)
+
+Add a keypress handler callback function, I<fn>, for the given key sequence I<key>.
+
+=cut
+--]]
+function add_key_handler (key, fn)
+
+	if type(key) ~= "string" or type(fn) ~= "function" then
+		error ("expecting a string and a function")
+	end
+
+	if key_handlers[key] then
+		-- TODO: we may wish to allow multiple handlers for one keypress
+		error ("key handler already exists for '" .. key .. "'")
+	end
+
+	key_handlers[key] = fn
+end
+
+--[[
+=pod
+
+=item remove_key_handler (key)
+
+Remove an key handler callback function for the given key I<key>.
+
+=cut
+--]]
+function remove_key_handler (key)
+
+	key_handlers[key] = nil
+end
 
 -- ------------------------------------------------------------------------
 -- update the /keys wmii file with the list of all handlers
@@ -817,6 +890,44 @@ local ev_handlers = {
         end
 
 }
+--[[
+=pod
+
+=item add_event_handler (ev, fn)
+
+Add an event handler callback function, I<fn>, for the given event I<ev>.
+
+=cut
+--]]
+-- TODO: Need to allow registering widgets for RightBar* events.  Should probably be done with its own event table, though
+function add_event_handler (ev, fn)
+	if type(ev) ~= "string" or type(fn) ~= "function" then
+		error ("expecting a string and a function")
+	end
+
+	if ev_handlers[ev] then
+		-- TODO: we may wish to allow multiple handlers for one event
+		error ("event handler already exists for '" .. ev .. "'")
+	end
+
+
+	ev_handlers[ev] = fn
+end
+
+--[[
+=pod
+
+=item remove_event_handler (ev)
+
+Remove an event handler callback function for the given event I<ev>.
+
+=cut
+--]]
+function remove_event_handler (ev)
+
+	ev_handlers[ev] = nil
+end
+
 
 -- ========================================================================
 -- MAIN INTERFACE FUNCTIONS
