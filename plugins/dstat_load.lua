@@ -7,13 +7,19 @@
 --
 local wmii = require("wmii")
 local os = require("os")
+local type = type
 
 module("dstat_load")
 
 widget = wmii.widget:new ("800_dstat_load")
-wmii.add_exec ("dstat --load --nocolor --noheaders --noupdate 1",
+wmii.add_exec ("TERM=vt100 dstat --load --nocolor --noheaders --noupdate 1",
                 function (line)
-                        if line and line:len() then
+                        if not (type(line) == "string") then
+                                return
+                        end
+
+                        local line = line:gsub ("%W%W+", " ")
+                        if line:len() > 3 then
                                 widget:show (line)
                         end
                 end)
