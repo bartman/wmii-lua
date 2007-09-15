@@ -28,15 +28,15 @@ else
 	mkdir -p ~/.wmii-3.5/core/ ~/.wmii-3.5/plugins/
 	@if test -f ~/.wmii-3.5/wmiirc ; then \
 		echo "NOTE: you might want to look at ~/.wmii-3.5/wmiirc.dist" ; \
-		cp wmiirc.lua ~/.wmii-3.5/wmiirc.dist ; \
+		install -b wmiirc.lua ~/.wmii-3.5/wmiirc.dist ; \
 		chmod +x ~/.wmii-3.5/wmiirc.dist ; \
 	else \
 		echo "Installing new ~/.wmii-3.5/wmiirc" ; \
-		cp wmiirc.lua ~/.wmii-3.5/wmiirc ; \
+		install -b wmiirc.lua ~/.wmii-3.5/wmiirc ; \
 		chmod +x ~/.wmii-3.5/wmiirc ; \
 	fi
-	cp core/*.lua ~/.wmii-3.5/core/
-	cp plugins/*.lua ~/.wmii-3.5/plugins/
+	install -b -t ~/.wmii-3.5/core/ core/*.lua
+	install -b -t ~/.wmii-3.5/plugins/ plugins/*.lua
 	${MAKE} -C luaixp install
 	${MAKE} -C luaeventloop install
 	# TODO: install manpage somewhere (~/usr/share/man/man3lua/ ?)
