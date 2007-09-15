@@ -2,7 +2,6 @@ If you have any suggests I am happy to add them to the list.
 
 for 0.2 release
     - core
-        - execute all handlers in pcall() to catch exceptions
         - add plugin api version check ... see doc/plugin-api
         - install the wmii.3lua man page in ~/.wmii-3.5
         - 'man' action that will launch an xterm displaying wmii.3lua page

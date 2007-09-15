@@ -545,7 +545,7 @@ local key_handlers = {
                         if act then
                                 local fn = action_handlers[act]
                                 if fn then
-                                        fn (act,args)
+                                        pcall (fn, act,args)
                                 end
                         end
                 end
@@ -850,7 +850,7 @@ local ev_handlers = {
                         end
                 end
                 if fn then
-                        fn (arg, num)
+                        pcall (fn, arg, num)
                 end
         end,
 
@@ -1017,7 +1017,7 @@ el:add_exec (wmiir .. " read /event",
                 -- now locate the handler function and call it
                 local fn = ev_handlers[ev] or ev_handlers["*"]
                 if fn then
-                        fn (ev, arg)
+                        pcall (fn, ev, arg)
                 end
         end)
 
@@ -1281,8 +1281,8 @@ function process_timers ()
 
         for i,tmr in pairs (torun) do
                 tmr:stop()
-                local new_interval = tmr:fn()
-                if not (new_interval == -1) then
+                local new_interval = pcall (tmr.fn, tmr)
+                if new_interval ~= -1 then
                         tmr:resched(rc)
                 end
         end
