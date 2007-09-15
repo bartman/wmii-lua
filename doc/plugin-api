@@ -1,0 +1,52 @@
+This file documents what you can in the plugins/*.lua files.
+
+About
+
+... TODO: quick blurb about the plugin api.
+
+Version Check
+
+  The API will be versioned with a X.Y version that is not at all tied to the 
+  version of the wmiirc-lua release.  The meaning of the version
+  components is as follows:
+
+  - X, the API major version number, distinguishes incompatible versions.
+  - Y, the API minor version number, identifies minor improvement.
+
+  When the API is changed such that it adds functionality without causing 
+  compatibility issues with existing scripts, then the Y is incremented.
+
+  When the API components are modified in a non compatible way, or
+  functionality is removed/replaced, then Y is reset to ZERO and X is
+  incremented.
+
+  To check what API version your installation is using run:
+
+    $ grep api_version core/*.lua plugins/*.lua
+
+  In order for a plugin to be accepted by the runtime, the following
+  conditions must be met:
+
+  - the X components of the API versions of the plugin and wmiirc-lua
+    must match
+  - the Y component of the plugin's API version must be less than or equal 
+    to the Y component of the wmiirc-lua's API version.
+
+Quick Example
+
+... TODO: a complete example of what can be done with comments
+                // this could just refer to bundled plugins
+
+API Details
+
+... TODO: 
+
+
+
+
+
+
+
+
+
+vim: set ts=8 et sw=8 tw=72

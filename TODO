@@ -1,15 +1,17 @@
 If you have any suggests I am happy to add them to the list.
 
-for 0.1 release
+for 0.2 release
     - core
         - add api to register/unregister actions/keybindings/events
         - execute all handlers in pcall() to catch exceptions
+        - add plugin api version check ... see doc/plugin-api
+        - install the wmii.3lua man page in ~/.wmii-3.5
+        - 'man' action that will launch an xterm displaying wmii.3lua page
 
     - bundled plugins
-        - cpu usage / load / uptime
         - 'browser' and 'google' actions to go to a browser
 
-for 0.2 release
+for 0.3 release
     - core
         - rewrite timer handling using select loop and coroutines 
           and a subprocess to do iread() ... see doc/event-loop
