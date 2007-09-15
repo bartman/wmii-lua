@@ -964,6 +964,19 @@ function widget:hide ()
 end
 
 -- ------------------------------------------------------------------------
+-- create a new program and for each line it generates call the callback function
+-- returns fd which can be passed to kill_exec()
+function add_exec (command, callback)
+        return el:add_exec (command, callback)
+end
+
+-- ------------------------------------------------------------------------
+-- terminates a program spawned off by add_exec()
+function kill_exec (fd)
+        return el:kill_exec (fd)
+end
+
+-- ------------------------------------------------------------------------
 -- timer template
 timer = {}
 local timers = {}
