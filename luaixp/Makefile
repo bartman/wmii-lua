@@ -31,4 +31,4 @@ clean:
 
 install: ${TARGET}
 	mkdir -p ~/.wmii-3.5/core/
-	cp ${TARGET} ~/.wmii-3.5/core/
+	install -b -t ~/.wmii-3.5/core/ ${TARGET}

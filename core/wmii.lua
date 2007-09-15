@@ -351,28 +351,47 @@ function get_view()
 end
 
 -- ------------------------------------------------------------------------
--- changes the current view
---   if the argument is a number it moves to that view at that index
---   if the argument is a string it moves to that view name
+-- changes the current view to the name given
 function set_view(sel)
         local cur = get_view()
         local all = get_tags()
 
-        local view_num = nil
-
-        if #all < 2 then
+        if #all < 2 or sel == cur then
                 -- nothing to do if we have less then 2 tags
                 return
+        end
 
-        elseif type(sel) == "number" then
-
-
-        elseif not (type(sel) == "string") then
-                error ("number or string argument expected")
+        if not (type(sel) == "string") then
+                error ("string argument expected")
         end
 
         -- set new view
         write ("/ctl", "view " .. sel)
+end
+
+-- ------------------------------------------------------------------------
+-- changes the current view to the index given
+function set_view_index(sel)
+        local cur = get_view()
+        local all = get_tags()
+
+        if #all < 2 then
+                -- nothing to do if we have less then 2 tags
+                return
+        end
+
+        local num = tonumber (sel)
+        if not num then
+                error ("number argument expected")
+        end
+
+        local name = all[sel]
+        if not name or name == cur then
+                return
+        end
+
+        -- set new view
+        write ("/ctl", "view " .. name)
 end
 
 -- ------------------------------------------------------------------------
@@ -547,7 +566,7 @@ local key_handlers = {
 
         -- work spaces
         ["Mod4-#"] = function (key, num)
-                set_view (num)
+                set_view_index (num)
         end,
         ["Mod4-Shift-#"] = function (key, num)
                 write ("/client/sel/tags", tostring(num))
