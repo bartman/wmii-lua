@@ -226,46 +226,11 @@ int l_ixp_iread (lua_State *L)
 	return 1;
 }
 
-static lua_State *iread_lua_state = NULL;
-static void iread_catcher (int sig)
-{
-	int rc;
-	lua_State *L = iread_lua_state;
-
-	//if (sig != SIGALRM)
-	//	return;
-
-	/*
-	 * attempt to call back into the lua context using the function that
-	 * is passed into the iterator
-	 */
-	if (L) {
-		int top = lua_gettop (L);
-		int timeout = luaL_optnumber (L, 1, 0);
-		rc = lua_isfunction (L, 2);
-		if (timeout > 0 && rc) {
-			int new_timeout;
-
-			lua_pushvalue (L, 2);
-			lua_call (L, 0, 1);
-
-			new_timeout = luaL_checknumber (L, 3);
-			lua_pop (L, 1);
-			alarm (new_timeout);
-
-			// restore the stack
-			lua_settop (L, top);
-		}
-	}
-}
-
 static int iread_iter (lua_State *L)
 {
 	struct l_ixp_iread_s *ctx;
 	char *s, *e, *cr;
-	int timeout;
 
-	timeout = luaL_optnumber (L, 1, 0);
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
 	DBGF("** ixp.iread - iter **\n");
@@ -279,33 +244,9 @@ static int iread_iter (lua_State *L)
 	}
 
 	if (!ctx->buf_len) {
-		struct sigaction sact, sact2;
 		int rc;
 		ctx->buf_pos = 0;
-
-		if (timeout > 0) {
-			sigemptyset (&sact.sa_mask);
-			sact.sa_flags = SA_RESTART;
-			sact.sa_handler = iread_catcher;
-			iread_lua_state = L;
-
-			sigaction (SIGALRM, &sact, &sact2);
-			alarm (timeout);
-		}
-
 		rc = ixp_read (ctx->fid, ctx->buf, ctx->buf_size);
-
-		if (timeout > 0) {
-			alarm (0);
-			iread_lua_state = NULL;
-			sigaction (SIGALRM, &sact2, NULL);
-		}
-
-		if (rc == EINTR) {
-			lua_pushstring (L, "timeout");
-			return 1;
-		}
-
 		if (rc <= 0) {
 			return 0; // we are done
 		}
