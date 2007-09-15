@@ -22,7 +22,6 @@ static int l_new (lua_State *L)
 	struct lel_eventloop *el;
 
 	DBGF("** eventloop.new () **\n");
-l_stack_dump ("  ", L);
 
 	el = (struct lel_eventloop*)lua_newuserdata(L, sizeof (struct lel_eventloop));
 
@@ -42,7 +41,6 @@ static int l_eventloop_gc (lua_State *L)
 	el = lel_checkeventloop (L, 1);
 
 	DBGF("** eventloop:__gc (%p) **\n", el);
-l_stack_dump ("  ", L);
 
 	return 0;
 }

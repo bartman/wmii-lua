@@ -865,7 +865,6 @@ local el = eventloop.new()
 el:add_exec (wmiir .. " read /event",
         function (line)
                 local line = line or "nil"
-                log ("*** event: "..line)
 
                 -- try to split off the argument(s)
                 local ev,arg = string.match(line, "(%S+)%s+(.+)")
