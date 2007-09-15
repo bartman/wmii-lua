@@ -1,12 +1,25 @@
-.PHONY: all luaixp clean install
-all: luaixp
+.PHONY: all luaixp clean tags install
+all: luaixp luaeventloop
 
-luaixp:
-	${MAKE} -C luaixp
+luaixp luaeventloop:
+	${MAKE} -C $@
 
 clean:
 	-rm *~
 	-${MAKE} -C luaixp clean
+	-${MAKE} -C luaeventloop clean
+
+
+cscope.files::
+	find . -name '*.[ch]' -o -name '*.lua' | grep -v -e CVS -e SCCS > cscope.files
+
+cscope.out: cscope.files
+	-cscope -P`pwd` -b
+
+tags: cscope.out
+	rm -f tags
+	xargs -n 50 ctags -a < cscope.files
+
 
 install:
 ifeq ($(shell pwd),$(wildcard ~/.wmii-3.5))
