@@ -49,4 +49,4 @@ man:
 		--center="WMII Lua Integration" \
 		--section=3lua \
 		--release="wmii 3.6" \
-		wmii.lua wmii.3lua
+		core/wmii.lua wmii.3lua
