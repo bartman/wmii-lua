@@ -35,6 +35,7 @@ else
 		cp wmiirc.lua ~/.wmii-3.5/wmiirc ; \
 		chmod +x ~/.wmii-3.5/wmiirc ; \
 	fi
+	cp core/*.lua ~/.wmii-3.5/plugins/
 	cp plugins/*.lua ~/.wmii-3.5/plugins/
 	${MAKE} -C luaixp install
 	${MAKE} -C luaeventloop install
