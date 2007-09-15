@@ -67,8 +67,8 @@ wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
                       .. "/.*/ -> 1\n")
 
 -- load some plugins
-require "clock"
-require "dstat_load"
+wmii.load_plugin ("clock")
+wmii.load_plugin ("dstat_load")
 
 -- ------------------------------------------------------------------------
 -- configuration is finished, run the event loop

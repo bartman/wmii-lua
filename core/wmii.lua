@@ -1050,6 +1050,17 @@ end
 -- PLUGINS API
 -- ========================================================================
 
+plugins = {}
+
+-- ------------------------------------------------------------------------
+-- plugin loader
+function load_plugin(name)
+        local p = pcall (require, name)
+        if p then
+                plugins[name] = p
+        end
+end
+
 -- ------------------------------------------------------------------------
 -- widget template
 widget = {}
@@ -1295,12 +1306,14 @@ end
 -- cleanup everything in preparation for exit() or exec()
 function cleanup ()
 
+        local i,v,tmr,p
+
         log ("wmii: stopping timer events")
 
-        local i,tmr
         for i,tmr in pairs (timers) do
                 pcall (tmr.delete, tmr)
         end
+        timers = {}
 
         log ("wmii: terminating eventloop")
 
@@ -1309,10 +1322,17 @@ function cleanup ()
         log ("wmii: disposing of widgets")
 
         -- dispose of all widgets
-        local i,v
         for i,v in pairs(widgets) do
                 pcall(v.delete,v)
         end
+        timers = {}
+
+        log ("wmii: releasing plugins")
+
+        for i,p in pairs(plugins) do
+                pcall (p.cleanup, p)
+        end
+        plugins = {}
 
         log ("wmii: dormant")
 end
