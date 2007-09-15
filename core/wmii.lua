@@ -1075,7 +1075,7 @@ function timer:delete ()
         self:stop()
         local i,t
         for i,t in pairs(timers) do
-                if t == timer then
+                if t == self then
                         table.remove (timers,i)
                         return
                 end
@@ -1099,6 +1099,7 @@ function timer:resched (seconds)
         table.sort (timers, timer.is_less_then)
 end
 
+-- helper for sorting timers
 function timer:is_less_then(another)
         if not self.next_time then
                 return false    -- another is smaller, nil means infinity
@@ -1125,10 +1126,10 @@ end
 -- ------------------------------------------------------------------------
 -- figure out how long before the next event
 function time_before_next_timer_event()
-        local timer = timers[1]
-        if timer and timer.next_time then
+        local tmr = timers[1]
+        if tmr and tmr.next_time then
                 local now = tonumber(os.date("%s"))
-                local seconds = timer.next_time - now
+                local seconds = tmr.next_time - now
                 if seconds > 0 then
                         return seconds
                 end
@@ -1141,26 +1142,26 @@ end
 function process_timers ()
         local now = tonumber(os.date("%s"))
         local torun = {}
-        local i,timer
+        local i,tmr
 
-        for i,timer in pairs (timers) do
-                if (not timer) or (not timer.next_time) then
+        for i,tmr in pairs (timers) do
+                if (not tmr) or (not tmr.next_time) then
                         table.remove(timers,i)
                         return 1
                 end
 
-                if timer.next_time > now then
-                        return timer.next_time - now
+                if tmr.next_time > now then
+                        return tmr.next_time - now
                 end
 
-                torun[#torun+1] = timer
+                torun[#torun+1] = tmr
         end
 
-        for i,timer in pairs (torun) do
-                timer:stop()
-                local new_interval = timer:fn()
+        for i,tmr in pairs (torun) do
+                tmr:stop()
+                local new_interval = tmr:fn()
                 if not (new_interval == -1) then
-                        timer:resched(rc)
+                        tmr:resched(rc)
                 end
         end
 
@@ -1171,14 +1172,27 @@ end
 -- ------------------------------------------------------------------------
 -- cleanup everything in preparation for exit() or exec()
 function cleanup ()
-        -- disable all event sources
+
+        log ("wmii: stopping timer events")
+
+        local i,tmr
+        for i,tmr in pairs (timers) do
+                pcall (timer.delete, tmr)
+        end
+
+        log ("wmii: terminating eventloop")
+
         pcall(eventloop.kill_all,el)
+
+        log ("wmii: disposing of widgets")
 
         -- dispose of all widgets
         local i,v
         for i,v in pairs(widgets) do
                 pcall(widget.delete,v)
         end
+
+        log ("wmii: dormant")
 end
 
 -- ========================================================================
