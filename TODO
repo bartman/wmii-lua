@@ -6,11 +6,6 @@ for 0.2 release
             - wmii.setconf("browser", "firefox")
             - 'browser' and 'google' actions to go to a browser
             - cheat and use xclip
-        - 'messages'
-            - reserve 000 prefix for events plugin
-            - should take up all the space between /lbar and rest of /rbar
-            - will handle 'Message' events and display text there
-            - support #color #color #color prefix
 
 for 0.3 release
     - core

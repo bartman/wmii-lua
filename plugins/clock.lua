@@ -31,7 +31,7 @@ local timer = nil       -- the 1/second tick timer
 -- and is prefixed to the widget name. There is currently no 
 -- way to reorder a widget, but it is planed for a future release.
 --
-widget = wmii.widget:new ("999_clock")
+local widget = wmii.widget:new ("999_clock")
 
 local xmessagebox = "xmessage -center -buttons quit:0 -default quit -file -"
 local function button_handler (ev, button)
@@ -61,5 +61,5 @@ local function clock_timer (time_since_update)
         return 1
 end
 
-timer = wmii.timer:new (clock_timer, 1)
+local timer = wmii.timer:new (clock_timer, 1)
 
