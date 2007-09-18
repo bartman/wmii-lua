@@ -7,7 +7,15 @@ for 0.2 release
         - 'man' action that will launch an xterm displaying wmii.3lua page
 
     - bundled plugins
-        - 'browser' and 'google' actions to go to a browser
+        - 'browser'
+            - wmii.setconf("browser", "firefox")
+            - 'browser' and 'google' actions to go to a browser
+            - cheat and use xclip
+        - 'messages'
+            - reserve 000 prefix for events plugin
+            - should take up all the space between /lbar and rest of /rbar
+            - will handle 'Message' events and display text there
+            - support #color #color #color prefix
 
 for 0.3 release
     - core
@@ -16,20 +24,28 @@ for 0.3 release
         - support for "raw mode" like win-space in wmii+ruby
         - add wmii.load_plugin("name") which works harder to locate a
           plugin file
+        - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
+        - action and program history (bring up the last X choices in
+          alt-a and alt-p)
 
     - bundled plugins
         - mpd: controls / volume
         - acpi: battery life / thermal
         - cpufreq: cpu freq / governor
         - whereami: wireless / controls
+        - history: 
+            - Mod1-[oi] to provide window history
+            - Mod4-[oi] to provide workspace history (vim inspired)
 
 future
     - core
-        -
+        - bundle xclipboard functionality (add a core/x11.so)
 
     - bundled plugins
-        - 
-
+        - 'session_manager'
+            - remember where windows are, and restart the "session" as
+              it was before
+            - global and per-view
 
 
 
