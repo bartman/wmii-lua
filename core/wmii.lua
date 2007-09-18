@@ -633,6 +633,26 @@ local key_handlers = {
         ["Mod4-Shift-#"] = function (key, num)
                 write ("/client/sel/tags", tostring(num))
         end,
+        ["Mod4-@"] = function (key, letter)
+                local all = get_tags()
+                local i,v
+                for i,v in pairs(all) do
+                        if letter == v:sub(1,1) then
+                                set_view_index (i)
+                                break
+                        end
+                end
+        end,
+        ["Mod4-Shift-@"] = function (key, letter)
+                local all = get_tags()
+                local i,v
+                for i,v in pairs(all) do
+                        if letter == v:sub(1,1) then
+                                write ("/client/sel/tags", v)
+                                break
+                        end
+                end
+        end,
         ["Mod1-comma"] = function (key)
                 set_view_ofs (-1)
         end,
@@ -722,21 +742,29 @@ end
 
 -- ------------------------------------------------------------------------
 -- update the /keys wmii file with the list of all handlers
+local alphabet="abcdefghijklmnopqrstuvwxyz"
 function update_active_keys ()
         local t = {}
         local x, y
         for x,y in pairs(key_handlers) do
                 if x:find("%w") then
-                        local i = x:find("#")
+                        local i = x:find("#$")
                         if i then
                                 local j
                                 for j=0,9 do
-                                        t[#t + 1] 
-                                                = x:sub(1,i-1) .. j
+                                        t[#t + 1] = x:sub(1,i-1) .. j
                                 end
                         else
-                                t[#t + 1] 
-                                        = tostring(x)
+                                i = x:find("@$")
+                                if i then
+                                        local j
+                                        for j=1,alphabet:len() do
+                                                local a = alphabet:sub(j,j)
+                                                t[#t + 1] = x:sub(1,i-1) .. a
+                                        end
+                                else
+                                        t[#t + 1] = tostring(x)
+                                end
                         end
                 end
         end
@@ -910,23 +938,33 @@ local ev_handlers = {
         -- key event handling
         Key = function (ev, arg)
                 log ("Key: " .. arg)
-                local num = nil
+                local magic = nil
                 -- can we find an exact match?
                 local fn = key_handlers[arg]
                 if not fn then
-                        local key = arg:gsub("-%d+", "-#")
+                        local key = arg:gsub("-%d$", "-#")
                         -- can we find a match with a # wild card for the number
                         fn = key_handlers[key]
                         if fn then
                                 -- convert the trailing number to a number
-                                num = tonumber(arg:match("-(%d+)"))
-                        else
-                                -- everything else failed, try default match
-                                fn = key_handlers["*"]
+                                magic = tonumber(arg:match("-(%d)$"))
                         end
                 end
+                if not fn then
+                        local key = arg:gsub("-%a$", "-@")
+                        -- can we find a match with a @ wild card for a letter
+                        fn = key_handlers[key]
+                        if fn then
+                                -- split off the trailing letter
+                                magic = arg:match("-(%a)$")
+                        end
+                end
+                if not fn then
+                        -- everything else failed, try default match
+                        fn = key_handlers["*"]
+                end
                 if fn then
-                        local r, err = pcall (fn, arg, num)
+                        local r, err = pcall (fn, arg, magic)
                         if not r then
                                 log ("WARNING: " .. tostring(err))
                         end
