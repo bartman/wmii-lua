@@ -560,7 +560,10 @@ local key_handlers = {
                         if act then
                                 local fn = action_handlers[act]
                                 if fn then
-                                        pcall (fn, act, args)
+                                        local r, err = pcall (fn, act, args)
+                                        if not r then
+                                                log ("WARNING: " .. tostring(err))
+                                        end
                                 end
                         end
                 end
@@ -923,7 +926,10 @@ local ev_handlers = {
                         end
                 end
                 if fn then
-                        pcall (fn, arg, num)
+                        local r, err = pcall (fn, arg, num)
+                        if not r then
+                                log ("WARNING: " .. tostring(err))
+                        end
                 end
         end,
 
@@ -1141,7 +1147,10 @@ el:add_exec (wmiir .. " read /event",
                 -- now locate the handler function and call it
                 local fn = ev_handlers[ev] or ev_handlers["*"]
                 if fn then
-                        pcall (fn, ev, arg)
+                        local r, err = pcall (fn, ev, arg)
+                        if not r then
+                                log ("WARNING: " .. tostring(err))
+                        end
                 end
         end)
 
@@ -1262,14 +1271,14 @@ function load_plugin(name)
 
         -- actually load the module, but use only the path where we though it should be
         package.path = path_match
-        local p,e,n = pcall (require, name)
+        local p,err = pcall (require, name)
         package.path = backup_path
         if not p then
                 log ("WARNING: failed to load '" .. name .. "' plugin")
                 log (" - path: " .. tostring(path_match))
                 log (" - file: " .. tostring(full_name))
                 log (" - plugin's api_version: " .. tostring(plugin_version))
-                log (" - reason: " .. tostring(e) .. " (" .. tostring(n) .. ")")
+                log (" - reason: " .. tostring(err))
                 return nil
         end
 
@@ -1327,12 +1336,16 @@ end
 --   w:show("foo", cell_fg .. " " .. cell_bg .. " " .. border)
 --
 function widget:show (txt, colors)
-        local txt = txt or ""
         local colors = colors or get_ctl("normcolors") or ""
+        local txt = txt or self.txt or ""
+        local towrite = txt
+        if colors then
+                towrite = colors .. " " .. towrite
+        end
         if not self.txt then
-                create ("/rbar/" .. self.name, colors .. " " .. txt)
+                create ("/rbar/" .. self.name, towrite)
         else
-                write ("/rbar/" .. self.name, txt)
+                write ("/rbar/" .. self.name, towrite)
         end
         self.txt = txt
 end
@@ -1452,7 +1465,7 @@ end
 function timer:resched (seconds)
         local seconds = seconds or self.interval
         if not (type(seconds) == "number") then
-                error ("expected number as argument")
+                error ("timer:resched expected number as argument")
         end
 
         local now = tonumber(os.date("%s"))
@@ -1510,25 +1523,34 @@ function process_timers ()
         local i,tmr
 
         for i,tmr in pairs (timers) do
-                if (not tmr) or (not tmr.next_time) then
+                if not tmr then
+                        -- prune out removed timers
                         table.remove(timers,i)
-                        return 1
+                        break
+
+                elseif not tmr.next_time then
+                        -- break out once we find a timer that is stopped
+                        break
+
+                elseif tmr.next_time > now then
+                        -- break out once we get to the future
+                        break
                 end
 
-                if tmr.next_time > now then
-                        return tmr.next_time - now
-                end
-
+                -- this one is good to go
                 torun[#torun+1] = tmr
         end
 
         for i,tmr in pairs (torun) do
                 tmr:stop()
-                local success, new_interval = pcall (tmr.fn, tmr)
-		if not success then
-			log("Callback had an error in process_timers: " .. tostring(new_interval) )
-                elseif new_interval ~= -1 then
-                        tmr:resched(rc)
+                local status,new_interval = pcall (tmr.fn, tmr)
+                if status then
+                        new_interval = new_interval or self.interval
+                        if new_interval and (new_interval ~= -1) then
+                                tmr:resched(new_interval)
+                        end
+                else
+                        log ("ERROR: " .. tostring(new_interval))
                 end
         end
 
