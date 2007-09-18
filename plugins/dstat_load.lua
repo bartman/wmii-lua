@@ -10,6 +10,7 @@ local os = require("os")
 local type = type
 
 module("dstat_load")
+api_version=0.1
 
 widget = wmii.widget:new ("800_dstat_load")
 wmii.add_exec ("TERM=vt100 dstat --load --nocolor --noheaders --noupdate 1",

@@ -2,7 +2,6 @@ If you have any suggests I am happy to add them to the list.
 
 for 0.2 release
     - core
-        - make wmii.load_plugin check api version ... see doc/plugin-api
         - install the wmii.3lua man page in ~/.wmii-3.5
         - 'man' action that will launch an xterm displaying wmii.3lua page
 
@@ -40,6 +39,7 @@ for 0.3 release
 future
     - core
         - bundle xclipboard functionality (add a core/x11.so)
+        - make wmii.load_plugin() support multiple api versions
 
     - bundled plugins
         - 'session_manager'

@@ -63,7 +63,7 @@ package.cpath = package.cpath
                 .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/core/?.so"
                 .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so"
 
-local ixp =require "ixp"
+local ixp = require "ixp"
 local eventloop = require "eventloop"
 
 local base = _G
@@ -78,6 +78,8 @@ local error = error
 local print = print
 local pcall = pcall
 local pairs = pairs
+local package = package
+local require = require
 local tostring = tostring
 local tonumber = tonumber
 local setmetatable = setmetatable
@@ -1146,15 +1148,103 @@ end
 -- PLUGINS API
 -- ========================================================================
 
-plugins = {}
+api_version = 0.1       -- the API version we export
+
+plugins = {}            -- all plugins that were loaded
 
 -- ------------------------------------------------------------------------
--- plugin loader
+-- plugin loader which also verifies the version of the api the plugin needs
+--
+-- here is what it does
+--   - does a manual locate on the file using package.path
+--   - reads in the file w/o using the lua interpreter
+--   - locates api_version=X.Y string
+--   - makes sure that api_version requested can be satisfied
+--
+-- TODO: currently the api_version must be in an X.Y format, but we may want 
+-- to expend this so plugins can say they want '0.1 | 1.3 | 2.0' etc
+--
 function load_plugin(name)
-        local p = pcall (require, name)
-        if p then
-                plugins[name] = p
+        local backup_path = package.path or "./?.lua"
+
+        log ("loading " .. name)
+
+        -- this is the version we want to find
+        local api_major, api_minor = tostring(api_version):match("(%d+)%.0*(%d+)")
+        if (not api_major) or (not api_minor) then
+                log ("WARNING: could not parse api_version in core/wmii.lua")
+                return nil
         end
+
+        -- first find the plugin file
+        local s, path_match, full_name, file
+        for s in string.gmatch(package.path, "[^;]+") do
+                local fn = s:gsub("%?", name)
+                file = io.open(fn, "r")
+                if file then
+                        path_match = s
+                        full_name = fn
+                        break
+                end
+        end
+
+        -- read it in
+        local txt
+        if file then
+                txt = file:read("*all")
+                file:close()
+        end
+
+        if not txt then
+                log ("WARNING: could not load plugin '" .. name .. "'")
+                return nil
+        end
+
+        -- find the api_version line
+        local line, plugin_version
+        for line in string.gmatch(txt, "%s*api_version%s*=%s*%d+%.%d+%s*") do
+                plugin_version = line:match("api_version%s*=%s*(%d+%.%d+)%s*")
+                if tmp then
+                        break
+                end
+        end
+
+        -- decompose the version string
+        local plugin_major, plugin_minor = plugin_version:match("(%d+)%.0*(%d+)")
+        if (not plugin_major) or (not plugin_minor) then
+                log ("WARNING: could not parse api_version for '" .. name .. "' plugin")
+                return nil
+        end
+
+        -- make a version test
+        if plugin_major ~= api_major then
+                log ("WARNING: " .. name ..  " plugin major version missmatch, is " .. plugin_version 
+                     .. " (api " .. tonumber(api_version) .. ")")
+                return nil
+        end
+
+        if plugin_minor > api_minor then
+                log ("WARNING: '" .. name ..  "' plugin minor version missmatch, is " .. plugin_version 
+                     .. " (api " .. tonumber(api_version) .. ")")
+                return nil
+        end
+
+        -- actually load the module, but use only the path where we though it should be
+        package.path = path_match
+        local p,e,n = pcall (require, name)
+        package.path = backup_path
+        if not p then
+                log ("WARNING: failed to load '" .. name .. "' plugin")
+                log (" - path: " .. tostring(path_match))
+                log (" - file: " .. tostring(full_name))
+                log (" - plugin's api_version: " .. tostring(plugin_version))
+                log (" - reason: " .. tostring(e) .. " (" .. tostring(n) .. ")")
+                return nil
+        end
+
+        -- success
+        log ("OK, plugin " .. name .. " loaded,  requested api v" .. plugin_version)
+        plugins[name] = p
 end
 
 -- ------------------------------------------------------------------------

@@ -6,7 +6,8 @@
 local wmii = require("wmii")
 local os = require("os")
 
-module("clock")
+module("clock")         -- module name
+api_version=0.1         -- api version, see doc/plugin-api
 
 -- ------------------------------------------------------------
 -- CLOCK CONFIGURATION VARIABLES
