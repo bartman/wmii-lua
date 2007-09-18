@@ -785,10 +785,68 @@ end
 -- EVENT HANDLERS
 -- ========================================================================
 
+local widget_ev_handlers = {
+}
+
+--[[
+=pod
+
+=item _handle_widget_event (ev, arg)
+
+Top-level event handler for redispatching events to widgets.  This event
+handler is added for any widget event that currently has a widget registered
+for it.
+
+Valid widget events are currently
+
+	RightBarMouseDown <buttonnumber> <widgetname>
+	RightBarClick <buttonnumber> <widgetname>
+
+the "Click" event is sent on mouseup.
+
+The callbacks are given only the button number as their argument, to avoid the
+need to reparse.
+
+=cut
+--]]
+
+local function _handle_widget_event (ev, arg)
+
+	log("_handle_widget_event: " .. tostring(ev) .. " - " .. tostring(arg))
+
+	-- parse arg to strip out our widget name
+	local number,wname = string.match(arg, "(%d+)%s+(.+)")
+
+	-- check our dispatch table for that widget
+	if not wname then
+		log("Didn't find wname")
+		return
+	end
+
+	local wtable = widget_ev_handlers[wname]
+	if not wtable then
+		log("No widget cares about" .. wname)
+		return
+	end
+
+	local fn = wtable[ev] or wtable["*"]
+	if fn then
+		log("Found " .. tostring(fn))
+		success, err = pcall( fn, ev, tonumber(number) )
+		if not success then
+			error(err)
+		end
+	else 
+		log("no function found for " .. ev)
+	end
+end
+
 local ev_handlers = {
         ["*"] = function (ev, arg)
                 log ("ev: " .. tostring(ev) .. " - " .. tostring(arg))
         end,
+
+	RightBarClick = _handle_widget_event,
 
         -- process timer events
         ProcessTimerEvents = function (ev, arg)
@@ -905,51 +963,6 @@ local ev_handlers = {
         end
 
 }
-
-local widget_ev_handlers = {
-}
-
---[[
-=pod
-
-=item _handle_widget_event (ev, arg)
-
-Top-level event handler for redispatching events to widgets.  This event
-handler is added for any widget event that currently has a widget registered
-for it.
-
-Valid widget events are currently
-
-	RightBarMouseDown <buttonnumber> <widgetname>
-	RightBarClick <buttonnumber> <widgetname>
-
-the "Click" event is sent on mouseup.
-
-The callbacks are given only the button number as their argument, to avoid the
-need to reparse.
-
-=cut
---]]
-
-function _handle_widget_event (ev, arg)
-	-- parse arg to strip out our widget name
-	local number,wname = string.match(arg, "(%d+)%s+(.+)")
-
-	-- check our dispatch table for that widget
-	if not wname then
-		return
-	end
-
-	local wtable = widget_ev_handlers[wname]
-	if not wtable then
-		return
-	end
-
-	local fn = wtable[ev] or wtable["*"]
-	if fn then
-		fn (ev, tonumber(number))
-	end
-end
 
 --[[
 =pod
