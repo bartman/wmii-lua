@@ -1217,10 +1217,15 @@ function load_plugin(name)
         local line, plugin_version
         for line in string.gmatch(txt, "%s*api_version%s*=%s*%d+%.%d+%s*") do
                 plugin_version = line:match("api_version%s*=%s*(%d+%.%d+)%s*")
-                if tmp then
+                if plugin_version then
                         break
                 end
         end
+
+	if not plugin_version then
+		log ("WARNING: could not find api_version string in plugin '" .. name .. "'")
+		return nil
+	end
 
         -- decompose the version string
         local plugin_major, plugin_minor = plugin_version:match("(%d+)%.0*(%d+)")
