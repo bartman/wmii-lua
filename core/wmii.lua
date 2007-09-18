@@ -55,7 +55,8 @@ It should be used by your wmiirc
 -- MODULE SETUP
 -- ========================================================================
 
-local wmiirc = os.getenv("HOME") .. "/.wmii-3.5/wmiirc"
+local wmiidir = os.getenv("HOME") .. "/.wmii-3.5"
+local wmiirc = wmiidir .. "/wmiirc"
 
 package.path = package.path
                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
@@ -448,6 +449,17 @@ end
 -- ========================================================================
 
 local action_handlers = {
+        man = function (act, args)
+                local xterm = get_conf("xterm") or "xterm"
+                local page = args
+                if (not page) or (not page:match("%S")) then
+                        page = wmiidir .. "/wmii.3lua"
+                end
+                local cmd = xterm .. " -e man " .. page .. " &"
+                log ("    executing: " .. cmd)
+                os.execute (cmd)
+        end,
+
         quit = function ()
                 write ("/ctl", "quit")
         end,
@@ -538,6 +550,7 @@ local key_handlers = {
         ["Mod1-a"] = function (key)
                 local text = menu(action_handlers, "action:")
                 if text then
+                        log ("Action: " .. text)
                         local act = text
                         local args = nil
                         local si = text:find("%s")
@@ -547,7 +560,7 @@ local key_handlers = {
                         if act then
                                 local fn = action_handlers[act]
                                 if fn then
-                                        pcall (fn, act,args)
+                                        pcall (fn, act, args)
                                 end
                         end
                 end
@@ -1528,12 +1541,17 @@ function cleanup ()
         end
         timers = {}
 
+        -- FIXME: it doesn't seem to do what I want
+        --[[ 
         log ("wmii: releasing plugins")
 
         for i,p in pairs(plugins) do
-                pcall (p.cleanup, p)
+                if p.cleanup then
+                        pcall (p.cleanup, p)
+                end
         end
         plugins = {}
+        --]]
 
         log ("wmii: dormant")
 end

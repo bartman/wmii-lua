@@ -1,3 +1,6 @@
+MAN = wmii.3lua
+
+
 .PHONY: all luaixp luaeventloop clean tags install
 all: luaixp luaeventloop
 
@@ -36,18 +39,21 @@ else
 		install -b wmiirc.lua ~/.wmii-3.5/wmiirc ; \
 		chmod +x ~/.wmii-3.5/wmiirc ; \
 	fi
-	install -b -t ~/.wmii-3.5/core/ core/*.lua
-	install -b -t ~/.wmii-3.5/plugins/ plugins/*.lua
+	install -b -m 640 -t ~/.wmii-3.5/core/ core/*.lua
+	install -b -m 640 -t ~/.wmii-3.5/plugins/ plugins/*.lua
+	install -b -m 640 -t ~/.wmii-3.5 ${MAN}
 	${MAKE} -C luaixp install
 	${MAKE} -C luaeventloop install
-	# TODO: install manpage somewhere (~/usr/share/man/man3lua/ ?)
+
+install: ${MAN}
 endif
 
 
-man:
+man: ${MAN}
+${MAN}: core/wmii.lua
 	pod2man \
 		--name=wmii \
 		--center="WMII Lua Integration" \
 		--section=3lua \
 		--release="wmii 3.6" \
-		core/wmii.lua wmii.3lua
+		$< $@
