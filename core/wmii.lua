@@ -831,10 +831,10 @@ local function _handle_widget_event (ev, arg)
 
 	local fn = wtable[ev] or wtable["*"]
 	if fn then
-		log("Found " .. tostring(fn))
 		success, err = pcall( fn, ev, tonumber(number) )
 		if not success then
-			error(err)
+			log("Callback had an error in _handle_widget_event: " .. tostring(err) )
+			return nil
 		end
 	else 
 		log("no function found for " .. ev)
@@ -1524,8 +1524,10 @@ function process_timers ()
 
         for i,tmr in pairs (torun) do
                 tmr:stop()
-                local new_interval = pcall (tmr.fn, tmr)
-                if new_interval ~= -1 then
+                local success, new_interval = pcall (tmr.fn, tmr)
+		if not success then
+			log("Callback had an error in process_timers: " .. tostring(new_interval) )
+                elseif new_interval ~= -1 then
                         tmr:resched(rc)
                 end
         end
