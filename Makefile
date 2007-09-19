@@ -10,6 +10,7 @@ luaixp luaeventloop:
 clean:
 	-rm -f *~ */*~
 	-rm -f wmii.3lua
+	-rm -f cscope.files cscope.out tags
 	-${MAKE} -C luaixp clean
 	-${MAKE} -C luaeventloop clean
 
