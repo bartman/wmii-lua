@@ -71,6 +71,15 @@ wmii.load_plugin ("messages")
 wmii.load_plugin ("clock")
 wmii.load_plugin ("dstat_load")
 
+
+-- here are some other examples...
+--[[
+
+-- use Mod1-tab to flip to the previous view
+wmii.remap_key_handler ("Mod1-r", "Mod1-tab")
+
+--]]
+
 -- ------------------------------------------------------------------------
 -- configuration is finished, run the event loop
 wmii.run_event_loop()

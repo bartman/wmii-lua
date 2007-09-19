@@ -733,12 +733,34 @@ end
 
 Remove an key handler callback function for the given key I<key>.
 
+Returns the handler callback function.
+
 =cut
 --]]
 function remove_key_handler (key)
 
+        local fn = key_handlers[key]
 	key_handlers[key] = nil
+        return fn
 end
+
+--[[
+=pod
+
+=item remap_key_handler (old_key, new_key)
+
+Remove a key handler callback function from the given key I<old_key>,
+and assign it to a new key I<new_key>.
+
+=cut
+--]]
+function remap_key_handler (old_key, new_key)
+
+        local fn = remove_key_handler(old_key)
+
+        return add_key_handler (new_key, fn)
+end
+
 
 -- ------------------------------------------------------------------------
 -- update the /keys wmii file with the list of all handlers

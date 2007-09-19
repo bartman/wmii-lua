@@ -1,8 +1,6 @@
 If you have any suggests I am happy to add them to the list.
 
 for 0.2 release
-    - core
-        - add wmii.rebind_key_handler ("Mod1-x", "Mod1-y")
     - bundled plugins
         - 'browser'
             - wmii.setconf("browser", "firefox")
