@@ -1,11 +1,13 @@
 If you have any suggests I am happy to add them to the list.
 
 for 0.2 release
-    - bundled plugins
-        - 'browser'
-            - wmii.setconf("browser", "firefox")
-            - 'browser' and 'google' actions to go to a browser
-            - cheat and use xclip
+    - core
+        - document supported keyboard commands
+        - document actions
+        - document bundled plugins
+        - contrib/<name>/{README,*} directory structure
+        - version number in the files
+        - 'make release' target
 
 for 0.3 release
     - core

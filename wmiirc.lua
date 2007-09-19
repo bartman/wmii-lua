@@ -70,6 +70,7 @@ wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
 wmii.load_plugin ("messages")
 wmii.load_plugin ("clock")
 wmii.load_plugin ("dstat_load")
+wmii.load_plugin ("browser")
 
 
 -- here are some other examples...
