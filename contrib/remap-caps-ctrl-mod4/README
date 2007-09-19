@@ -1,0 +1,16 @@
+This xmodmaprc script applies to the US layout of the PC104 keyboard.
+
+It remaps keys such that:
+
+        - Caps_Lock generates a Control_L key code
+        - Control_L generates Super_L key code
+
+Super_L generates Mod4 (the Windows key).
+
+This is particularly useful on keyboards, like the one in my Thinkpad
+X41, that don't have a Mod4 (Windows) key, which wmiirc-lua relies on.
+
+To install it, copy the file to ~/.xmodmaprc, and run xmodmaprc from
+~/.xsession.
+
+- Bart Trojanowski <bart@jukie.net>
