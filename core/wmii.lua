@@ -71,7 +71,6 @@ local history = require "history"
 
 local io = require("io")
 local os = require("os")
-local posix = require("posix")
 local string = require("string")
 local table = require("table")
 local math = require("math")
@@ -86,10 +85,21 @@ local tostring = tostring
 local tonumber = tonumber
 local setmetatable = setmetatable
 
+-- kinda silly, but there is no working liblua5.1-posix0 in ubuntu
+-- so we make it optional
+local have_posix, posix = pcall(require,"posix")
+
 module("wmii")
 
 -- get the process id
-local mypid = posix.getprocessid("pid")
+local myid
+if posix then
+        myid = posix.getprocessid("pid")
+else
+        local now = tonumber(os.date("%s"))
+        math.randomseed(now)
+        myid = math.random(10000)
+end
 
 -- ========================================================================
 -- MODULE VARIABLES
@@ -533,11 +543,15 @@ local action_handlers = {
         end,
 
         wmiirc = function ()
-                local wmiirc = find_wmiirc()
-                if wmiirc then
-                        log ("    executing: lua " .. wmiirc)
-                        cleanup()
-                        posix.exec ("lua", wmiirc)
+                if posix then
+                        local wmiirc = find_wmiirc()
+                        if wmiirc then
+                                log ("    executing: lua " .. wmiirc)
+                                cleanup()
+                                posix.exec ("lua", wmiirc)
+                        end
+                else
+                        log("sorry cannot restart; you don't have lua's posix library.")
                 end
         end,
 
@@ -1371,7 +1385,7 @@ el:add_exec (wmiir .. " read /event",
 -- run the event loop and process events, this function does not exit
 function run_event_loop ()
         -- stop any other instance of wmiirc
-        wmixp:write ("/event", "Start wmiirc " .. tostring(mypid))
+        wmixp:write ("/event", "Start wmiirc " .. tostring(myid))
 
         log("wmii: updating lbar")
 
