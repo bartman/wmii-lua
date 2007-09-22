@@ -626,7 +626,7 @@ local key_handlers = {
                 write ("/tag/sel/ctl", "send sel toggle")
         end,
 
-        -- work spaces
+        -- work spaces (# and @ are wildcards for numbers and letters)
         ["Mod4-#"] = function (key, num)
                 set_view_index (num)
         end,
@@ -1148,13 +1148,20 @@ end
 
 -- ------------------------------------------------------------------------
 -- read a value from /ctl wmii file
+--   table = wmii.get_ctl()
+--   value = wmii.get_ctl("variable"
 function get_ctl (name)
         local s
+        local t = {}
         for s in iread("/ctl") do
                 local var,val = s:match("(%w+)%s+(.+)")
                 if var == name then
                         return val
                 end
+                t[var] = val
+        end
+        if not name then
+                return t
         end
         return nil
 end
@@ -1183,7 +1190,10 @@ end
 -- ------------------------------------------------------------------------
 -- read an internal wmiirc.lua variable
 function get_conf (name)
-        return config[name]
+        if name then
+                return config[name]
+        end
+        return config
 end
 
 -- ========================================================================
@@ -1255,11 +1265,13 @@ plugins = {}            -- all plugins that were loaded
 --   - reads in the file w/o using the lua interpreter
 --   - locates api_version=X.Y string
 --   - makes sure that api_version requested can be satisfied
+--   - if the plugins is available it will set variables passed in
+--   - it then loads the plugin
 --
 -- TODO: currently the api_version must be in an X.Y format, but we may want 
 -- to expend this so plugins can say they want '0.1 | 1.3 | 2.0' etc
 --
-function load_plugin(name)
+function load_plugin(name, vars)
         local backup_path = package.path or "./?.lua"
 
         log ("loading " .. name)
@@ -1329,22 +1341,36 @@ function load_plugin(name)
                 return nil
         end
 
+        -- the configuration parameters before loading
+        if type(vars) == "table" then
+                local var, val
+                for var,val in pairs(vars) do
+                        local success = pcall (set_conf, name .. "." .. var, val)
+                        if not success then
+                                log ("WARNING: bad variable {" .. tostring(var) .. ", " .. tostring(val) .. "} "
+                                        .. "given; loading '" .. name .. "' plugin failed.")
+                                return nil
+                        end
+                end
+        end
+
         -- actually load the module, but use only the path where we though it should be
         package.path = path_match
-        local p,err = pcall (require, name)
+        local success,what = pcall (require, name)
         package.path = backup_path
-        if not p then
+        if not success then
                 log ("WARNING: failed to load '" .. name .. "' plugin")
                 log (" - path: " .. tostring(path_match))
                 log (" - file: " .. tostring(full_name))
                 log (" - plugin's api_version: " .. tostring(plugin_version))
-                log (" - reason: " .. tostring(err))
+                log (" - reason: " .. tostring(what))
                 return nil
         end
 
         -- success
         log ("OK, plugin " .. name .. " loaded,  requested api v" .. plugin_version)
-        plugins[name] = p
+        plugins[name] = what
+        return what
 end
 
 -- ------------------------------------------------------------------------
