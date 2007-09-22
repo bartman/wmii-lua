@@ -1,0 +1,91 @@
+See doc/configuration for how to change bindings.
+
+Default key bindings
+---------------------
+
+  Mod1-Return        Launch terminal.
+  Mod1-Shift-Return  Ask for tag, launch terminal in that view, and follow.
+
+  Mod1-p             Ask for a program and execute it.
+  Mod1-Shift-p       Run program with given tag (presents a menu twice to get
+                     the tag and the program).
+  Mod1-Shift-c       Kill (close) current client
+
+  Mod1-a             Ask for action and execute it.  A menu is presented at
+                     the bottom of the screen, after selection action is
+                     executed.  Actions can be defined by plugins, default
+                     actions are outlined below.
+
+  Mod4-a..z          Jump to first view whose name starts with the given
+                     letter, sorted with intellisort
+
+  Mod4-0..9          Choose either the corresponding numerical view or the
+                     non-numeric view at index specified by the number. For
+                     example, if the views are  '1 2 3 4 code irc web' and
+                     you press MODKEY-6, it'll take you to  irc
+  Mod4-Shift-0..9    Move the current client to the view specified; selection
+                     is done in the same way as Mod4-Shift-0..9
+
+  Mod1-h             Select prev column.
+  Mod1-l             Select next column.
+  Mod1-k             Select prev client.
+  Mod1-j             Select next client.
+
+  Mod1-space         Toggle managed/floating layer.
+  Mod1-Shift-space   Toggle managed/floating layer for client.
+
+  Mod1-d             Set default mode.
+  Mod1-s             Set stacked mode.
+  Mod1-m             Set max mode.
+
+  Mod1-Shift-h       Send to prev column.
+  Mod1-Shift-l       Send to next column.
+  Mod1-Shift-j       Swap with lower client.
+  Mod1-Shift-k       Swap with upper client.
+
+  Mod1-comma         Move to preceding view.
+  Mod1-period        Move to following view.
+
+  Mod1-r             Go back to previous view (where we came from).
+                     Pressing more than once makes you cycle between 2 views.
+  Mod1-Shift-r       Retag current client and move to corresponding view.
+                     Alloes +/- modifiers.
+  Mod1-t             Ask for view to move to.
+  Mod1-Shift-t       Retag in the namespace. Given a client tagged as foo+bar:
+                       baz   retags it as bar:baz
+                       +baz  retags it as foo+bar+bar:baz
+                     Given foo+bar:baz, -baz  retags as  foo
+
+Internal actions (Mod1-a)
+--------------------------
+  browser            if given an argument, open the given URL in a browser,
+                     otherwise ask for it.
+  google             same as 'browser', but searches with google.
+
+  man                with no arguments display the wmiirc-lua manpage, or
+                     if argument is specified loads any page.
+  exec               with no argument it restarts wmii, with an argument it
+                     replace wmii with another window manager (dangerous).
+
+  wmiirc             reload the wmiirc configuration.
+
+
+Outstanding thigns:
+--------------------
+
+The following keyboard shortcuts need to be ported from wmii+ruby.
+
+  Mod4-space         Switch between raw and normal input modes.
+                     The current mode is indicated in the bar. All other key
+                     bindings are ignored in raw mode.
+  Mod1-f             Maximize current floating client.
+  Mod4-comma         Move to preceding view within current namespace.
+  Mod4-period        Move to following view within current namespace.
+
+The following actions need to be ported from wmii+ruby.
+
+  rename-view: change the name of the current view, and retag all clients
+               accordingly. Takes the new name as a parameter, or asks for it.
+  screenshot:  takes a screenshot in $HOME/tmp/NAME-IDX.png, where NAME is
+               either the given parameter or 'screenshot', and IDX is
+               incremented automatically
