@@ -1,13 +1,30 @@
-This is a lean and mean implementation of wmiirc in lua.  The goals of
-the project are:
-  - be fast, small, and feature rich,
-  - avoid threading and polling at costs, and
-  - replicate the functionality of wmii+ruby.
+wmiirc-lua copyright (c) 2007 Bart Trojanowski <bart@jukie.net>
+                              http://www.jukie.net/~bart/blog/wmiirc-in-lua
 
-More details on my blog:
- - see http://www.jukie.net/~bart/blog/wmiirc-in-lua
+Abstract
+--------
+wmii [1], window manager improved-improved, is a dynamic window manager
+for X11.  It supports classic and tiled window management with extended
+keyboard, mouse, and 9P-based [2] remote control.
 
-Requirements:
+wmiirc-lua [3] implements an "event loop" script for the wmii window
+manager.  The goals of the project are to
+
+ - be fast, small, feature rich, and extensible through plugins,
+ - avoid threading and polling at all costs, and
+ - replicate the functionality of wmii+ruby.
+
+As the name suggests the script is written in Lua.  Before writing it I
+was a happy user of wmii+ruby.  Happy, until powertop [4] was written.
+Powertop told me that ruby was the number 1 reason my battery life
+sucked.  I chose lua because it helps me achieve the first and second
+goals.
+
+
+Requirements
+------------
+The following are required to build wmiirc-lua project:
+
  - wmii, 3.5+ or whatever is in hg at the moment
  - libixp, latest
  - lua5.1
@@ -15,28 +32,108 @@ Requirements:
  - liblua5.1-posix0
  - patience (no, it's not a package)
 
-Installation instructions:
- - install lua5.1 liblua5.1-posix0
-   - on Debian you can do this to install all of lua5.1:
+Note that as of version 0.2 wmiirc-lua is tracking wmii project closely,
+and we don't officially support anything older then wmii from the hg
+(mercurial) repository.
+
+
+Installation
+------------
+If you are running Debian (or derivative) these steps may help you:
+
+ 1) install Debian packages that you need to build
+
+    apt-get install mercurial git-core                      \
+                    build-essential debhelper               \
+                    libx11-dev libxext-dev libxt-dev        \
+                    lua5.1 liblua5.1-0-dev liblua5.1-posix0 
+
+    If you chose to work on plugins, you can install all lua packages
+    like this:
 
        apt-cache search lua5.1 | awk '/liblua5.1/ { print $1 }' \
        | xargs sudo apt-get install -y
 
- - build an install wmii from mercurial (3.5 or newer), you will also
-   need libixp:
+ 2) build libixp and wmii from source:
 
-     hg clone http://www.suckless.org/hg.rc/libixp
-     hg clone http://www.suckless.org/hg.rc/wmii
+    hg clone http://suckless.org/hg.rc/libixp
+    cd libixp
+    make 
+    sudo make install
+    cd ..
 
- - install the wmiirc script:
+    hg clone http://suckless.org/hg.rc/wmii
+    cd wmii
+    make 
+    sudo make install
+    cd ..
 
-     make install
+ 3) build wmiirc-lua
 
- - make .xsession execute wmii
+    # you can skip this step if you already have wmiirc-lua :)
+    git clone git://repo.or.cz/wmiirc-lua.git/
+    cd wmiirc-lua
 
-Note:
- - my configuration uses Mod4 (the Win key on PC keyboards) for
-   switching between work spaces and retagging.  If your keyboard does
-   not have a Win key, you can execute the xmodmaprc-mod4 from your
-   xsession: 
-     xmodmaprc .wmii-3.5/xmodmaprc-mod4
+    make install
+
+
+Running wmii
+------------
+wmiirc-lua is now ready to run, but you still have to make wmii your
+window manager.  You can do this by running the wmii executable from
+.initrc or .xsession... your choice.
+
+    cat ~/.xinitrc
+    wmii
+
+or
+
+    cat ~/.xsession
+    exec wmii
+
+Note: the base configuration uses Mod4 -- the windows key on PC
+keyboards -- for some of the binding.  If your keyboard, like my
+Thinkpad's, does not have a windows key you can "make one" with
+xmodmaprc.  See: contrib/remap-caps-ctrl-mod4
+
+Configuration
+-------------
+All configuration of wmiirc-lua is done by editing the
+~/.wmii-3.5/wmiirc file.  See doc/configuration for more help on configuring
+wmiirc-lua.
+
+wmiirc-lua supports all the keyboard shortcuts of wmii's shell wmiirc,
+some of the features of wmii+ruby, as well as some additional ones.  See
+the doc/key-bindings for information on how to control wmii with the
+extended key bindings wmiirc-lua provides.
+
+More advanced users may also write plugins for wmiirc-lua using the
+plugin API.  Plugins live in ~/.wmii-3.5/plugins/ directory, and several
+come with this package.  See the wmii.3lua man page, and doc/plugin-api
+for more information about how to write code for wmiirc-lua.
+
+    make man
+    man ./wmii.3lua
+
+
+Credits
+-------
+The following people have contributed especially to wmiirc-lua in
+various ways.  They are copyright holders of their respective
+contributions.
+
+- Bart Trojanowski <bart@jukie.net>
+- Dave O'Neill <dmo@dmo.ca>
+- Jean Richard <jean@geemoo.ca>
+
+
+Credits
+-------
+wmiirc-lua is licensed under GPLv2.
+
+References
+----------
+[1] http://www.suckless.org/
+[2] http://www.cs.bell-labs.com/sys/man/5/INDEX.html 
+[3] http://www.jukie.net/~bart/blog/wmiirc-in-lua
+[4] http://www.linuxpowertop.org
