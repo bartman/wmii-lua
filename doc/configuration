@@ -1,3 +1,151 @@
+About
+======
+All files in wmiirc-lua are stored in ~/.wmii-3.5.  You can read a bit
+more about this in doc/dir-structure.  wmiirc-lua configuration is stored
+in wmiirc and is a lua script.
 
-- ~/.wmii-3.5/wmiirc
-- mod-a wmiirc
+
+Initialization
+===============
+Being a lua script, wmiirc, begins with the following line to cause the
+system to run it under the lua VM.  This must be the first line.
+
+        #!/usr/bin/env lua
+
+An alternative is to use specific path to the lua interperter, like so:
+
+        #!/usr/bin/lua5.1
+
+The next part loads the 'wmii' library, which implements all the
+functionality.  However to find it, the interpreter has to be told where
+to look for it.
+
+        -- initialize wmii library
+        package.path = package.path
+               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/core/?.lua"
+               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
+        require "wmii" 
+
+The lines above sets a new package.path which will look for lua
+libraries in ~/.wmii-3.5/core/ and ~/.wmii-3.5/plugins/.
+
+Loading the 'wmii' lua library does not cause any events to be handled
+yet.  To handle events you need to issue the wmii.run_event_loop() call,
+which should be done at the bottom of wmiirc as it never exits.
+
+        -- this function does not exit
+        wmii.run_event_loop()
+
+If you make modifications to wmiirc, you can reload the script by
+pressing Mod1-a (alt-a) and then selecting wmiirc from the list.
+
+Configuring the window manager
+===============================
+Now let's look how to configure wmiirc-lua; please note that any
+configuration must come after the require "wmii" line and before the
+wmii.run_event_loop() call.
+
+Wmii, the window manager itself, stores some information about how it
+should look and behave.  These are usually accessed as shows below on
+the command line:
+
+        # wmiir read /ctl
+        view 1
+        focuscolors #FFFFAA #007700 #88FF88
+        normcolors #888888 #222222 #333333
+        font fixed
+        grabmod Mod1
+        border 1
+
+All these variables can be set sing wmii.set_ctl command.  In your
+wmiirc, you can set each one individually:
+
+        wmii.set_ctl ("view", 1)
+
+or set some or all at once using a table:
+
+        wmii.set_ctl ({
+                -- which tag should be shown at startup
+                view        = 1,
+                -- width of the border decorating the clients
+                border      = 1,
+                -- what font should wmii use
+                font        = 'fixed',
+                -- colours for selected items
+                focuscolors = '#FFFFAA #007700 #88FF88',
+                -- colours for everything else
+                normcolors  = '#888888 #222222 #333333',
+                -- used with mouse actions to control windows
+                grabmod     = ' Mod1'
+        })
+
+The comments above describe what each option does.
+
+To read back the control values use:
+
+        all = wmii.get_ctl()
+        print ("current view is ", all.view)
+
+Or you can read one view at a time:
+
+        view = wmii.get_ctl('view')
+
+
+Setting wmiirc-lua system variables
+====================================
+wmiirc-lua provides a configuration table to store variables which will
+control how it runs as well as how certain plugins operate.
+
+You can set an individual value like this:
+
+        wmii.set_conf ("xterm", "urxvt")
+
+Or set multiple values at once:
+
+        wmii.set_conf ({
+                xterm = 'x-terminal-emulator',
+                clock.format = '%c'
+        })
+
+Note that the latter sets configuration parameters in the clock plugin.
+It is a convention in wmiirc-lua to prefix plugin variables with the
+plugin name and a period.
+
+To read back the configuration values use:
+
+        all = wmii.get_conf()
+        one = wmii.get_conf('xterm')
+
+Adding plugins
+===============
+wmiirc-lua is extendible through plugin modules.  Some plugins are
+shipped with the package, others you can get from 3rd party sources.
+New plugins should be placed in ~/.wmii-3.5/plugins/ directory.
+See doc/plugin-api to learn more about writing plugins.
+
+To load plugins into wmiirc, simply call the load_plugin function:
+
+        -- load some plugins
+        wmii.load_plugin ("messages")
+        wmii.load_plugin ("clock")
+        wmii.load_plugin ("dstat_load")
+        wmii.load_plugin ("browser")
+
+As mentioned above plugins can have configuration options.  To set them
+at load time a table can be passed with those parameters defined.
+
+        wmii.load_plugin ("clock", {
+                        update = 2
+                })
+
+Note that doing the above is equivalent to:
+
+        wmii.set_conf ("clock.update", 2)
+        wmii.load_plugin ("clock")
+
+As with configuration, all plugins must be loaded before calling
+run_event_loop() function.
+
+
+
+vim: set ts=8 et sw=8 tw=72

@@ -1,10 +1,12 @@
-== About
+About
+======
 
 The problem is that the libixp interface does not permit a select() loop to
 be ran against the ixp socket w/o a major rewrite of the ixp library.  I
 am not interested in this.
 
-== The eventloop library
+The eventloop library
+======================
 
 The cleanest way to handle multiple event sources is via a select() or
 poll() loop.  However the blocking nature of libixp is still a problem.

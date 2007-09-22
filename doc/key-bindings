@@ -1,7 +1,7 @@
 See doc/configuration for how to change bindings.
 
 Default key bindings
----------------------
+=====================
 
   Mod1-Return        Launch terminal.
   Mod1-Shift-Return  Ask for tag, launch terminal in that view, and follow.
@@ -57,7 +57,7 @@ Default key bindings
                      Given foo+bar:baz, -baz  retags as  foo
 
 Internal actions (Mod1-a)
---------------------------
+==========================
   browser            if given an argument, open the given URL in a browser,
                      otherwise ask for it.
   google             same as 'browser', but searches with google.
@@ -71,7 +71,7 @@ Internal actions (Mod1-a)
 
 
 Outstanding thigns:
---------------------
+====================
 
 The following keyboard shortcuts need to be ported from wmii+ruby.
 
@@ -89,3 +89,8 @@ The following actions need to be ported from wmii+ruby.
   screenshot:  takes a screenshot in $HOME/tmp/NAME-IDX.png, where NAME is
                either the given parameter or 'screenshot', and IDX is
                incremented automatically
+
+
+
+
+vim: set ts=8 et sw=8 tw=72
