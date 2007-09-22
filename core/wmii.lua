@@ -628,6 +628,18 @@ local key_handlers = {
 
         -- work spaces (# and @ are wildcards for numbers and letters)
         ["Mod4-#"] = function (key, num)
+                local all = get_tags()
+                -- first attempt to find a view that starts with the number requested
+                local num_str = tostring(num)
+                local i,v
+                for i,v in pairs(all) do
+                        if num_str == v:sub(1,1) then
+                                set_view_index (i)
+                                return
+                        end
+                end
+
+                -- if we fail, then set it to the index requested
                 set_view_index (num)
         end,
         ["Mod4-Shift-#"] = function (key, num)

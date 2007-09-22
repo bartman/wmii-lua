@@ -2,8 +2,6 @@ If you have any suggests I am happy to add them to the list.
 
 for 0.2 release
     - core
-        - Mod4-# should try to select numerical view if present before
-          selecting index.
         - document bundled plugins
         - version number in the files
         - 'make release' target
