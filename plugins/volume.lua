@@ -8,7 +8,7 @@ volume.lua - wmiirc-lua plugin for volume control
 =head1 SYNOPSIS
 
     -- in your wmiirc.lua:
-    require("volume")
+    wmii.load_plugin("volume")
 
     -- If you also want keybindings for volume control, you might want to add:
     wmii.add_key_handler('Mod1-minus', function (key)
