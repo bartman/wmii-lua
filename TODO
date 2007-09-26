@@ -14,7 +14,7 @@ for 0.3 release
           plugin file
         - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
         - action and program history (bring up the last X choices in
-          alt-a and alt-p)
+          Mod1-a and Mod1-p)
 
     - bundled plugins
         - mpd: controls / volume
@@ -29,6 +29,10 @@ future
     - core
         - bundle xclipboard functionality (add a core/x11.so)
         - make wmii.load_plugin() support multiple api versions
+        - Mod1-; will display a "execute lua code here" command line
+          - it would be nice if it tab completed
+        - Mod1-[ and Mod1-] to push/pop windows off a stack in a hidden
+          tag
 
     - bundled plugins
         - 'session_manager'
