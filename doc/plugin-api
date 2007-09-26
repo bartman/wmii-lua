@@ -1,4 +1,5 @@
-== About
+About
+======
 
 This file documents what you can in the plugins/*.lua files.
 
@@ -9,7 +10,8 @@ line in them:
 
 ... TODO: quick blurb about the plugin api.
 
-== Version Check
+Version Check
+==============
 
 The API will be versioned with a X.Y version that is not at all tied to the 
 version of the wmiirc-lua release.  The meaning of the version
@@ -37,12 +39,14 @@ conditions must be met:
   - the Y component of the plugin's API version must be less than or equal 
     to the Y component of the wmiirc-lua's API version.
 
-== Quick Example
+Quick Example
+==============
 
 ... TODO: a complete example of what can be done with comments
                 // this could just refer to bundled plugins
 
-== API Details
+API Details
+============
 
 ... TODO: 
 

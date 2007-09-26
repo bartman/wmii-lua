@@ -470,6 +470,11 @@ local action_handlers = {
                 write ("/ctl", "exec " .. what)
         end,
 
+        xlock = function (act)
+                local cmd = get_conf("xlock") or "xscreensaver-command --lock"
+                os.execute (cmd)
+        end,
+
         wmiirc = function ()
                 cleanup()
                 posix.exec ("lua", wmiirc)
@@ -1136,7 +1141,8 @@ end
 -- ========================================================================
 
 local config = {
-        xterm = 'x-terminal-emulator'
+        xterm = 'x-terminal-emulator',
+        xlock = "xscreensaver-command --lock"
 }
 
 -- ------------------------------------------------------------------------

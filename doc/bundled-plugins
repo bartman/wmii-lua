@@ -1,0 +1,40 @@
+About
+======
+wmiirc-lua bundles some plugins with the distribution and this document
+briefly describes each.  The plugin files themselves are located in
+~/.wmii-3.5/plugins/ and are documented in more detail through comments.
+
+browser
+========
+  This plugin adds two actions (alt-a):
+
+    - "browser" - passes argument or clipboard contents to browser.
+    - "google" - passes argument or clipboard contents to browser as a
+      search query.
+
+  This plugin currently requires that you have xclip utility installed.
+
+clock
+======
+  Adds a widget named, 999_clock, which puts it at the right most
+  location.  Clock is driven by a timer which fires once a second by
+  default.  Both timer tick and clock format can be set in wmiirc.
+
+dstat_load
+===========
+  Uses the dstat utility to generate a load ticker.
+
+messages
+=========
+  Processes 'msg' events and sends them to the middle of the bar.  This
+  can be used by external tools to generate events for wmii.
+
+  Example:
+
+    tail -f /var/log/messages | xargs -n1 wmiir xwrite /event msg
+
+
+
+
+
+vim: set ts=8 et sw=8 tw=72

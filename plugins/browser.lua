@@ -1,17 +1,9 @@
 --
 -- Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
 --
--- Notification area for wmii bar
+-- Browser integration for wmii.
 --
--- To get a messages use:
---
---      wmiir xwrite /event msg anything you want to see
---
--- If you have a script that seldom generates one-line events, you can run:
---
---      somescript | sed -u 's/^/msg /' | wmiir write /event
--- or
---      ssh remote tail -F log-file | xargs -n1 -i wmiir xwrite /event "msg {}"
+-- This plugin depends on xclip utility.
 --
 
 local wmii = require("wmii")

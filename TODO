@@ -2,7 +2,6 @@ If you have any suggests I am happy to add them to the list.
 
 for 0.2 release
     - core
-        - document bundled plugins
         - version number in the files
         - 'make release' target
 
@@ -36,6 +35,8 @@ future
             - remember where windows are, and restart the "session" as
               it was before
             - global and per-view
+        - 'messages'
+            - add action or hot-key to copy last message to xclipboard
 
 
 
