@@ -29,10 +29,27 @@ future
     - core
         - bundle xclipboard functionality (add a core/x11.so)
         - make wmii.load_plugin() support multiple api versions
+
         - Mod1-; will display a "execute lua code here" command line
           - it would be nice if it tab completed
+
+        - tags starting with '@' are reserved for internal use and don't
+          display on /lbar
         - Mod1-[ and Mod1-] to push/pop windows off a stack in a hidden
-          tag
+          tag @stack
+
+        - figure out a better way for wmiirc to remap function in
+          wmii.lua;
+          - an option would be to give each function a name (be it an
+            event, key-binding, or action) and make them usable from
+            either so people could bind a function ring_my_bell() to an
+            event, key, or action.  Maybe...
+                wmii.bind_event ("ring", wmii.h_ring_my_bell)
+                wmii.bind_key ("Alt-r", wmii.h_ring_my_bell)
+                wmii.bind_action ("ring", wmii.h_ring_my_bell)
+            it should really make no difference how the action was
+            invoked.  We could let the handler function know *how* with
+            a parameter that wmii.lua passes to it.
 
     - bundled plugins
         - 'session_manager'
