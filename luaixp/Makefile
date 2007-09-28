@@ -1,3 +1,5 @@
+include ../config.mk
+
 SRCS = lixp_main.c lixp_debug.c lixp_util.c lixp_instance.c
 OBJS = $(SRCS:.c=.o)
 
@@ -30,5 +32,9 @@ clean:
 	-rm -f *.o *.so *~
 
 install: ${TARGET}
-	mkdir -p ~/.wmii-3.5/core/
-	install -b -t ~/.wmii-3.5/core/ ${TARGET}
+	${INSTALL} -d ${CORE_LIB_DIR}
+	${INSTALL} -b -t ${CORE_LIB_DIR} ${TARGET}
+
+install-user: ${TARGET}
+	${INSTALL} -d ${HOME_CORE}
+	${INSTALL} -m 0744 -b -t ${HOME_CORE} ${TARGET}

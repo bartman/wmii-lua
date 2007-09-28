@@ -39,8 +39,8 @@ and we don't officially support anything older then wmii from the hg
 (mercurial) repository.
 
 
-Installation
-------------
+Building prerequisites
+----------------------
 If you are running Debian (or derivative) these steps may help you:
 
  1) install Debian packages that you need to build
@@ -70,13 +70,63 @@ If you are running Debian (or derivative) these steps may help you:
     sudo make install
     cd ..
 
- 3) build wmiirc-lua
 
-    # you can skip this step if you already have wmiirc-lua :)
+Installation
+------------
+Now that you have the prerequisites installed, you can chose one of the
+following options.
+
+ A. Make a Debian package
+
+    A.1. build the actual DEB
+
+        # (optional) get the sources
+        git clone git://repo.or.cz/wmiirc-lua.git/
+        cd wmiirc-lua
+      
+        make deb
+
+    A.2. install deb
+
+        # as root
+        dpkg -i wmiirc-lua*.deb
+
+    A.3. Setting up $HOME for wmiirc-lua
+
+        # as the user run
+        install-wmiirc-lua
+
+ B. Install system wide, and in $HOME
+
+    B.1. get the sources
+
+        # (optional) get the sources
+        git clone git://repo.or.cz/wmiirc-lua.git/
+        cd wmiirc-lua
+      
+        # (optional) configure where things go
+        vim config.mk
+
+    B.2. Installing software in shared directories
+
+        # build as anyone
+        make
+
+        # install system-wide as root
+        make install
+
+    B.3. Setting up $HOME for wmiirc-lua
+
+        # as the user run
+        install-wmiirc-lua
+
+ C. Install in $HOME only
+
+    # (optional) get the sources
     git clone git://repo.or.cz/wmiirc-lua.git/
     cd wmiirc-lua
-
-    make install
+    
+    make install-user
 
 
 Running wmii

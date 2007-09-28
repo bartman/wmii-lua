@@ -1,0 +1,48 @@
+#!/bin/bash
+# Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
+#
+# This script installs wmiirc-lua files into $HOME/.wmii-3.5
+
+SRC=/etc/X11/wmii-3.5
+DEST=${HOME}/.wmii-3.5
+
+do_install () {
+        INSTALL="install $@"
+
+        ${INSTALL} -d ${DEST}
+        for f in "$SRC"/* ; do
+                ${INSTALL} -t ${DEST} ${f}
+        done
+}
+
+while true ; do
+        cmd=$1 ; shift
+        case $cmd in 
+            --force)
+                do_install
+                ;;
+            --backup)
+                do_install -b
+                ;;
+            *)
+                break
+                ;;
+        esac
+done
+
+if [ -f "${SRC}/wmiirc" ] ; then
+        echo >&2 "System wide files for wmiirc-lua not installed."
+        exit 1
+fi
+
+if [ -f "${DEST}/wmiirc" ] ; then
+        echo >&2 "You already have files installed in ${DEST}."
+        echo >&2 ""
+        echo >&2 "Please select one of the following options and rerun this script:"
+        echo >&2 ""
+        echo >&2 "   $0 --force           - overwrite existing files"
+        echo >&2 "   $0 --backup          - backup existing files"
+        exit 1
+fi
+
+

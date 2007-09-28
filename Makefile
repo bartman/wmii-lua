@@ -1,11 +1,51 @@
+include config.mk
+
 MAN = wmii.3lua
 
 
-.PHONY: all luaixp luaeventloop clean tags install
-all: luaixp luaeventloop
+# ------------------------------------------------------------------------
+# main target
 
-luaixp luaeventloop:
+.PHONY: all help libs luaixp luaeventloop docs man clean tags install install-user
+all: libs man
+
+help:
+	@echo "make [target]"
+	@echo
+	@echo " general targets"
+	@echo "   all            - build everything"
+	@echo "   libs           - build libraries"
+	@echo "   docs           - build documentation"
+	@echo "   clean          - clean up build"
+	@echo "   install        - install in system dir"
+	@echo "   install-user   - install in user home dir"
+	@echo
+	@echo " development targets"
+	@echo "   tags           - build ctags index"
+	@echo "   cscope         - build cscope index"
+
+xxx:
+	${MAKE} install DESTDIR=$(shell pwd)/debian/tmp PREFIX=/usr
+
+# ------------------------------------------------------------------------
+# building
+
+libs: luaeventloop clean
+luaeventloop luaixp:
 	${MAKE} -C $@
+
+docs: man
+man: ${MAN}
+${MAN}: core/wmii.lua
+	${POD2MAN} \
+		--name=wmii \
+		--center="WMII Lua Integration" \
+		--section=3lua \
+		--release="wmii 3.6" \
+		$< $@
+
+# ------------------------------------------------------------------------
+# cleaning
 
 clean:
 	-rm -f *~ */*~
@@ -14,6 +54,57 @@ clean:
 	-${MAKE} -C luaixp clean
 	-${MAKE} -C luaeventloop clean
 
+# ------------------------------------------------------------------------
+# installing
+
+#
+# install system wide
+#
+install: ${MAN}
+	# create directories
+	${INSTALL} -d ${ALL_INSTALL_DIRS}
+	#
+	# install libraries
+	${MAKE} -C luaixp install
+	${MAKE} -C luaeventloop install
+	#
+	# install core and plugin lua scripts
+	${INSTALL} -m 0644 -t ${CORE_LUA_DIR} core/*.lua
+	${INSTALL} -m 0644 -t ${PLUGIN_LUA_DIR} plugins/*.lua
+	#
+	# install template files
+	${INSTALL} -m 0755 -T wmiirc.lua ${RC_DIR}/wmiirc
+	${INSTALL} -m 0644 -t ${RC_DIR} ${MAN}
+	#
+	# install scripts
+	${INSTALL} -m 0744 -t ${BIN_DIR} install-wmiirc-lua
+
+#
+# install in user directory
+#
+install-user:
+ifeq ($(shell pwd),$(wildcard ~/.wmii-3.5))
+	@echo "You're already in the ~/.wmii-3.5/ directory"
+else
+	${INSTALL} -d ${ALL_HOME_DIRS}
+	@if test -f ${HOME_WMII}/wmiirc ; then \
+		echo "NOTE: you might want to look at ${HOME_WMII}/wmiirc.dist" ; \
+		${INSTALL} -T -m 0744 -b wmiirc.lua ${HOME_WMII}/wmiirc.dist ; \
+	else \
+		echo "Installing new ${HOME_WMII}/wmiirc" ; \
+		${INSTALL} -T -m 0744 -b wmiirc.lua ${HOME_WMII}/wmiirc ; \
+	fi
+	${INSTALL} -m 0644 -b -t ${HOME_CORE} core/*.lua
+	${INSTALL} -m 0644 -b -t ${HOME_PLUGINS} plugins/*.lua
+	${INSTALL} -m 0644 -b -t ${HOME_WMII} ${MAN}
+	${MAKE} -C luaixp install-user
+	${MAKE} -C luaeventloop install-user
+
+install-user: ${MAN}
+endif
+
+# ------------------------------------------------------------------------
+# tags and cscope
 
 cscope.files::
 	find . -name '*.[ch]' -o -name '*.lua' | grep -v -e CVS -e SCCS > cscope.files
@@ -25,36 +116,3 @@ tags: cscope.out
 	rm -f tags
 	xargs -n 50 ctags -a < cscope.files
 
-
-install:
-ifeq ($(shell pwd),$(wildcard ~/.wmii-3.5))
-	@echo "You're already in the ~/wmii-3.5/ directory"
-else
-	mkdir -p ~/.wmii-3.5/core/ ~/.wmii-3.5/plugins/
-	@if test -f ~/.wmii-3.5/wmiirc ; then \
-		echo "NOTE: you might want to look at ~/.wmii-3.5/wmiirc.dist" ; \
-		install -b wmiirc.lua ~/.wmii-3.5/wmiirc.dist ; \
-		chmod +x ~/.wmii-3.5/wmiirc.dist ; \
-	else \
-		echo "Installing new ~/.wmii-3.5/wmiirc" ; \
-		install -b wmiirc.lua ~/.wmii-3.5/wmiirc ; \
-		chmod +x ~/.wmii-3.5/wmiirc ; \
-	fi
-	install -b -m 640 -t ~/.wmii-3.5/core/ core/*.lua
-	install -b -m 640 -t ~/.wmii-3.5/plugins/ plugins/*.lua
-	install -b -m 640 -t ~/.wmii-3.5 ${MAN}
-	${MAKE} -C luaixp install
-	${MAKE} -C luaeventloop install
-
-install: ${MAN}
-endif
-
-
-man: ${MAN}
-${MAN}: core/wmii.lua
-	pod2man \
-		--name=wmii \
-		--center="WMII Lua Integration" \
-		--section=3lua \
-		--release="wmii 3.6" \
-		$< $@
