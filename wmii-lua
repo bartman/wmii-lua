@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
+#
+# This script launches the wmii window manager with the wmiirc.lua script.
+
+# we will look for wmiirc in these directories
+POSSIBLE_WMIIRC="
+${HOME}/.wmii-3.5/wmiirc.lua
+${HOME}/.wmii-3.5/wmiirc
+/etc/X11/wmii-3.5/wmiirc.lua
+/etc/X11/wmii-3.5/wmiirc
+"
+
+# try to find the best wmiirc written in lua
+WMIIRC=
+for wmiirc in ${POSSIBLE_WMIIRC} ; do
+        if ( test -r "${wmiirc}" ) && ( head -n1 "${wmiirc}" | grep -q lua ) ; then
+                exec wmii -r "${wmiirc}"
+        fi
+done
+
+# default to the base one
+exec wmii

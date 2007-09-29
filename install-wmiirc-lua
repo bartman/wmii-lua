@@ -1,18 +1,21 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
 #
 # This script installs wmiirc-lua files into $HOME/.wmii-3.5
 
-SRC=/etc/X11/wmii-3.5
-DEST=${HOME}/.wmii-3.5
+set -e
+
+SRC_DIR="/etc/X11/wmii-3.5"
+DST_DIR="${HOME}/.wmii-3.5"
+
+SRC_WMIIRC="${SRC_DIR}/wmiirc.lua"
+DST_WMIIRC="${DST_DIR}/wmiirc"
 
 do_install () {
         INSTALL="install $@"
 
-        ${INSTALL} -d ${DEST}
-        for f in "$SRC"/* ; do
-                ${INSTALL} -t ${DEST} ${f}
-        done
+        ${INSTALL} -m 755 -d "${DST_DIR}"
+        ${INSTALL} -m 744 -T "${SRC_WMIIRC}" "${DST_WMIIRC}"
 }
 
 while true ; do
@@ -30,13 +33,13 @@ while true ; do
         esac
 done
 
-if [ -f "${SRC}/wmiirc" ] ; then
+if [ -f "${SRC_WMIIRC}" ] ; then
         echo >&2 "System wide files for wmiirc-lua not installed."
         exit 1
 fi
 
-if [ -f "${DEST}/wmiirc" ] ; then
-        echo >&2 "You already have files installed in ${DEST}."
+if [ -f "${DST_WMIIRC}" ] ; then
+        echo >&2 "You already have files installed in ${DST_WMIIRC}."
         echo >&2 ""
         echo >&2 "Please select one of the following options and rerun this script:"
         echo >&2 ""

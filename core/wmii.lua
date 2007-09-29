@@ -113,6 +113,14 @@ local view_hist_max = 10              -- max number to keep track of
 -- allow for a client to be forced to a tag
 local next_client_goes_to_tag = nil
 
+-- where to find plugins
+plugin_path = os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so;"
+           .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua;"
+           .. "/usr/local/lib/lua/5.1/wmii/?.so;"
+           .. "/usr/local/share/lua/5.1/wmii/?.lua;"
+           .. "/usr/lib/lua/5.1/wmii/?.so;"
+           .. "/usr/share/lua/5.1/wmii/?.lua"
+
 -- ========================================================================
 -- LOCAL HELPERS
 -- ========================================================================
@@ -1303,8 +1311,11 @@ function load_plugin(name, vars)
 
         -- first find the plugin file
         local s, path_match, full_name, file
-        for s in string.gmatch(package.path, "[^;]+") do
+        for s in string.gmatch(plugin_path, "[^;]+") do
+log ("     searching in " .. tostring (s))
+                -- try to locate the files locally
                 local fn = s:gsub("%?", name)
+log ("           trying " .. tostring (fn))
                 file = io.open(fn, "r")
                 if file then
                         path_match = s

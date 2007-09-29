@@ -1,0 +1,7 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Wmii-lua
+Comment=Wmii with lua event loop
+Exec=wmii-lua
+Icon=wmii.png
+Type=XSession

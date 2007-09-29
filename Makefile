@@ -72,12 +72,16 @@ install: ${MAN}
 	${INSTALL} -m 0644 -t ${CORE_LUA_DIR} core/*.lua
 	${INSTALL} -m 0644 -t ${PLUGIN_LUA_DIR} plugins/*.lua
 	#
-	# install template files
-	${INSTALL} -m 0755 -T wmiirc.lua ${RC_DIR}/wmiirc
-	${INSTALL} -m 0644 -t ${RC_DIR} ${MAN}
+	# install new config file
+	${INSTALL} -m 0755 -t ${RC_DIR} wmiirc.lua
+	${INSTALL} -m 0644 -t ${XS_DIR} wmii-lua.desktop
+	#
+	# install man page
+	${INSTALL} -m 0644 -t ${MAN_DIR} ${MAN}
 	#
 	# install scripts
 	${INSTALL} -m 0744 -t ${BIN_DIR} install-wmiirc-lua
+	${INSTALL} -m 0744 -t ${BIN_DIR} wmii-lua
 
 #
 # install in user directory

@@ -19,13 +19,17 @@ PLUGIN_LUA_DIR	= ${DESTDIR}${PREFIX}/share/lua/${LUA_VERSION}/wmii
 
 BIN_DIR		= ${DESTDIR}${PREFIX}/bin
 RC_DIR		= ${DESTDIR}/etc/X11/wmii-3.5
+MAN_DIR		= ${DESTDIR}${PREFIX}/share/man/man3
+XS_DIR		= ${DESTDIR}${PREFIX}/share/xsessions
 
 ALL_INSTALL_DIRS= ${CORE_LIB_DIR} \
 		  ${CORE_LUA_DIR} \
 		  ${PLUGIN_LIB_DIR} \
 		  ${PLUGIN_LUA_DIR} \
 		  ${BIN_DIR} \
-		  ${RC_DIR}
+		  ${RC_DIR} \
+		  ${MAN_DIR} \
+		  ${XS_DIR}
 
 # ------------------------------------------------------------------------
 # home directories
