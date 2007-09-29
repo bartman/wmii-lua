@@ -6,7 +6,7 @@ OBJS = $(SRCS:.c=.o)
 LUAINC := $(shell pkg-config --cflags lua5.1)
 LUALIB := $(shell pkg-config --libs lua5.1)
 
-IXPPREFIX = ${HOME}
+#IXPPREFIX = ${HOME}
 IXPINC := -I${IXPPREFIX}/usr/include
 IXPLIB := -L${IXPPREFIX}/usr/lib -lixp
 
