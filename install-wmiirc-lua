@@ -18,7 +18,7 @@ do_install () {
         ${INSTALL} -m 744 -T "${SRC_WMIIRC}" "${DST_WMIIRC}"
 }
 
-while true ; do
+while test -n "$1" ; do
         cmd=$1 ; shift
         case $cmd in 
             --force)
@@ -33,12 +33,12 @@ while true ; do
         esac
 done
 
-if [ -f "${SRC_WMIIRC}" ] ; then
+if ! test -f "${SRC_WMIIRC}" ; then
         echo >&2 "System wide files for wmiirc-lua not installed."
         exit 1
 fi
 
-if [ -f "${DST_WMIIRC}" ] ; then
+if test -f "${DST_WMIIRC}" ; then
         echo >&2 "You already have files installed in ${DST_WMIIRC}."
         echo >&2 ""
         echo >&2 "Please select one of the following options and rerun this script:"
@@ -48,4 +48,4 @@ if [ -f "${DST_WMIIRC}" ] ; then
         exit 1
 fi
 
-
+do_install
