@@ -1,0 +1,18 @@
+Source: wmiirc-lua
+Section: main
+Priority: optional
+Maintainer: Bart Trojanowski <bart@jukie.net>
+Build-Depends: debhelper (>= 5), liblua5.1-dev, liblua5.1-posix-dev, libixp
+Standards-Version: 3.7.2
+
+Package: wmiirc-lua
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, wmii (>= 3.6)
+Description: wmii event loop written in lua
+ wmiirc-lua is a lua replacement for the shell wmiirc that comes stock with
+ the wmii package.  This script processes all events from the user and
+ manipulates windows in a similar way to the stock wmiirc.  The big advantage
+ of using lua is that it's very lean and uses little resources.
+ .
+ For more information visit the wmiirc-lua home page:
+   http://www.jukie.net/~bart/blog/tag/wmiirc-lua

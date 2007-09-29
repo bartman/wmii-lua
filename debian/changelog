@@ -1,0 +1,5 @@
+wmiirc-lua (0.1.2) unstable; urgency=low
+
+  * Initial Debianization.
+
+ -- Bart Trojanowski <bart@jukie.net>  Fri, 28 Sep 2007 20:55:03 -0400

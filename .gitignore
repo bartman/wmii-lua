@@ -4,3 +4,8 @@ cscope.files
 cscope.out
 tags
 wmii.3lua
+build-stamp
+configure-stamp
+debian/files
+debian/wmiirc-lua.substvars
+debian/wmiirc-lua
