@@ -19,6 +19,37 @@ package.path = package.path
                .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
 require "wmii" 
 
+-- Setup my environment (completely optional)
+
+--[[
+        -- conditionally load up my xmodmaprc
+        hostname = os.getenv("HOSTNAME")
+        if type(hostname) == 'string' and hostname:match("^oxygen") then
+                os.execute ("xmodmap ~/.xmodmaprc")
+        end
+
+        -- add ssh keys if they are not in the agent already
+        os.execute ("if ( ! ssh-add -l >/dev/null ) || test $(ssh-add -l | wc -l) = 0 ; then "
+                        .. "ssh-add </dev/null ; fi")
+
+        -- this lets me have progyfonts in ~/.fonts
+        os.execute ("~/.fonts/rebuild")
+
+        -- restore the mixer settings
+        os.execute ("aumix -L")
+
+        -- this hids the mouse cursor after a timeout
+        os.execute ("unclutter &")
+
+        -- configure X
+        os.execute ("xset r on")
+        os.execute ("xset r rate 200 25")
+        os.execute ("xset b off")
+
+        -- clear the background
+        os.execute ("xsetroot -solid black")
+--]]
+
 -- This is the base configuration of wmii, it writes to the /ctl file.
 wmii.set_ctl ({
         view        = 1,
