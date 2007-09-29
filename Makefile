@@ -37,7 +37,7 @@ debi: deb
 # ------------------------------------------------------------------------
 # building
 
-libs: luaeventloop clean
+libs: luaeventloop luaixp
 luaeventloop luaixp:
 	${MAKE} -C $@
 

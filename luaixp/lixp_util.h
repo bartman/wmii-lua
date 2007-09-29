@@ -3,6 +3,15 @@
 
 #include <lua.h>
 
+#if 0
+// backward compatibility to 0.3 (20070518)
+// ... but there is no good way to detect that we need it at build time
+#ifndef IxpStat
+#define IxpStat Stat
+#define IxpMsg Message
+#endif
+#endif
+
 struct IxpCFid;
 struct IxpStat;
 
