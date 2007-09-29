@@ -1312,10 +1312,8 @@ function load_plugin(name, vars)
         -- first find the plugin file
         local s, path_match, full_name, file
         for s in string.gmatch(plugin_path, "[^;]+") do
-log ("     searching in " .. tostring (s))
                 -- try to locate the files locally
                 local fn = s:gsub("%?", name)
-log ("           trying " .. tostring (fn))
                 file = io.open(fn, "r")
                 if file then
                         path_match = s

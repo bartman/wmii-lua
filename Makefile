@@ -6,7 +6,7 @@ MAN = wmii.3lua
 # ------------------------------------------------------------------------
 # main target
 
-.PHONY: all help libs luaixp luaeventloop docs man clean tags install install-user
+.PHONY: all help deb debi libs luaixp luaeventloop docs man clean tags install install-user
 all: libs man
 
 help:
@@ -23,9 +23,16 @@ help:
 	@echo " development targets"
 	@echo "   tags           - build ctags index"
 	@echo "   cscope         - build cscope index"
+	@echo
+	@echo " Debian targets"
+	@echo "   deb            - build the .deb"
+	@echo "   debi           - install the deb"
 
-xxx:
-	${MAKE} install DESTDIR=$(shell pwd)/debian/tmp PREFIX=/usr
+deb:
+	debuild
+
+debi: deb
+	sudo debi
 
 # ------------------------------------------------------------------------
 # building

@@ -5,6 +5,10 @@ for 0.2 release
         - version number in the files
         - 'make release' target
 
+    - bugs
+        - Mod1-a wmiirc will fail if you don't have ~/.wmii-3.5/wmiirc;
+          it should also look in system files
+
 for 0.3 release
     - core
         - rewrite timer handling using select loop and coroutines 
