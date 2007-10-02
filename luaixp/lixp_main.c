@@ -29,7 +29,7 @@ static int l_new (lua_State *L)
 
 	DBGF("** ixp.new ([%s]) **\n", adr);
 
-	cli = ixp_mount((char*)adr);
+	cli = ixp_mount(adr);
 	if (!cli)
 		return lixp_pusherror (L, "could not open ixp connection");
 

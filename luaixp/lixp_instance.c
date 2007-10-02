@@ -50,7 +50,7 @@ int l_ixp_write (lua_State *L)
 	file = luaL_checkstring (L, 2);
 	data = luaL_checklstring (L, 3, &data_len);
 
-	fid = ixp_open(ixp->client, (char*)file, P9_OWRITE);
+	fid = ixp_open(ixp->client, file, P9_OWRITE);
 	if(fid == NULL)
 		return lixp_pusherror (L, "count not open p9 file");
 
@@ -80,7 +80,7 @@ int l_ixp_read (lua_State *L)
 	ixp = lixp_checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
 
-	fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
+	fid = ixp_open(ixp->client, file, P9_OREAD);
 	if(fid == NULL)
 		return lixp_pusherror (L, "count not open p9 file");
 
@@ -143,7 +143,7 @@ int l_ixp_create (lua_State *L)
 
 	DBGF("** ixp.create (%s) **\n", file);
 	
-	fid = ixp_create (ixp->client, (char*)file, 0777, P9_OWRITE);
+	fid = ixp_create (ixp->client, file, 0777, P9_OWRITE);
 	if (!fid)
 		return lixp_pusherror (L, "count not create file");
 
@@ -174,7 +174,7 @@ int l_ixp_remove (lua_State *L)
 
 	DBGF("** ixp.remove (%s) **\n", file);
 	
-	rc = ixp_remove (ixp->client, (char*)file);
+	rc = ixp_remove (ixp->client, file);
 	if (!rc)
 		return lixp_pusherror (L, "failed to remove p9 file");
 
@@ -213,7 +213,7 @@ int l_ixp_iread (lua_State *L)
 	luaL_getmetatable (L, L_IXP_IREAD_MT);
 	lua_setmetatable (L, -2);
 
-	ctx->fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
+	ctx->fid = ixp_open(ixp->client, file, P9_OREAD);
 	if(ctx->fid == NULL) {
 		return lixp_pusherror (L, "count not open p9 file");
 	}
@@ -317,7 +317,7 @@ int l_ixp_stat (lua_State *L)
 
 	DBGF("** ixp.stat (%s) **\n", file);
 
-	stat = ixp_stat(ixp->client, (char*)file);
+	stat = ixp_stat(ixp->client, file);
 	if(!stat)
 		return lixp_pusherror(L, "cannot stat file");
 
@@ -358,7 +358,7 @@ int l_ixp_idir (lua_State *L)
 	luaL_getmetatable (L, L_IXP_IDIR_MT);
 	lua_setmetatable (L, -2);
 
-	ctx->fid = ixp_open(ixp->client, (char*)file, P9_OREAD);
+	ctx->fid = ixp_open(ixp->client, file, P9_OREAD);
 	if(ctx->fid == NULL) {
 		return lixp_pusherror (L, "count not open p9 file");
 	}
