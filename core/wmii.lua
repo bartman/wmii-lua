@@ -1020,7 +1020,7 @@ local ev_handlers = {
 
         -- mouse handling on the lbar
         LeftBarClick = function (ev, arg)
-                local button,tag = string.match(arg, "(%w+)%s+(%w+)")
+                local button,tag = string.match(arg, "(%w+)%s+(%S+)")
                 set_view (tag)
         end,
 
