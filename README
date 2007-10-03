@@ -80,16 +80,16 @@ following options.
 
     A.1. build the actual DEB
 
-        # (optional) get the sources
+        # get the sources, switch to debian branch
         git clone git://repo.or.cz/wmiirc-lua.git/
         cd wmiirc-lua
+        git checkout debian
       
         make deb
 
     A.2. install deb
 
-        # as root
-        dpkg -i wmiirc-lua*.deb
+        sudo debi
 
     A.3. Setting up $HOME for wmiirc-lua
 
