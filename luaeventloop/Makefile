@@ -3,11 +3,8 @@ include ../config.mk
 SRCS = lel_main.c lel_debug.c lel_util.c lel_instance.c
 OBJS = $(SRCS:.c=.o)
 
-LUAINC := $(shell pkg-config --cflags lua5.1)
-LUALIB := $(shell pkg-config --libs lua5.1)
-
-CFLAGS += ${LUAINC} -ggdb -O0 -fPIC
-LIBS   += ${LUALIB}
+CFLAGS += ${LUA_INC} -ggdb -O0 -fPIC
+LIBS   += ${LUA_LIB}
 
 #CFLAGS += -DDBG
 

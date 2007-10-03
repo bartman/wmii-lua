@@ -9,3 +9,4 @@ configure-stamp
 debian/files
 debian/wmiirc-lua.substvars
 debian/wmiirc-lua
+config.mk

@@ -3,15 +3,8 @@ include ../config.mk
 SRCS = lixp_main.c lixp_debug.c lixp_util.c lixp_instance.c
 OBJS = $(SRCS:.c=.o)
 
-LUAINC := $(shell pkg-config --cflags lua5.1)
-LUALIB := $(shell pkg-config --libs lua5.1)
-
-#IXPPREFIX = ${HOME}
-IXPINC := -I${IXPPREFIX}/usr/include
-IXPLIB := -L${IXPPREFIX}/usr/lib -lixp
-
-CFLAGS += ${LUAINC} ${IXPINC} -ggdb -O0 -fPIC
-LIBS   += ${LUALIB} ${IXPLIB}
+CFLAGS += ${LUA_INC} ${IXP_INC} -ggdb -O0 -fPIC
+LIBS   += ${LUA_LIB} ${IXP_LIB}
 
 TARGET = ixp.so
 

@@ -1,9 +1,23 @@
 # ------------------------------------------------------------------------
-LUA_VERSION	= 5.1
-
+# standard programs
 CC = cc
 INSTALL = install
 POD2MAN = pod2man
+
+# ------------------------------------------------------------------------
+# things about lua
+LUA_VERSION	= 5.1
+LUA_PKG_NAME	= lua5.1
+
+LUA_INC := $(shell pkg-config --cflags ${LUA_PKG_NAME})
+LUA_LIB := $(shell pkg-config --libs ${LUA_PKG_NAME})
+
+# ------------------------------------------------------------------------
+# things about ixp
+#IXP_PREFIX = ${HOME}
+
+IXP_INC := -I${IXP_PREFIX}/usr/include
+IXP_LIB := -L${IXP_PREFIX}/usr/lib -lixp
 
 # ------------------------------------------------------------------------
 # system directories

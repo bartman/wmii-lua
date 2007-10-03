@@ -34,6 +34,13 @@ deb:
 debi: deb
 	sudo debi
 
+config.mk: config.mk.dist
+	if test -f $@ ; then \
+		touch $@ ; \
+	else \
+		cp $< $@ ; \
+	fi
+
 # ------------------------------------------------------------------------
 # building
 
