@@ -1,4 +1,6 @@
 See doc/configuration for how to change bindings.
+See contrib/remap-caps-ctrl-mod4/README about possible remapping to get
+Mod4 on your keyboard.
 
 Default key bindings
 =====================
