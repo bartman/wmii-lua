@@ -11,11 +11,7 @@ for 0.2 release
 
 for 0.3 release
     - core
-        - rewrite timer handling using select loop and coroutines 
-          and a subprocess to do iread() ... see doc/event-loop
-        - support for "raw mode" like win-space in wmii+ruby
-        - add wmii.load_plugin("name") which works harder to locate a
-          plugin file
+        - support for "raw mode" like Mod4-space in wmii+ruby
         - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
         - action and program history (bring up the last X choices in
           Mod1-a and Mod1-p)
@@ -54,6 +50,9 @@ future
             it should really make no difference how the action was
             invoked.  We could let the handler function know *how* with
             a parameter that wmii.lua passes to it.
+
+        - improve logging
+          - use file in ~/.wmii-3.5/ like wmii+ruby
 
     - bundled plugins
         - 'session_manager'
