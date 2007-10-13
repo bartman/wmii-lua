@@ -59,9 +59,24 @@ future
             - remember where windows are, and restart the "session" as
               it was before
             - global and per-view
+
         - 'messages'
             - add action or hot-key to copy last message to xclipboard
 
+        - 'groups'
+            - grouping multiple windows (maybe a tag prefix, and use the
+              existing tag idea)
+              - group individually,
+              - group all in a view,
+              - group all visible
+            - sending input to all windows in that group
+            - would be useful for a cluster, etc.
+
+        - 'suspend'
+            - add key-bindings to suspend/resume application with
+              SIGSTOP/SIGCONT
+            - probably should add wmii support to decorate windows
+              differently when in this state
 
 
 
