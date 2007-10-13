@@ -7,7 +7,8 @@ Standards-Version: 3.7.2
 
 Package: wmiirc-lua
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, wmii (>= 3.6~rc2+20070518-3)
+Depends: ${shlibs:Depends}, ${misc:Depends}, wmii (>= 3.6~rc2+20070518-3), dwm-tools
+Recommends: xclip, dstat
 Description: wmii event loop written in lua
  wmiirc-lua is a lua replacement for the shell wmiirc that comes stock with
  the wmii package.  This script processes all events from the user and
