@@ -1412,7 +1412,7 @@ widgets = {}
 --     widget = wmii.widget:new ("999_clock")
 --     widget = wmii.widget:new ("999_clock", clock_event_handler)
 function widget:new (name, fn)
-        o = {}
+        local o = {}
 
         if type(name) == "string" then
                 o.name = name
@@ -1539,7 +1539,7 @@ local timers = {}
 --     timer:new (my_timer_fn)
 --     timer:new (my_timer_fn, 15)
 function timer:new (fn, seconds)
-        o = {}
+        local o = {}
 
         if type(fn) == "function" then
                 o.fn = fn
