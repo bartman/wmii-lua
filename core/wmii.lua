@@ -725,7 +725,25 @@ local key_handlers = {
         end,
         ["Mod1-m"] = function (key)
 		write("/tag/sel/ctl", "colmode sel max")
-        end
+        end,
+
+        -- changing client flags
+        ["Mod1-f"] = function (key)
+                log ("setting flags")
+
+                local cli = get_client ()
+
+                local flags = { "suspend", "raw" }
+                local current_flags = cli:flags_string()
+
+                local what = menu(flags, "current flags: " .. current_flags .. " toggle:")
+
+                cli:toggle(what)
+        end,
+        ["Mod4-space"] = function (key)
+                local cli = get_client ()
+                cli:toggle("raw")
+        end,
 }
 
 --[[
@@ -1027,6 +1045,7 @@ local ev_handlers = {
         -- focus updates
         ClientFocus = function (ev, arg)
                 log ("ClientFocus: " .. arg)
+                client_focused (arg)
         end,
         ColumnFocus = function (ev, arg)
                 log ("ColumnFocus: " .. arg)
@@ -1041,6 +1060,10 @@ local ev_handlers = {
                         write ("/client/" .. cli .. "/tags", tag)
                         set_view(tag)
                 end
+                client_created (arg)
+        end,
+        DestroyClient = function (ev, arg)
+                client_destoryed (arg)
         end,
 
         -- urgent tag?
@@ -1710,6 +1733,239 @@ function cleanup ()
 
         log ("wmii: dormant")
 end
+
+-- ========================================================================
+-- CLIENT HANDLING
+-- ========================================================================
+
+--[[
+-- Notes on client tracking
+--
+-- When a client is created wmii sends us a CreateClient message, and
+-- we in turn create a 'client' object and store it in the 'clients'
+-- table indexed by the client's ID.
+--
+-- Each client object stores the following:
+--   .xid   - the X client ID
+--   .pid   - the process ID
+--   .prog  - program object representing the process
+--
+-- The client and program objects track the following modes for each program:
+--
+--   raw mode:
+--      - for each client window
+--      - Mod4-space toggles the state between normal and raw
+--      - Mod1-f raw also toggles the state
+--      - in raw mode all input goes to the client, except for Mod4-space
+--      - a focused client with raw mode enabled is put into raw mode
+--
+--   suspend mode:
+--      - for each program
+--      - Mod1-f suspend toggles the state for current client's program
+--      - a focused client, whose program was previous suspended is resumed
+--      - an unfocused client, with suspend enabled, will be suspended
+--      - suspend/resume is done by sending the STOP/CONT signals to the PID
+--]]
+
+function xid_to_pid (xid)
+        local cmd = "xprop -id " .. tostring(xid) .. " _NET_WM_PID"
+        local file = io.popen (cmd)
+        local out = file:read("*a")
+        file:close()
+        local pid = out:match("^_NET_WM_PID.*%s+=%s+(%d+)%s+$")
+        return tonumber(pid)
+end
+
+local focused_xid = nil
+local clients = {}              -- table of client objects indexed by xid
+local programs = {}             -- table of program objects indexed by pid
+local mode_widget = widget:new ("999_client_mode")
+
+-- make programs table have weak values
+-- programs go away as soon as no clients point to it
+local programs_mt = {}
+setmetatable(programs, programs_mt)
+programs_mt.__mode = 'v'
+
+-- program class
+program = {}
+function program:new (pid)
+        -- make an object
+        local o = {}
+        setmetatable (o,self)
+        self.__index = self
+        self.__gc = function (old) old:cont() end
+        -- initialize the new object
+        o.pid = pid
+        -- suspend mode
+        o.suspend = {}
+        o.suspend.toggle = function (prog)
+                                prog.suspend.enabled = not prog.suspend.enabled
+                        end
+        o.suspend.enabled = false       -- if true, defocusing suspends (SIGSTOP)
+        o.suspend.active = true         -- if true, focusing resumes (SIGCONT)
+        return o
+end
+
+function program:stop ()
+        if not self.suspend.active then
+                local cmd = "kill -STOP " .. tostring(self.pid)
+                log ("    executing: " .. cmd)
+                os.execute (cmd)
+                self.suspend.active = true
+        end
+end
+
+function program:cont ()
+        if self.suspend.active then
+                local cmd = "kill -CONT " .. tostring(self.pid)
+                log ("    executing: " .. cmd)
+                os.execute (cmd)
+                self.suspend.active = false
+        end
+end
+
+function get_program (pid)
+        local prog = programs[pid]
+        if not prog then
+                prog = program:new (pid)
+                programs[pid] = prog
+        end
+        return prog
+end
+
+-- client class
+client = {}
+function client:new (xid)
+        -- make an object
+        local o = {}
+        setmetatable (o,self)
+        self.__index = function (t,k) 
+                if k == 'suspend' then          -- suspend mode is tracked per program
+                        return t.prog.suspend
+                end
+                return self[k]
+        end
+        self.__gc = function (old) old.prog=nil end
+        -- initialize the new object
+        o.xid = xid
+        o.pid = xid_to_pid(xid)
+        o.prog = get_program (o.pid)
+        -- raw mode
+        o.raw = {}
+        o.raw.toggle = function (cli)
+                                cli.raw.enabled = not cli.raw.enabled
+                                cli:set_raw_mode()
+                        end
+        o.raw.enabled = false           -- if true, raw mode enabled when client is focused
+        return o
+end
+
+function client:stop ()
+        if self.suspend.enabled then
+                self.prog:stop()
+        end
+end
+
+function client:cont ()
+        self.prog:cont()
+end
+
+function client:set_raw_mode()
+        if not self or not self.raw.enabled then        -- normal mode
+                update_active_keys ()
+        else                                            -- raw mode
+                write ("/keys", "Mod4-space")
+        end
+end
+
+function client:toggle(what)
+        if what and self[what] then
+                local ctl = self[what]
+
+                ctl.toggle (self)
+
+                log ("xid=" .. tostring (xid) 
+                .. "  pid=" .. tostring (self.pid) .. " (" .. tostring (self.prog.pid) .. ")"
+                .. "  what=" .. tostring (what) 
+                .. "  enabled=" .. tostring(ctl["enabled"]))
+        end
+        mode_widget:show (self:flags_string())
+end
+
+function client:flags_string()
+        local ret = ''
+        if self.suspend.enabled then ret = ret .. "s" else ret = ret .. "-" end
+        if self.raw.enabled     then ret = ret .. "r" else ret = ret .. "-" end
+        return ret
+end
+
+function get_client (xid)
+        local xid = xid or wmixp:read("/client/sel/ctl")
+        local cli = clients[xid]
+        if not cli then
+                cli = client:new (xid)
+                clients[xid] = cli
+        end
+        return cli
+end
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+function client_created (xid)
+        log ("-client_created " .. tostring(xid))
+        return get_client(xid)
+end
+
+function client_destoryed (xid)
+        log ("-client_destoryed " .. tostring(xid))
+        if clients[xid] then
+                local cli = clients[xid]
+                clients[xid] = nil
+                log ("  del pid: " .. tostring(cli.pid))
+                cli:cont()
+        end
+end
+
+function client_focused (xid)
+        log ("-client_focused " .. tostring(xid))
+        -- do nothing if the same xid
+        if focused_xid == xid then
+                return clients[xid]
+        end
+
+        local old = clients[focused_xid]
+        local new = get_client(xid)
+
+        -- handle raw mode switch
+        if not old or ( old and new and old.raw.enabled ~= new.raw.enabled ) then
+                new:set_raw_mode()
+        end
+
+        -- do nothing if the same pid
+        if old and new and old.pid == new.pid then
+                mode_widget:show (new:flags_string())
+                return clients[xid]
+        end
+
+        if old then
+                log ("  old pid: " .. tostring(old.pid)
+                      .. "  xid: " .. tostring(old.xid)
+                    .. "  flags: " .. old:flags_string())
+                old:stop()
+        end
+
+        if new then
+                log ("  new pid: " .. tostring(new.pid)
+                      .. "  xid: " .. tostring(new.xid)
+                    .. "  flags: " .. new:flags_string())
+                new:cont()
+        end
+
+        mode_widget:show (new:flags_string())
+        focused_xid = xid
+        return new
+end
+
 
 -- ========================================================================
 -- DOCUMENTATION
