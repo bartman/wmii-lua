@@ -1,16 +1,8 @@
 If you have any suggests I am happy to add them to the list.
 
-for 0.2 release
-    - core
-        - version number in the files
-        - 'make release' target
-
-    - bugs
-        - Mod1-a wmiirc will fail if you don't have ~/.wmii-3.5/wmiirc;
-          it should also look in system files
-
 for 0.3 release
     - core
+        - version number in the files
         - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
         - action and program history (bring up the last X choices in
           Mod1-a and Mod1-p)

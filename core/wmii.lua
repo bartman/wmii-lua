@@ -67,7 +67,6 @@ package.cpath = package.cpath
 local ixp = require "ixp"
 local eventloop = require "eventloop"
 
-local base = _G
 local io = require("io")
 local os = require("os")
 local posix = require("posix")
@@ -121,6 +120,12 @@ plugin_path = os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so;"
            .. "/usr/lib/lua/5.1/wmii/?.so;"
            .. "/usr/share/lua/5.1/wmii/?.lua"
 
+-- where to find wmiirc (see find_wmiirc())
+wmiirc_path = os.getenv("HOME") .. "/.wmii-3.5/wmiirc.lua;"
+           .. os.getenv("HOME") .. "/.wmii-3.5/wmiirc;"
+           .. "/etc/X11/wmii-3.5/wmiirc.lua;"
+           .. "/etc/X11/wmii-3.5/wmiirc"
+
 -- ========================================================================
 -- LOCAL HELPERS
 -- ========================================================================
@@ -137,8 +142,38 @@ Currently just writes to io.stderr
 =cut
 --]]
 function log (str)
-        io.stderr:write (str .. "\n")
+        if get_conf("debug") then
+                io.stderr:write (str .. "\n")
+        end
 end
+
+--[[
+=pod
+
+=item find_wmiirc ( )
+
+Locates the wmiirc script.  It looks in ~/.wmii-3.5 and /etc/X11/wmii-3.5
+for the first lua script bearing the name wmiirc.lua or wmiirc.  Returns
+first match.
+
+=cut
+--]]
+function find_wmiirc()
+        local fn
+        for fn in string.gmatch(wmiirc_path, "[^;]+") do
+                -- try to locate the files locally
+                local file = io.open(fn, "r")
+                if file then
+                        local txt = file:read("*line")
+                        file:close()
+                        if type(txt) == 'string' and txt:match("lua") then
+                                return fn
+                        end
+                end
+        end
+        return nil
+end
+
 
 -- ========================================================================
 -- MAIN ACCESS FUNCTIONS
@@ -473,7 +508,8 @@ local action_handlers = {
         end,
 
         exec = function (act, args)
-                local what = args or wmiirc
+                local what = args or "wmii"
+                log ("    asking wmii to exec " .. tostring(what))
                 cleanup()
                 write ("/ctl", "exec " .. what)
         end,
@@ -484,10 +520,15 @@ local action_handlers = {
         end,
 
         wmiirc = function ()
-                cleanup()
-                posix.exec ("lua", wmiirc)
+                local wmiirc = find_wmiirc()
+                if wmiirc then
+                        log ("    executing: lua " .. wmiirc)
+                        cleanup()
+                        posix.exec ("lua", wmiirc)
+                end
         end,
 
+--[[
         rehash = function ()
                 -- TODO: consider storing list of executables around, and 
                 -- this will then reinitialize that list
@@ -497,7 +538,8 @@ local action_handlers = {
         status = function ()
                 -- TODO: this should eventually update something on the /rbar
                 log ("    TODO: status")
-        end
+        end,
+--]]
 }
 
 --[[
@@ -954,6 +996,7 @@ local ev_handlers = {
                 if arg then
                         if arg == "wmiirc" then
                                 -- backwards compatibility with bash version
+                                log ("    exiting; pid=" .. mypid)
                                 cleanup()
                                 os.exit (0)
                         else
@@ -962,6 +1005,7 @@ local ev_handlers = {
                                 if pid then
                                         local pid = tonumber (pid)
                                         if not (pid == mypid) then
+                                                log ("    exiting; pid=" .. mypid)
                                                 cleanup()
                                                 os.exit (0)
                                         end
@@ -1173,7 +1217,8 @@ end
 
 local config = {
         xterm = 'x-terminal-emulator',
-        xlock = "xscreensaver-command --lock"
+        xlock = "xscreensaver-command --lock",
+        debug = false,
 }
 
 -- ------------------------------------------------------------------------
