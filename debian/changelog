@@ -1,3 +1,14 @@
+wmiirc-lua (0.2) unstable; urgency=low
+
+  * client tracking - provides raw and suspend modes (see doc/client-modes).
+  * fixed install permissions for wmii-lua.
+  * improved stock wmiirc.
+  * improved documentation in doc/.
+  * improved install scripts and debianization.
+  * minor bug fixes.
+
+ -- Bart Trojanowski <bart@jukie.net>  Sat, 13 Oct 2007 20:17:46 -0400
+
 wmiirc-lua (0.1.2) unstable; urgency=low
 
   * Initial Debianization.
