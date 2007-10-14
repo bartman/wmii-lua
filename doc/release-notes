@@ -1,0 +1,44 @@
+About
+======
+This file lists steps that I use to release the project.  It is probably
+not of interest to you. :)
+
+Branches
+=========
+    master   - current development stream
+    release  - last stable release
+    debian   - changes for debian packages
+    pu       - proposed updates
+
+ Development will occur on 'master', releases will be pushed out on 'release',
+ and any (experimental) patches not yet in 'master' will be put on 'pu'.
+
+Base release     (master -> release)
+=============
+
+ VERSION="0.2"
+
+ git checkout -f release
+ git merge master
+ git tag -s v$VERSION                           # enter description
+ 
+ git push
+
+Debian release   (release -> debian)
+===============
+
+ VERSION="0.2"
+ DEBVERSION="${VERSION}-1"
+
+ git checkout -f debian
+ git merge v$VERSION
+
+ dch -v $DEBVERSION
+
+ git commit -m"debian $DEBVERSION" debian/
+
+ git push
+
+
+
+vim: set ts=8 et sw=8 tw=72
