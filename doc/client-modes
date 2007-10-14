@@ -1,0 +1,45 @@
+About
+======
+wmii tracks several things about each X client window.  wmiirc-lua goes
+a bit further and can set different modes on each client.  The modes are
+tracked on a per client (aka window) basis and do not influence other
+clients.  Currently the following modes are supported:
+
+  - raw mode - bypass wmii key-bindings for selected programs
+  - suspend mode - send SIGSTOP when unfocused, SIGCONT when focused
+
+Modes can be toggled on and off by using Mod1-f shortcut.
+
+The mode of the current window is displayed on the wmii status bar.
+When all modes are disabled the widget will show -- indicating that all
+available modes are disabled.  The dashes will be replaced with the
+first character of the mode when that mode is enabled for the current
+client.  For example: r- would indicate that raw mode was enabled, but
+suspend mode was disabled.
+
+
+raw mode
+=========
+Raw mode is tracked for each client, and can be either on or off.  When
+a focused client has raw mode enabled all input except for Mod4-space is
+passed to the application and not wmii.  Otherwise, all wmiirc-lua
+key-bindings are handled as expected.
+
+Raw mode can be entered using Mod4-space or Mod1-f (and selecting raw),
+but can only be disabled by Mod4-space.  Note that you can also switch
+focus with the mouse to regain key-bindings.
+
+suspend mode
+=============
+Suspend mode is tracked for each process (ie the PID), and can be either
+enabled or disabled.  When a client with suspend mode enabled loses
+focus, it is sent the STOP signal -- essentially suspending the process.
+Any time that a client whose process was previously suspended gains
+focus, it is sent the CONT signal.
+
+Suspend mode can be toggled bu using Mod1-f (and selecting suspend).
+
+
+
+vim: set ts=8 et sw=8 tw=72
+

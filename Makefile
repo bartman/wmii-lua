@@ -95,7 +95,7 @@ install: ${MAN}
 	#
 	# install scripts
 	${INSTALL} -m 0744 -t ${BIN_DIR} install-wmiirc-lua
-	${INSTALL} -m 0744 -t ${BIN_DIR} wmii-lua
+	${INSTALL} -m 0755 -t ${BIN_DIR} wmii-lua
 
 #
 # install in user directory
@@ -120,6 +120,12 @@ else
 
 install-user: ${MAN}
 endif
+
+.PHONY: xxx
+xxx:
+	${MAKE} all
+	sudo ${MAKE} install PREFIX=/usr
+
 
 # ------------------------------------------------------------------------
 # tags and cscope
