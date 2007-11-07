@@ -15,6 +15,11 @@ for 0.3 release
         - history: 
             - Mod1-[oi] to provide window history
             - Mod4-[oi] to provide workspace history (vim inspired)
+        - at: use the at scheduler to implement a reminder system
+              action of 'at' or '@' for short
+              examples:
+                 alt-a @ 20:00 "message to display"
+                 alt-a @ 20:00 !xeyes
 
 future
     - core
