@@ -108,7 +108,7 @@ local wmixp = ixp.new(wmii_adr)
 
 -- history of previous views, view_hist[#view_hist] is the last one
 local view_hist = {}                  -- sorted with 1 being the oldest
-local view_hist_max = 10              -- max number to keep track of
+local view_hist_max = 50              -- max number to keep track of
 
 -- allow for a client to be forced to a tag
 local next_client_goes_to_tag = nil
@@ -583,6 +583,31 @@ end
 -- KEY HANDLERS
 -- ========================================================================
 
+function ke_view_starting_with_letter (letter)
+        local i,v
+
+        -- find the view name in history in reverse order
+        for i=#view_hist,1,-1 do
+                v = view_hist[i]
+                if letter == v:sub(1,1) then
+                        set_view(v)
+                        return true
+                end
+        end
+
+        -- otherwise just pick the first view that matches
+        local all = get_tags()
+        for i,v in pairs(all) do
+                if letter == v:sub(1,1) then
+                        set_view_index (i)
+                        return true
+                end
+        end
+
+        return false
+end
+
+
 local key_handlers = {
         ["*"] = function (key)
                 log ("*: " .. key)
@@ -684,32 +709,18 @@ local key_handlers = {
 
         -- work spaces (# and @ are wildcards for numbers and letters)
         ["Mod4-#"] = function (key, num)
-                local all = get_tags()
                 -- first attempt to find a view that starts with the number requested
                 local num_str = tostring(num)
-                local i,v
-                for i,v in pairs(all) do
-                        if num_str == v:sub(1,1) then
-                                set_view_index (i)
-                                return
-                        end
+                if not ke_view_starting_with_letter (num_str) then
+                        -- if we fail, then set it to the index requested
+                        set_view_index (num)
                 end
-
-                -- if we fail, then set it to the index requested
-                set_view_index (num)
         end,
         ["Mod4-Shift-#"] = function (key, num)
                 write ("/client/sel/tags", tostring(num))
         end,
         ["Mod4-@"] = function (key, letter)
-                local all = get_tags()
-                local i,v
-                for i,v in pairs(all) do
-                        if letter == v:sub(1,1) then
-                                set_view_index (i)
-                                break
-                        end
-                end
+                ke_view_starting_with_letter (letter)
         end,
         ["Mod4-Shift-@"] = function (key, letter)
                 local all = get_tags()
