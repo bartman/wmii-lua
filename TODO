@@ -2,6 +2,7 @@ If you have any suggests I am happy to add them to the list.
 
 for 0.3 release
     - core
+        - verify required packages in wmii.lua (like lua version number)
         - version number in the files
         - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
         - action and program history (bring up the last X choices in
@@ -15,6 +16,11 @@ for 0.3 release
         - history: 
             - Mod1-[oi] to provide window history
             - Mod4-[oi] to provide workspace history (vim inspired)
+        - at: use the at scheduler to implement a reminder system
+              action of 'at' or '@' for short
+              examples:
+                 alt-a @ 20:00 "message to display"
+                 alt-a @ 20:00 !xeyes
 
 future
     - core
@@ -50,6 +56,11 @@ future
             - remember where windows are, and restart the "session" as
               it was before
             - global and per-view
+
+        - 'clipboard'
+            - remember X of the last copy/paste contents
+            - pull them up with an action
+            - see http://glipper.sourceforge.net/ for ideas/code
 
         - 'messages'
             - add action or hot-key to copy last message to xclipboard
