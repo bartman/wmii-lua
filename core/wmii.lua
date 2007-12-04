@@ -1994,16 +1994,20 @@ function client_focused (xid)
         end
 
         if old then
+                --[[
                 log ("  old pid: " .. tostring(old.pid)
                       .. "  xid: " .. tostring(old.xid)
                     .. "  flags: " .. old:flags_string())
+                    ]]--
                 old:stop()
         end
 
         if new then
+                --[[
                 log ("  new pid: " .. tostring(new.pid)
                       .. "  xid: " .. tostring(new.xid)
                     .. "  flags: " .. new:flags_string())
+                    ]]--
                 new:cont()
         end
 
