@@ -1,3 +1,12 @@
+wmiirc-lua (0.2.1-1) unstable; urgency=low
+
+  * at module.
+  * fix how core/plugin libraries are discovered.
+  * added history for views, programs and actions.
+  * minor bug fixes.
+
+ -- Bart Trojanowski <bart@jukie.net>  Tue, 04 Dec 2007 23:39:18 -0500
+
 wmiirc-lua (0.2) unstable; urgency=low
 
   * client tracking - provides raw and suspend modes (see doc/client-modes).
