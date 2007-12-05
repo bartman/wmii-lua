@@ -15,8 +15,8 @@ io.stderr:write ("----------------------------------------------\n")
 
 -- load wmii.lua
 local wmiidir = os.getenv("HOME") .. "/.wmii-3.5"
-package.path  = wmiidir .. "/core/?.lua;"    ..
-                wmiidir .. "/plugins/?.lua"  ..
+package.path  = wmiidir .. "/core/?.lua;"       ..
+                wmiidir .. "/plugins/?.lua;"    ..
                 package.path
 require "wmii" 
 
