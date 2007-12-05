@@ -67,6 +67,7 @@ package.cpath = wmiidir .. "/core/?.so;" ..
 
 local ixp = require "ixp"
 local eventloop = require "eventloop"
+local history = require "history"
 
 local io = require("io")
 local os = require("os")
@@ -112,6 +113,10 @@ local view_hist_max = 50              -- max number to keep track of
 
 -- allow for a client to be forced to a tag
 local next_client_goes_to_tag = nil
+
+-- program and action histories
+local prog_hist = history.new (20)
+local action_hist = history.new(10)
 
 -- where to find plugins
 plugin_path = os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so;"
@@ -275,7 +280,7 @@ end
 
 -- ------------------------------------------------------------------------
 -- setup a table describing dmenu command
-local function dmenu_cmd (prompt)
+local function dmenu_cmd (prompt, iterator)
         local cmdt = { "dmenu", "-b" }
         local fn = get_ctl("font")
         if fn then
@@ -370,7 +375,14 @@ function prog_menu ()
         dmenu[#dmenu+1] = ">"
         dmenu[#dmenu+1] = outfile
 
-        local cmd = "dmenu_path |" .. table.concat(dmenu," ")
+        local hstt = { }
+        for n in prog_hist:walk_reverse() do
+                hstt[#hstt+1] = "echo '" .. n .. "' ; "
+        end
+
+        local cmd = "(" .. table.concat(hstt)
+                         .. "dmenu_path ) |" 
+                         .. table.concat(dmenu," ")
         os.execute (cmd)
 
         local fh = io.open (outfile, "rb")
@@ -641,6 +653,7 @@ local key_handlers = {
                         if act then
                                 local fn = action_handlers[act]
                                 if fn then
+                                        action_hist:add (act)
                                         local r, err = pcall (fn, act, args)
                                         if not r then
                                                 log ("WARNING: " .. tostring(err))
@@ -652,6 +665,7 @@ local key_handlers = {
         ["Mod1-p"] = function (key)
                 local prog = prog_menu()
                 if prog then
+                        prog_hist:add(prog:match("(%w+)"))
                         log ("    executing: " .. prog)
                         os.execute (prog .. " &")
                 end
