@@ -58,8 +58,8 @@ It should be used by your wmiirc
 local wmiidir = os.getenv("HOME") .. "/.wmii-3.5"
 local wmiirc = wmiidir .. "/wmiirc"
 
-package.path  = wmiidir .. "/core/?.lua;"    ..
-                wmiidir .. "/plugins/?.lua"  ..
+package.path  = wmiidir .. "/core/?.lua;" ..
+                wmiidir .. "/plugins/?.lua;" ..
                 package.path
 package.cpath = wmiidir .. "/core/?.so;" ..
                 wmiidir .. "/plugins/?.so;" ..
