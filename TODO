@@ -5,8 +5,6 @@ for 0.3 release
         - verify required packages in wmii.lua (like lua version number)
         - version number in the files
         - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
-        - action and program history (bring up the last X choices in
-          Mod1-a and Mod1-p)
 
     - bundled plugins
         - mpd: controls / volume
