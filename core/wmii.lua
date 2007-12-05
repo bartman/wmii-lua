@@ -619,6 +619,45 @@ function ke_view_starting_with_letter (letter)
         return false
 end
 
+function ke_handle_action()
+        local actions = { }
+        local seen = {}
+
+        local n
+        for n in action_hist:walk_reverse() do
+                actions[#actions+1] = n
+                seen[n] = 1
+        end
+
+        local i,v
+        for i,v in pairs(action_handlers) do
+                if not seen[i] then
+                        actions[#actions+1] = i
+                end
+        end
+
+        local text = menu(actions, "action:")
+        if text then
+                log ("Action: " .. text)
+                local act = text
+                local args = nil
+                local si = text:find("%s")
+                if si then
+                        act,args = string.match(text .. " ", "(%w+)%s(.+)")
+                end
+                if act then
+                        local fn = action_handlers[act]
+                        if fn then
+                                action_hist:add (act)
+                                local r, err = pcall (fn, act, args)
+                                if not r then
+                                        log ("WARNING: " .. tostring(err))
+                                end
+                        end
+                end
+        end
+end
+
 
 local key_handlers = {
         ["*"] = function (key)
@@ -641,26 +680,7 @@ local key_handlers = {
                 end
         end,
         ["Mod1-a"] = function (key)
-                local text = menu(action_handlers, "action:")
-                if text then
-                        log ("Action: " .. text)
-                        local act = text
-                        local args = nil
-                        local si = text:find("%s")
-                        if si then
-                                act,args = string.match(text .. " ", "(%w+)%s(.+)")
-                        end
-                        if act then
-                                local fn = action_handlers[act]
-                                if fn then
-                                        action_hist:add (act)
-                                        local r, err = pcall (fn, act, args)
-                                        if not r then
-                                                log ("WARNING: " .. tostring(err))
-                                        end
-                                end
-                        end
-                end
+                ke_handle_action()
         end,
         ["Mod1-p"] = function (key)
                 local prog = prog_menu()
