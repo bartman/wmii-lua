@@ -1,0 +1,16 @@
+- convert repo to build debs using git-buildpackage
+
+10:57 < dave0> bartman: 'make deb' gives me wacky errors on wmiirc-lua
+10:57 < dave0> This package has a Debian revision number but there does not seem to be
+10:57 < dave0> an appropriate original tar file or .orig directory in the parent directory;
+10:57 < dave0> (expected wmiirc-lua_0.2.1.orig.tar.gz or wmiirc-lua.git.orig)
+10:57 < dave0> continue anyway? (y/n)
+
+- figure out what to do with libixp... maybe release a more recent libixp.deb myself
+
+11:07 < dave0> then it aborts claiming I don't have libixp installed
+11:07 < dave0> which I installed from source per the instructions, not from apt-get
+11:07 < dave0> is there a way to override that?
+11:08 < dave0> dpkg-checkbuilddeps: Unmet build dependencies: libixp
+11:08 < dave0> debuild: fatal error at line 987:
+
