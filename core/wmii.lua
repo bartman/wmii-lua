@@ -376,7 +376,7 @@ function prog_menu ()
         dmenu[#dmenu+1] = outfile
 
         local hstt = { }
-        for n in prog_hist:walk_reverse() do
+        for n in prog_hist:walk_reverse_unique() do
                 hstt[#hstt+1] = "echo '" .. n .. "' ; "
         end
 
@@ -625,14 +625,17 @@ function ke_handle_action()
 
         local n
         for n in action_hist:walk_reverse() do
-                actions[#actions+1] = n
-                seen[n] = 1
+                if not seen[n] then
+                        actions[#actions+1] = n
+                        seen[n] = 1
+                end
         end
 
-        local i,v
-        for i,v in pairs(action_handlers) do
-                if not seen[i] then
-                        actions[#actions+1] = i
+        local v
+        for n,v in pairs(action_handlers) do
+                if not seen[n] then
+                        actions[#actions+1] = n
+                        seen[n] = 1
                 end
         end
 
