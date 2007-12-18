@@ -115,6 +115,7 @@ else
 	${INSTALL} -m 0644 -b -t ${HOME_CORE} core/*.lua
 	${INSTALL} -m 0644 -b -t ${HOME_PLUGINS} plugins/*.lua
 	${INSTALL} -m 0644 -b -t ${HOME_WMII} ${MAN}
+	${INSTALL} -m 0744 -t ${HOME_BIN_DIR} wmii-lua
 	${MAKE} -C luaixp install-user
 	${MAKE} -C luaeventloop install-user
 
