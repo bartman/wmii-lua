@@ -93,7 +93,7 @@ module("wmii")
 
 -- get the process id
 local myid
-if posix then
+if have_posix then
         myid = posix.getprocessid("pid")
 else
         local now = tonumber(os.date("%s"))
@@ -543,7 +543,7 @@ local action_handlers = {
         end,
 
         wmiirc = function ()
-                if posix then
+                if have_posix then
                         local wmiirc = find_wmiirc()
                         if wmiirc then
                                 log ("    executing: lua " .. wmiirc)
