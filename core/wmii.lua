@@ -1059,7 +1059,7 @@ local ev_handlers = {
                 if arg then
                         if arg == "wmiirc" then
                                 -- backwards compatibility with bash version
-                                log ("    exiting; pid=" .. mypid)
+                                log ("    exiting; pid=" .. tostring(myid))
                                 cleanup()
                                 os.exit (0)
                         else
@@ -1067,8 +1067,8 @@ local ev_handlers = {
                                 local pid = string.match(arg, "wmiirc (%d+)")
                                 if pid then
                                         local pid = tonumber (pid)
-                                        if not (pid == mypid) then
-                                                log ("    exiting; pid=" .. mypid)
+                                        if not (pid == myid) then
+                                                log ("    exiting; pid=" .. tostring(myid))
                                                 cleanup()
                                                 os.exit (0)
                                         end
