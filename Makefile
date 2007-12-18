@@ -94,7 +94,7 @@ install: ${MAN}
 	${INSTALL} -m 0644 -t ${MAN_DIR} ${MAN}
 	#
 	# install scripts
-	${INSTALL} -m 0744 -t ${BIN_DIR} install-wmiirc-lua
+	${INSTALL} -m 0755 -t ${BIN_DIR} install-wmiirc-lua
 	${INSTALL} -m 0755 -t ${BIN_DIR} wmii-lua
 
 #
