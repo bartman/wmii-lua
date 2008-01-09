@@ -555,6 +555,10 @@ local action_handlers = {
                 end
         end,
 
+        fullscreen = function ()
+                wmixp:write ("/client/sel/ctl", "Fullscreen toggle")
+        end,
+
 --[[
         rehash = function ()
                 -- TODO: consider storing list of executables around, and 
