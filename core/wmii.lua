@@ -555,10 +555,6 @@ local action_handlers = {
                 end
         end,
 
-        fullscreen = function ()
-                wmixp:write ("/client/sel/ctl", "Fullscreen toggle")
-        end,
-
         urgent = function ()
                 wmixp:write ("/client/sel/ctl", "Urgent toggle")
         end,
@@ -616,6 +612,10 @@ end
 -- ========================================================================
 -- KEY HANDLERS
 -- ========================================================================
+
+function ke_fullscreen_toggle()
+        wmixp:write ("/client/sel/ctl", "Fullscreen toggle")
+end
 
 function ke_view_starting_with_letter (letter)
         local i,v
@@ -839,9 +839,12 @@ local key_handlers = {
         ["Mod1-m"] = function (key)
 		write("/tag/sel/ctl", "colmode sel max")
         end,
+        ["Mod1-f"] = function (key)
+                ke_fullscreen_toggle()
+        end,
 
         -- changing client flags
-        ["Mod1-f"] = function (key)
+        ["Shift-Mod1-f"] = function (key)
                 log ("setting flags")
 
                 local cli = get_client ()
