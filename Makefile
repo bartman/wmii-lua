@@ -6,7 +6,7 @@ MAN = wmii.3lua
 # ------------------------------------------------------------------------
 # main target
 
-.PHONY: all help deb debi libs luaixp luaeventloop docs man clean tags install install-user
+.PHONY: all help deb debi libs luaixp luaeventloop docs man clean tags install install-user install-variable-check install-user-variable-check
 all: libs man
 
 help:
@@ -74,7 +74,7 @@ clean:
 #
 # install system wide
 #
-install: ${MAN}
+install: ${MAN} install-variable-check
 	# create directories
 	${INSTALL} -d ${ALL_INSTALL_DIRS}
 	#
@@ -97,10 +97,20 @@ install: ${MAN}
 	${INSTALL} -m 0755 -t ${BIN_DIR} install-wmiirc-lua
 	${INSTALL} -m 0755 -t ${BIN_DIR} wmii-lua
 
+install-variable-check:
+	$(if ${ALL_INSTALL_DIRS},,$(error ALL_INSTALL_DIRS variable is empty; check config.mk))
+	$(if ${CORE_LUA_DIR},,    $(error CORE_LUA_DIR variable is empty; check config.mk))
+	$(if ${PLUGIN_LUA_DIR},,  $(error PLUGIN_LUA_DIR variable is empty; check config.mk))
+	$(if ${RC_DIR},,          $(error RC_DIR variable is empty; check config.mk))
+	$(if ${XS_DIR},,          $(error XS_DIR variable is empty; check config.mk))
+	$(if ${MAN_DIR},,         $(error MAN_DIR variable is empty; check config.mk))
+	$(if ${BIN_DIR},,         $(error BIN_DIR variable is empty; check config.mk))
+	@echo Config vars OK.
+
 #
 # install in user directory
 #
-install-user:
+install-user: install-user-variable-check
 ifeq ($(shell pwd),$(wildcard ~/.wmii-3.5))
 	@echo "You're already in the ~/.wmii-3.5/ directory"
 else
@@ -121,6 +131,15 @@ else
 
 install-user: ${MAN}
 endif
+
+install-user-variable-check:
+	$(if ${ALL_HOME_DIRS},,$(error ALL_HOME_DIRS variable is empty; check config.mk))
+	$(if ${HOME_WMII},,    $(error HOME_WMII variable is empty; check config.mk))
+	$(if ${HOME_CORE},,    $(error HOME_CORE variable is empty; check config.mk))
+	$(if ${HOME_PLUGINS},, $(error HOME_PLUGINS variable is empty; check config.mk))
+	$(if ${HOME_WMII},,    $(error HOME_WMII variable is empty; check config.mk))
+	$(if ${HOME_BIN_DIR},, $(error HOME_BIN_DIR variable is empty; check config.mk))
+	@echo Config vars OK.
 
 .PHONY: xxx
 xxx:
