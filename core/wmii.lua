@@ -1095,6 +1095,15 @@ local ev_handlers = {
         end,
         DestroyTag = function (ev, arg)
                 remove ("/lbar/" .. arg)
+
+                -- remove the tag from history
+                local i,v
+                for i=#view_hist,1,-1 do
+                        v = view_hist[i]
+                        if arg == v then
+                                table.remove(view_hist,i)
+                        end
+                end
         end,
 
         FocusTag = function (ev, arg)
