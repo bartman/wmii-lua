@@ -6,7 +6,7 @@ MAN = wmii.3lua
 # ------------------------------------------------------------------------
 # main target
 
-.PHONY: all help deb debi libs luaixp luaeventloop docs man clean tags install install-user install-variable-check install-user-variable-check
+.PHONY: all help deb debi libs luaixp luaeventloop docs man clean distclean tags install install-user install-variable-check install-user-variable-check
 all: libs man
 
 help:
@@ -17,6 +17,7 @@ help:
 	@echo "   libs           - build libraries"
 	@echo "   docs           - build documentation"
 	@echo "   clean          - clean up build"
+	@echo "   distclean      - clean even more"
 	@echo "   install        - install in system dir"
 	@echo "   install-user   - install in user home dir"
 	@echo
@@ -67,6 +68,9 @@ clean:
 	-rm -f cscope.files cscope.out tags
 	-${MAKE} -C luaixp clean
 	-${MAKE} -C luaeventloop clean
+
+distclean: clean
+	-rm -f config.mk
 
 # ------------------------------------------------------------------------
 # installing
