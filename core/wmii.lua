@@ -71,7 +71,6 @@ local history = require "history"
 
 local io = require("io")
 local os = require("os")
-local posix = require("posix")
 local string = require("string")
 local table = require("table")
 local math = require("math")
@@ -86,10 +85,21 @@ local tostring = tostring
 local tonumber = tonumber
 local setmetatable = setmetatable
 
+-- kinda silly, but there is no working liblua5.1-posix0 in ubuntu
+-- so we make it optional
+local have_posix, posix = pcall(require,"posix")
+
 module("wmii")
 
 -- get the process id
-local mypid = posix.getprocessid("pid")
+local myid
+if have_posix then
+        myid = posix.getprocessid("pid")
+else
+        local now = tonumber(os.date("%s"))
+        math.randomseed(now)
+        myid = math.random(10000)
+end
 
 -- ========================================================================
 -- MODULE VARIABLES
@@ -376,7 +386,7 @@ function prog_menu ()
         dmenu[#dmenu+1] = outfile
 
         local hstt = { }
-        for n in prog_hist:walk_reverse() do
+        for n in prog_hist:walk_reverse_unique() do
                 hstt[#hstt+1] = "echo '" .. n .. "' ; "
         end
 
@@ -533,12 +543,20 @@ local action_handlers = {
         end,
 
         wmiirc = function ()
-                local wmiirc = find_wmiirc()
-                if wmiirc then
-                        log ("    executing: lua " .. wmiirc)
-                        cleanup()
-                        posix.exec ("lua", wmiirc)
+                if have_posix then
+                        local wmiirc = find_wmiirc()
+                        if wmiirc then
+                                log ("    executing: lua " .. wmiirc)
+                                cleanup()
+                                posix.exec ("lua", wmiirc)
+                        end
+                else
+                        log("sorry cannot restart; you don't have lua's posix library.")
                 end
+        end,
+
+        urgent = function ()
+                wmixp:write ("/client/sel/ctl", "Urgent toggle")
         end,
 
 --[[
@@ -595,6 +613,10 @@ end
 -- KEY HANDLERS
 -- ========================================================================
 
+function ke_fullscreen_toggle()
+        wmixp:write ("/client/sel/ctl", "Fullscreen toggle")
+end
+
 function ke_view_starting_with_letter (letter)
         local i,v
 
@@ -625,14 +647,17 @@ function ke_handle_action()
 
         local n
         for n in action_hist:walk_reverse() do
-                actions[#actions+1] = n
-                seen[n] = 1
+                if not seen[n] then
+                        actions[#actions+1] = n
+                        seen[n] = 1
+                end
         end
 
-        local i,v
-        for i,v in pairs(action_handlers) do
-                if not seen[i] then
-                        actions[#actions+1] = i
+        local v
+        for n,v in pairs(action_handlers) do
+                if not seen[n] then
+                        actions[#actions+1] = n
+                        seen[n] = 1
                 end
         end
 
@@ -814,9 +839,12 @@ local key_handlers = {
         ["Mod1-m"] = function (key)
 		write("/tag/sel/ctl", "colmode sel max")
         end,
+        ["Mod1-f"] = function (key)
+                ke_fullscreen_toggle()
+        end,
 
         -- changing client flags
-        ["Mod1-f"] = function (key)
+        ["Shift-Mod1-f"] = function (key)
                 log ("setting flags")
 
                 local cli = get_client ()
@@ -1042,7 +1070,7 @@ local ev_handlers = {
                 if arg then
                         if arg == "wmiirc" then
                                 -- backwards compatibility with bash version
-                                log ("    exiting; pid=" .. mypid)
+                                log ("    exiting; pid=" .. tostring(myid))
                                 cleanup()
                                 os.exit (0)
                         else
@@ -1050,8 +1078,8 @@ local ev_handlers = {
                                 local pid = string.match(arg, "wmiirc (%d+)")
                                 if pid then
                                         local pid = tonumber (pid)
-                                        if not (pid == mypid) then
-                                                log ("    exiting; pid=" .. mypid)
+                                        if not (pid == myid) then
+                                                log ("    exiting; pid=" .. tostring(myid))
                                                 cleanup()
                                                 os.exit (0)
                                         end
@@ -1368,7 +1396,7 @@ el:add_exec (wmiir .. " read /event",
 -- run the event loop and process events, this function does not exit
 function run_event_loop ()
         -- stop any other instance of wmiirc
-        wmixp:write ("/event", "Start wmiirc " .. tostring(mypid))
+        wmixp:write ("/event", "Start wmiirc " .. tostring(myid))
 
         log("wmii: updating lbar")
 

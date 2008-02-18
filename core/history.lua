@@ -78,4 +78,27 @@ function history:walk_reverse ()
         end
 end
 
+function history:walk_reverse_unique ()
+        local s = self
+
+        local iterator = s:walk_reverse()
+        if not iterator then
+                return function ()
+                        return nil
+                end
+        end
+
+        local seen = {}
+        return function ()
+                local v = iterator()
+                while v do
+                        if not seen[v] then
+                                seen[v] = 1
+                                return v
+                        end
+                        v = iterator()
+                end
+        end
+end
+
 
