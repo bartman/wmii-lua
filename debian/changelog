@@ -1,3 +1,9 @@
+wmiirc-lua (0.2.3-1) unstable; urgency=low
+
+  * handle API change in liblua5.1-posix1. 
+
+ -- Bart Trojanowski <bart@jukie.net>  Wed, 12 Mar 2008 21:55:48 -0400
+
 wmiirc-lua (0.2.2-1) unstable; urgency=low
 
   * minor fixes and features: fullscreen (alt-f); urgent action; volume
