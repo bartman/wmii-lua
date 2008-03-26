@@ -94,8 +94,16 @@ module("wmii")
 -- get the process id
 local myid
 if have_posix then
-        myid = posix.getprocessid("pid")
-else
+        -- but having posix is not enough as the API changes, so we try each one
+        if posix.getprocessid then
+                myid = pcall (posix.getprocessid, "pid")
+        end
+        if not myid and posix.getpid then
+                myid = pcall (posix.getpid, "pid")
+        end
+end
+if not myid then
+        -- we were not able to get the PID, but we can create a random number
         local now = tonumber(os.date("%s"))
         math.randomseed(now)
         myid = math.random(10000)
