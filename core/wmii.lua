@@ -96,10 +96,16 @@ local myid
 if have_posix then
         -- but having posix is not enough as the API changes, so we try each one
         if posix.getprocessid then
-                myid = pcall (posix.getprocessid, "pid")
+                local stat,rc = pcall (posix.getprocessid, "pid")
+                if stat then
+                        myid = rc
+                end
         end
         if not myid and posix.getpid then
-                myid = pcall (posix.getpid, "pid")
+                local stat,rc = pcall (posix.getpid, "pid")
+                if stat then
+                        myid = rc
+                end
         end
 end
 if not myid then
