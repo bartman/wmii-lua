@@ -562,7 +562,9 @@ local action_handlers = {
                         if wmiirc then
                                 log ("    executing: lua " .. wmiirc)
                                 cleanup()
-                                posix.exec ("lua", wmiirc)
+                                posix.exec (wmiirc)
+                                posix.exec ("/bin/sh", "-c", "exec lua wmiirc")
+                                posix.exec ("/usr/bin/lua", wmiirc)
                         end
                 else
                         log("sorry cannot restart; you don't have lua's posix library.")
