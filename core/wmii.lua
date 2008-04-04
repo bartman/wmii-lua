@@ -96,10 +96,16 @@ local myid
 if have_posix then
         -- but having posix is not enough as the API changes, so we try each one
         if posix.getprocessid then
-                myid = pcall (posix.getprocessid, "pid")
+                local stat,rc = pcall (posix.getprocessid, "pid")
+                if stat then
+                        myid = rc
+                end
         end
         if not myid and posix.getpid then
-                myid = pcall (posix.getpid, "pid")
+                local stat,rc = pcall (posix.getpid, "pid")
+                if stat then
+                        myid = rc
+                end
         end
 end
 if not myid then
@@ -556,7 +562,9 @@ local action_handlers = {
                         if wmiirc then
                                 log ("    executing: lua " .. wmiirc)
                                 cleanup()
-                                posix.exec ("lua", wmiirc)
+                                posix.exec (wmiirc)
+                                posix.exec ("/bin/sh", "-c", "exec lua wmiirc")
+                                posix.exec ("/usr/bin/lua", wmiirc)
                         end
                 else
                         log("sorry cannot restart; you don't have lua's posix library.")
@@ -1103,6 +1111,15 @@ local ev_handlers = {
         end,
         DestroyTag = function (ev, arg)
                 remove ("/lbar/" .. arg)
+
+                -- remove the tag from history
+                local i,v
+                for i=#view_hist,1,-1 do
+                        v = view_hist[i]
+                        if arg == v then
+                                table.remove(view_hist,i)
+                        end
+                end
         end,
 
         FocusTag = function (ev, arg)
