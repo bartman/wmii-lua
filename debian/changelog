@@ -1,3 +1,9 @@
+wmiirc-lua (0.2.3-2) unstable; urgency=low
+
+  * fix wmiirc restart issues.
+
+ -- Bart Trojanowski <bart@jukie.net>  Fri, 04 Apr 2008 09:41:31 -0400
+
 wmiirc-lua (0.2.3-1) unstable; urgency=low
 
   * handle API change in liblua5.1-posix1. 
