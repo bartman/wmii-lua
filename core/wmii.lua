@@ -1395,6 +1395,7 @@ end
 
 -- the event loop instance
 local el = eventloop.new()
+local wmiirc_running = false
 
 -- add the core event handler for events
 el:add_exec (wmiir .. " read /event",
@@ -1436,10 +1437,12 @@ function run_event_loop ()
         update_active_keys ()
 
         log("wmii: starting event loop")
-        while true do
+        wmiirc_running = true
+        while wmiirc_running do
                 local sleep_for = process_timers()
                 el:run_loop(sleep_for)
         end
+        log ("wmii: exiting")
 end
 
 -- ========================================================================
@@ -1876,6 +1879,7 @@ function cleanup ()
         --]]
 
         log ("wmii: dormant")
+        wmiirc_running = false
 end
 
 -- ========================================================================
