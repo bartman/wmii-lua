@@ -128,7 +128,7 @@ To load plugins into wmiirc, simply call the load_plugin function:
         -- load some plugins
         wmii.load_plugin ("messages")
         wmii.load_plugin ("clock")
-        wmii.load_plugin ("dstat_load")
+        wmii.load_plugin ("loadavg")
         wmii.load_plugin ("browser")
 
 As mentioned above plugins can have configuration options.  To set them
