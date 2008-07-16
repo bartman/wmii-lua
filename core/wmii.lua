@@ -419,7 +419,7 @@ function prog_menu ()
 end
 
 -- ------------------------------------------------------------------------
--- displays the a program menu, returns selected program
+-- returns a table of all tags
 function get_tags()
         local t = {}
         local s
@@ -433,7 +433,7 @@ function get_tags()
 end
 
 -- ------------------------------------------------------------------------
--- displays the a program menu, returns selected program
+-- returns the selected tag (the view)
 function get_view()
         local v = wmixp:read("/ctl") or ""
         return v:match("view%s+(%S+)")
@@ -1682,8 +1682,9 @@ function update_displayed_widgets ()
 end
 
 -- ------------------------------------------------------------------------
--- create a new program and for each line it generates call the callback function
--- returns fd which can be passed to kill_exec()
+-- fork and exec a program; the callback function is called for each line
+-- read from the stdout of that program; the return is the fd that can be
+-- passed to kill_exec to terminate the program.
 function add_exec (command, callback)
         return el:add_exec (command, callback)
 end
