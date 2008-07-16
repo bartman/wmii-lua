@@ -1209,6 +1209,14 @@ local ev_handlers = {
                 client_destoryed (arg)
         end,
 
+        -- force the next window tags
+        NextWindowTags = function (ev, arg)
+                if type(arg) == 'string' then
+                        log ("    forcing next client to tags: " .. arg)
+                        next_client_goes_to_tag = arg
+                end
+        end,
+
         -- urgent tag?
         UrgentTag = function (ev, arg)
                 log ("UrgentTag: " .. arg)
