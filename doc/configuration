@@ -130,6 +130,7 @@ To load plugins into wmiirc, simply call the load_plugin function:
         wmii.load_plugin ("clock")
         wmii.load_plugin ("loadavg")
         wmii.load_plugin ("browser")
+        wmii.load_plugin ("view_workdirs")
 
 As mentioned above plugins can have configuration options.  To set them
 at load time a table can be passed with those parameters defined.
