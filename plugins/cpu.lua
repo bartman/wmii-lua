@@ -34,9 +34,12 @@ is NO WARRANTY, to the extent permitted by law.
 
 local wmii = require("wmii")
 local os = require("os")
+local posix = require("posix")
 local io = require("io")
 local type = type
 local error = error
+local pairs = pairs
+local tostring = tostring
 
 module("cpu")
 api_version = 0.1
@@ -48,43 +51,73 @@ local timer  = nil
 
 widget = wmii.widget:new ("400_cpu")
 
-local function _command ( cmd )
-
-	if (cmd) then
-		wmii.log( "about to run " .. cmd)
-		local file = io.popen( cmd)
-		local status = file:read("*a")
-		file:close()
-
-		return status:match("[^\n]*")
-	else
-		return ""
-	end
+local function cpu_list()
+        local dir = "/sys/devices/system/cpu/"
+        local _,cpu
+        local list = {}
+        for _,cpu in pairs(posix.glob(dir .. 'cpu[0-9]*')) do
+                local stat
+                if cpu then
+                        stat = posix.stat(cpu)
+                        if stat and stat.type == 'directory' then
+                                list[#list+1] = cpu
+                        end
+                end
+        end
+        return list
 end
 
-local function create_string ( )
-	wmii.log( "create string")
-	local cmd = "cpufreq-info |grep 'current CPU fre'|uniq | awk '{print $5 $6}'"
-	local cmd2 = "cpufreq-info | grep \'The gove\'|awk '{print $3}' | uniq"
-	local cmd3 = "echo `awk '/remaining/ {print $3}' /proc/acpi/battery/BAT0/state`\*100/`awk '/last/ {print $4}' /proc/acpi/battery/BAT0/info` | bc"
-	local str2 = _command(cmd2)
-	str2 = str2.sub(str2, 2, str2.len(str2)-1)
-	local str = _command(cmd)
-	str = str.sub(str, 1, str.len(str)-1)
-	return str .. "(" .. str2 .. ") BAT0: " .. _command(cmd3) .. "%"
+function read_file(path)
+	local fd = io.open(path, "r")
+	if fd == nil then
+		return nil
+	end
+
+	local text = fd:read("*a")
+        fd:close()
+
+        if type(text) == 'string' then
+                text = text:match('(%w+)')
+        end
+
+        return text
+end
+
+local function create_string(cpu)
+        local govfile = cpu .. '/cpufreq/scaling_governor'
+        local gov = read_file(govfile) or ""
+
+        local frqfile = cpu .. '/cpufreq/scaling_cur_freq'
+        local frq = read_file(frqfile) or ""
+
+        if type(frq) == 'string' then
+                local mhz = frq:match('(.*)000')
+                if mhz then
+                        frq = mhz .. "MHz"
+                else
+                        frq = frq .. "kHz"
+                end
+        else
+                frq = ""
+        end
+
+        return gov .. " " .. frq
 end
 
 function update ( new_vol )
-	local str = create_string()
+        local txt = ""
+        local _, cpu
+        local list = cpu_list()
+        for _,cpu in pairs(list) do
+                txt = txt .. create_string(cpu) .. " "
+        end
 
-	widget:show(str)
+	widget:show(txt)
 end
 
-local function cpu_timer ( timer )
-
-	wmii.log("cpu_timer()")
-	update(0)
-    return 10
+local function cpu_timer(timer)
+        update(0)
+        return 10
 end
 
 timer = wmii.timer:new (cpu_timer, 1)
