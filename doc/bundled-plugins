@@ -40,6 +40,11 @@ view_workdirs
   update a table of working directories per view.  See plugin comments
   for more info.
 
+battery
+=======
+  Monitor percentage of battery capacity remaining in bar.  Supports warning on
+  low and critical status, and display of multiple batteries.
+
 
 
 
