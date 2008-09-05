@@ -419,7 +419,7 @@ function prog_menu ()
 end
 
 -- ------------------------------------------------------------------------
--- returns a table of all tags
+-- displays the a program menu, returns selected program
 function get_tags()
         local t = {}
         local s
@@ -433,7 +433,7 @@ function get_tags()
 end
 
 -- ------------------------------------------------------------------------
--- returns the selected tag (the view)
+-- displays the a program menu, returns selected program
 function get_view()
         local v = wmixp:read("/ctl") or ""
         return v:match("view%s+(%S+)")
@@ -1209,14 +1209,6 @@ local ev_handlers = {
                 client_destoryed (arg)
         end,
 
-        -- force the next window tags
-        NextWindowTags = function (ev, arg)
-                if type(arg) == 'string' then
-                        log ("    forcing next client to tags: " .. arg)
-                        next_client_goes_to_tag = arg
-                end
-        end,
-
         -- urgent tag?
         UrgentTag = function (ev, arg)
                 log ("UrgentTag: " .. arg)
@@ -1690,9 +1682,8 @@ function update_displayed_widgets ()
 end
 
 -- ------------------------------------------------------------------------
--- fork and exec a program; the callback function is called for each line
--- read from the stdout of that program; the return is the fd that can be
--- passed to kill_exec to terminate the program.
+-- create a new program and for each line it generates call the callback function
+-- returns fd which can be passed to kill_exec()
 function add_exec (command, callback)
         return el:add_exec (command, callback)
 end

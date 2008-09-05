@@ -6,11 +6,16 @@ for 0.3 release
         - version number in the files
         - resize windows/columns with Mod1-[+-] or Mod1-Ctrl-[hjkl]
 
+        - some way to get the configuration out at runtime
+
+        - debugging
+            - look at http://www.keplerproject.org/lualogging/
+            - make 'debug' take a filename to log to
+              ('1' and 'true' will go to stderr)
+            - log levels
+
     - bundled plugins
         - mpd: controls / volume
-        - acpi: battery life / thermal
-        - cpufreq: cpu freq / governor
-        - whereami: wireless / controls
         - history: 
             - Mod1-[oi] to provide window history
             - Mod4-[oi] to provide workspace history (vim inspired)
@@ -71,5 +76,7 @@ future
               - group all visible
             - sending input to all windows in that group
             - would be useful for a cluster, etc.
+
+        - whereami: wireless / controls
 
 vim: set ts=8 et sw=8 tw=72

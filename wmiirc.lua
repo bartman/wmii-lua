@@ -104,7 +104,6 @@ wmii.load_plugin ("clock")
 wmii.load_plugin ("loadavg")
 wmii.load_plugin ("volume")
 wmii.load_plugin ("browser")
---wmii.load_plugin ("view_workdirs") -- see plugins/view_workdirs.lua for details
 
 
 -- here are some other examples...
