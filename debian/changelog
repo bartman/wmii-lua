@@ -1,3 +1,11 @@
+wmiirc-lua (0.2.4-1) unstable; urgency=low
+
+  * new load plugin (Dave O'Neill); battery plugin (Stefan Riegler and Dave
+    O'Neill); cpufreq plugin (Jan-David Quesel and Bart Trojanowski);
+    view_workdirs (Bart Trojanowski); various fixes.
+
+ -- Bart Trojanowski <bart@jukie.net>  Fri, 12 Sep 2008 20:47:59 -0400
+
 wmiirc-lua (0.2.3-2) unstable; urgency=low
 
   * fix wmiirc restart issues.
