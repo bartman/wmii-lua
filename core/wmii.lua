@@ -2068,10 +2068,17 @@ function client_destoryed (xid)
                 log ("  del pid: " .. tostring(cli.pid))
                 cli:cont()
         end
+        if focused_xid == xid then
+                focused_xid = nil
+        end
 end
 
 function client_focused (xid)
         log ("-client_focused " .. tostring(xid))
+        -- return the current focused xid if nil is passed
+        if not xid then
+                return focused_xid
+        end
         -- do nothing if the same xid
         if focused_xid == xid then
                 return clients[xid]
