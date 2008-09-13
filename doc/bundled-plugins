@@ -20,9 +20,9 @@ clock
   location.  Clock is driven by a timer which fires once a second by
   default.  Both timer tick and clock format can be set in wmiirc.
 
-dstat_load
-===========
-  Uses the dstat utility to generate a load ticker.
+loadavg
+=======
+  Reads /proc/loadavg to display load average
 
 messages
 =========
@@ -33,6 +33,11 @@ messages
 
     tail -f /var/log/messages | xargs -n1 wmiir xwrite /event msg
 
+
+battery
+=======
+  Monitor percentage of battery capacity remaining in bar.  Supports warning on
+  low and critical status, and display of multiple batteries.
 
 
 

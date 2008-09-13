@@ -14,3 +14,16 @@
 11:08 < dave0> dpkg-checkbuilddeps: Unmet build dependencies: libixp
 11:08 < dave0> debuild: fatal error at line 987:
 
+- some issues to look into
+
+<jkr> bartman: wmii-lua just froze and now it won't start anymore
+<jkr> cannot read file /event, broken pipe %r or something
+<jkr> And sh: nil: no such file or directory
+<jkr> Hmm, wmii starts but won't open urxvt
+<jkr> Weird, now it works again
+<jkr> This thing is strange
+<jkr> Sweet, it has snappy windows
+<jkr> Does it supprt sticky windows too?
+<jkr> Woah, it crashed again.
+<jkr> wmii: column.c497: column_scale: Assertion `f->collapsed ? ((f->r).max.y - (f->r).min.y) >= 0 : dy > 0` failed
+

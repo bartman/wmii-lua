@@ -49,7 +49,7 @@ If you are running Debian (or derivative) these steps may help you:
                     build-essential debhelper               \
                     libx11-dev libxext-dev libxt-dev        \
                     lua5.1 liblua5.1-0-dev liblua5.1-posix0 \
-                    dwm-tools xclip dstat
+                    dwm-tools xclip dstat pkg-config
 
     If you chose to work on plugins, you can install all lua packages
     like this:
