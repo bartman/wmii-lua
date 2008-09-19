@@ -185,6 +185,7 @@ local function update_single_battery ( battery )
 	end
 
 	local batt = fbatt:read("*a")
+        fbatt:close()
 
 	local battpresent = batt:match('present:%s+(%w+)')
 	if battpresent ~= "yes" then
@@ -196,6 +197,7 @@ local function update_single_battery ( battery )
 
 	local fbattinfo    = io.open(string.format(wmii.get_conf("battery.infofile"), battery["name"]),"r")
 	local battinfo     = fbattinfo:read("*a")
+        fbattinfo:close()
 
 	local batt_percent = batt:match('remaining capacity:%s+(%d+)')
 	                     / battinfo:match('last full capacity:%s+(%d+)') * 100
