@@ -74,8 +74,8 @@ int l_ixp_read (lua_State *L)
 	struct ixp *ixp;
 	IxpCFid *fid;
 	const char *file;
-	char *buf;
-	size_t buf_ofs, buf_size, buf_left;
+	char *buf, *_buf;
+	size_t buf_ofs, buf_size;
 
 	ixp = lixp_checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
@@ -90,12 +90,12 @@ int l_ixp_read (lua_State *L)
 		return lixp_pusherror (L, "count not allocate memory");
 	}
 	buf_ofs = 0;
-	buf_size = buf_left = fid->iounit;
+	buf_size = fid->iounit;
 
 	DBGF("** ixp.read (%s) **\n", file);
 	
 	for (;;) {
-		int rc = ixp_read (fid, buf+buf_ofs, buf_left);
+		int rc = ixp_read (fid, buf+buf_ofs, buf_size-buf_ofs);
 		if (rc==0)
 			break;
 		else if (rc<0) {
@@ -104,7 +104,6 @@ int l_ixp_read (lua_State *L)
 		}
 
 		buf_ofs += rc;
-		buf_left -= rc;
 
 		if (buf_ofs >= buf_size)
 			return lixp_pusherror (L, "internal error while reading");
@@ -112,17 +111,22 @@ int l_ixp_read (lua_State *L)
 		if (buf_size >= 4096)
 			break;
 
-		buf = realloc (buf, 4096);
-		if (!buf) {
+		_buf = realloc (buf, 4096);
+		if (!_buf) {
 			ixp_close(fid);
+			free(buf);
 			return lixp_pusherror (L, "count not allocate memory");
 		}
+		buf = _buf;
 		buf_size = 4096;
 	}
 
 	ixp_close(fid);
 
-	lua_pushstring (L, buf);
+	if (memchr(buf, '\0', buf_ofs))
+		fprintf(stderr, "** WARNING: ixp.read (%s): result contains null characters **\n", file);
+
+	lua_pushlstring (L, buf, buf_ofs);
 	return 1;
 }
 
@@ -229,7 +233,7 @@ int l_ixp_iread (lua_State *L)
 static int iread_iter (lua_State *L)
 {
 	struct l_ixp_iread_s *ctx;
-	char *s, *e, *cr;
+	char *s, *cr;
 
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
@@ -254,21 +258,24 @@ static int iread_iter (lua_State *L)
 	}
 
 	s = ctx->buf + ctx->buf_pos;
-	e = s + ctx->buf_len;
 
 	cr = strchr (s, '\n');
 	if (!cr) {
 		// no match, just return the whole thing
 		// TODO: should read more upto a cr or some limit
-		lua_pushstring (L, s);
+		if (memchr(s, '\0', ctx->buf_len))
+			fprintf(stderr, "** WARNING: ixp.iread - iter: result contains null characters **\n");
+		lua_pushlstring (L, s, ctx->buf_len);
 		ctx->buf_len = 0;
 		return 1;
 
 	} else {
 		// we have a match s..cr is our sub string
-		int len = (cr-s) + 1;
-		*cr = 0;
-		lua_pushstring (L, s);
+		int len = cr-s;
+		if (memchr(s, '\0', len))
+			fprintf(stderr, "** WARNING: ixp.iread - iter: result contains null characters **\n");
+		lua_pushlstring (L, s, len);
+		len++;
 		ctx->buf_pos += len;
 		ctx->buf_len -= len;
 		return 1;
