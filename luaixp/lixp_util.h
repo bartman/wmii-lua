@@ -15,6 +15,7 @@
 struct IxpCFid;
 struct IxpStat;
 
+extern int lixp_pusherrorf(lua_State *L, const char *fmt, ...);
 extern int lixp_pusherror(lua_State *L, const char *info);
 
 extern int lixp_write_data (struct IxpCFid *fid, const char *data, size_t data_len);

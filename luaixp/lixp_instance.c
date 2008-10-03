@@ -67,63 +67,98 @@ int l_ixp_write (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * lua: data = read(file) -- returns all contents (upto 4k) 
+ * lua: data [,short_read]  = read(file, [max_buffer_size])
+ *      -- returns contents of file
+ *
+ * max_buffer_size limits the read to IXP_READ_MAX_BUFFER_SIZE by default, but
+ * can be configured to a different value.  Setting max_buffer_size to zero
+ * means no limit will be applied.
+ *
+ * On return data holds the data read, and short_read indicates if there was
+ * more data that was not read.
+ *
+ * If the file contents are expected to be large use l_ixp_iread(), which
+ * iterates over the file.
  */
 int l_ixp_read (lua_State *L)
 {
 	struct ixp *ixp;
 	IxpCFid *fid;
 	const char *file;
-	char *buf;
-	size_t buf_ofs, buf_size, buf_left;
+	char *buf, *_buf;
+	size_t buf_ofs, buf_size;
+	lua_Number max_buffer_size;
+	size_t realloc_size;
+	int short_read = 1;
 
 	ixp = lixp_checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
+	max_buffer_size = luaL_optnumber (L, 3, IXP_READ_MAX_BUFFER_SIZE);
 
 	fid = ixp_open(ixp->client, file, P9_OREAD);
 	if(fid == NULL)
 		return lixp_pusherror (L, "count not open p9 file");
 
-	buf = malloc (fid->iounit);
+	buf_size = fid->iounit;
+	if (max_buffer_size && buf_size > max_buffer_size)
+		buf_size = max_buffer_size;
+	buf = malloc (buf_size);
 	if (!buf) {
 		ixp_close(fid);
 		return lixp_pusherror (L, "count not allocate memory");
 	}
 	buf_ofs = 0;
-	buf_size = buf_left = fid->iounit;
 
 	DBGF("** ixp.read (%s) **\n", file);
 	
 	for (;;) {
-		int rc = ixp_read (fid, buf+buf_ofs, buf_left);
-		if (rc==0)
+		int rc = ixp_read (fid, buf+buf_ofs, buf_size-buf_ofs);
+		if (rc==0) {
+			short_read = 0;
 			break;
-		else if (rc<0) {
+
+		} else if (rc<0) {
 			ixp_close(fid);
 			return lixp_pusherror (L, "failed to read from p9 file");
 		}
 
 		buf_ofs += rc;
-		buf_left -= rc;
 
-		if (buf_ofs >= buf_size)
+		if (buf_ofs > buf_size)
 			return lixp_pusherror (L, "internal error while reading");
 
-		if (buf_size >= 4096)
+		if (buf_ofs == buf_size)
 			break;
 
-		buf = realloc (buf, 4096);
-		if (!buf) {
+		if (max_buffer_size && buf_size >= max_buffer_size)
+			break;
+
+		realloc_size = max_buffer_size;
+		if (!max_buffer_size)
+			realloc_size = buf_size * 2;
+
+		_buf = NULL;
+		if (realloc_size > buf_size)
+			_buf = realloc (buf, realloc_size);
+
+		if (!_buf) {
 			ixp_close(fid);
-			return lixp_pusherror (L, "count not allocate memory");
+			free(buf);
+			return lixp_pusherrorf(L, "failed to allocate %u bytes",
+					realloc_size);
 		}
-		buf_size = 4096;
+		buf = _buf;
+		buf_size = realloc_size;
 	}
 
 	ixp_close(fid);
 
-	lua_pushstring (L, buf);
-	return 1;
+	if (memchr(buf, '\0', buf_ofs))
+		fprintf(stderr, "** WARNING: ixp.read (%s): result contains null characters **\n", file);
+
+	lua_pushlstring(L, buf, buf_ofs);
+	lua_pushboolean(L, short_read);
+	return 2;
 }
 
 /* ------------------------------------------------------------------------
@@ -229,7 +264,7 @@ int l_ixp_iread (lua_State *L)
 static int iread_iter (lua_State *L)
 {
 	struct l_ixp_iread_s *ctx;
-	char *s, *e, *cr;
+	char *s, *cr;
 
 	ctx = (struct l_ixp_iread_s*)lua_touserdata (L, lua_upvalueindex(1));
 
@@ -254,21 +289,24 @@ static int iread_iter (lua_State *L)
 	}
 
 	s = ctx->buf + ctx->buf_pos;
-	e = s + ctx->buf_len;
 
 	cr = strchr (s, '\n');
 	if (!cr) {
 		// no match, just return the whole thing
 		// TODO: should read more upto a cr or some limit
-		lua_pushstring (L, s);
+		if (memchr(s, '\0', ctx->buf_len))
+			fprintf(stderr, "** WARNING: ixp.iread - iter: result contains null characters **\n");
+		lua_pushlstring (L, s, ctx->buf_len);
 		ctx->buf_len = 0;
 		return 1;
 
 	} else {
 		// we have a match s..cr is our sub string
-		int len = (cr-s) + 1;
-		*cr = 0;
-		lua_pushstring (L, s);
+		int len = cr-s;
+		if (memchr(s, '\0', len))
+			fprintf(stderr, "** WARNING: ixp.iread - iter: result contains null characters **\n");
+		lua_pushlstring (L, s, len);
+		len++;
 		ctx->buf_pos += len;
 		ctx->buf_len -= len;
 		return 1;

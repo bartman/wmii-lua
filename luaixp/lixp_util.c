@@ -2,6 +2,8 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
 #include <ixp.h>
 #include <lua.h>
@@ -10,24 +12,78 @@
 #include "lixp_util.h"
 
 
+/*
+ * Copy src into destination escaping %'s into %%'s;
+ *
+ * NOTE: destination buffer must be twice as large as the source.
+ */
+static inline void copy_escaping_fmt(char *dest, const char *src)
+{
+	char *d = dest, *pc;
+	const char *s = src;
+
+	while ((pc = strchr (s, '%'))) {
+		int len = pc - s + 1;
+		memcpy(d, s, len);
+		d += len;
+		s += len;
+		*(d++) = '%';
+	}
+
+	strcpy(d, s);
+}
+
 /* ------------------------------------------------------------------------
  * error helper
  */
+int lixp_pusherrorf(lua_State *L, const char *fmt, ...)
+{
+	va_list ap;
+
+	lua_pushnil(L);
+	if (errno) {
+		char *_fmt;
+		const char *estr;
+		size_t elen;
+
+		estr = strerror(errno);
+		elen = strlen(estr);
+
+		_fmt = malloc(strlen(fmt) + 2 + (elen*2) + 1);
+		if (!_fmt)
+			goto do_short_fmt;
+
+		copy_escaping_fmt(_fmt, estr);
+		strcat(_fmt, "; ");
+		strcat(_fmt, fmt);
+
+		va_start(ap, fmt);
+		lua_pushvfstring(L, _fmt, ap);
+		va_end(ap);
+
+		free(_fmt);
+
+		lua_pushnumber(L, errno);
+		return 3;
+	}
+
+do_short_fmt:
+	va_start(ap, fmt);
+	lua_pushvfstring(L, "%s", ap);
+	va_end(ap);
+	return 2;
+}
+
 int lixp_pusherror(lua_State *L, const char *info)
 {
-	lua_pushnil(L);
 	if (info==NULL) {
+		lua_pushnil(L);
 		lua_pushstring(L, strerror(errno));
 		lua_pushnumber(L, errno);
 		return 3;
-	} else if (errno) {
-		lua_pushfstring(L, "%s: %s", info, strerror(errno));
-		lua_pushnumber(L, errno);
-		return 3;
-	} else {
-		lua_pushfstring(L, "%s", info);
-		return 2;
 	}
+
+	return lixp_pusherrorf(L, "%s", info);
 }
 
 /* ------------------------------------------------------------------------
