@@ -2,22 +2,39 @@
 
 require "ixp"
 
-print ("testing...")
-ixp.test ()
+-- print ("testing...")
+-- ixp.test ()
 
 print ("create new ixp...")
 x = ixp.new("unix!/tmp/ns.bart.:0/wmii")
 
-print ("testing...")
-x:test ()
-
+-- print ("testing...")
+-- x:test ()
 
 print ("writing...")
 x:write ("/lbar/1", '#FF0000 #00FF00 #0000FF 1xxx')
 
 print ("reading...")
 data = x:read ("/lbar/1")
-print (data)
+print ("  " .. data)
+
+print ("reading with limit...")
+data,short = x:read ("/lbar/1", 8)
+print ("  " .. tostring(data))
+if not data then
+        print ("  ... error: " .. tostring(short) .. ")")
+elseif short then
+        print ("  ... short read")
+end
+
+print ("reading a nonexistent file...")
+data,short = x:read ("/lbar/xxxxxxxxxxxxxxxxxxxxxxx")
+print ("  " .. tostring(data))
+if not data then
+        print ("  ... error: " .. short)
+elseif short then
+        print ("  ... short read")
+end
 
 print ("stating...")
 data = x:stat ("/event")

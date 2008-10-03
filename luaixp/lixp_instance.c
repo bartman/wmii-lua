@@ -67,7 +67,18 @@ int l_ixp_write (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
- * lua: data = read(file) -- returns all contents (upto 4k) 
+ * lua: data [,short_read]  = read(file, [max_buffer_size])
+ *      -- returns contents of file
+ *
+ * max_buffer_size limits the read to IXP_READ_MAX_BUFFER_SIZE by default, but
+ * can be configured to a different value.  Setting max_buffer_size to zero
+ * means no limit will be applied.
+ *
+ * On return data holds the data read, and short_read indicates if there was
+ * more data that was not read.
+ *
+ * If the file contents are expected to be large use l_ixp_iread(), which
+ * iterates over the file.
  */
 int l_ixp_read (lua_State *L)
 {
@@ -76,49 +87,68 @@ int l_ixp_read (lua_State *L)
 	const char *file;
 	char *buf, *_buf;
 	size_t buf_ofs, buf_size;
+	lua_Number max_buffer_size;
+	size_t realloc_size;
+	int short_read = 1;
 
 	ixp = lixp_checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
+	max_buffer_size = luaL_optnumber (L, 3, IXP_READ_MAX_BUFFER_SIZE);
 
 	fid = ixp_open(ixp->client, file, P9_OREAD);
 	if(fid == NULL)
 		return lixp_pusherror (L, "count not open p9 file");
 
-	buf = malloc (fid->iounit);
+	buf_size = fid->iounit;
+	if (max_buffer_size && buf_size > max_buffer_size)
+		buf_size = max_buffer_size;
+	buf = malloc (buf_size);
 	if (!buf) {
 		ixp_close(fid);
 		return lixp_pusherror (L, "count not allocate memory");
 	}
 	buf_ofs = 0;
-	buf_size = fid->iounit;
 
 	DBGF("** ixp.read (%s) **\n", file);
 	
 	for (;;) {
 		int rc = ixp_read (fid, buf+buf_ofs, buf_size-buf_ofs);
-		if (rc==0)
+		if (rc==0) {
+			short_read = 0;
 			break;
-		else if (rc<0) {
+
+		} else if (rc<0) {
 			ixp_close(fid);
 			return lixp_pusherror (L, "failed to read from p9 file");
 		}
 
 		buf_ofs += rc;
 
-		if (buf_ofs >= buf_size)
+		if (buf_ofs > buf_size)
 			return lixp_pusherror (L, "internal error while reading");
 
-		if (buf_size >= 4096)
+		if (buf_ofs == buf_size)
 			break;
 
-		_buf = realloc (buf, 4096);
+		if (max_buffer_size && buf_size >= max_buffer_size)
+			break;
+
+		realloc_size = max_buffer_size;
+		if (!max_buffer_size)
+			realloc_size = buf_size * 2;
+
+		_buf = NULL;
+		if (realloc_size > buf_size)
+			_buf = realloc (buf, realloc_size);
+
 		if (!_buf) {
 			ixp_close(fid);
 			free(buf);
-			return lixp_pusherror (L, "count not allocate memory");
+			return lixp_pusherrorf(L, "failed to allocate %u bytes",
+					realloc_size);
 		}
 		buf = _buf;
-		buf_size = 4096;
+		buf_size = realloc_size;
 	}
 
 	ixp_close(fid);
@@ -126,8 +156,9 @@ int l_ixp_read (lua_State *L)
 	if (memchr(buf, '\0', buf_ofs))
 		fprintf(stderr, "** WARNING: ixp.read (%s): result contains null characters **\n", file);
 
-	lua_pushlstring (L, buf, buf_ofs);
-	return 1;
+	lua_pushlstring(L, buf, buf_ofs);
+	lua_pushboolean(L, short_read);
+	return 2;
 }
 
 /* ------------------------------------------------------------------------

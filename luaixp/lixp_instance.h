@@ -9,6 +9,8 @@ struct IxpClient;
 #define L_IXP_IDIR_MT "ixp.idir_mt"
 #define L_IXP_IREAD_MT "ixp.iread_mt"
 
+#define IXP_READ_MAX_BUFFER_SIZE 65536   // max returned by l_ixp_read
+
 /* the C representation of a ixp instance object */
 struct ixp {
 	const char *address;;
