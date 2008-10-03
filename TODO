@@ -14,6 +14,10 @@ for 0.3 release
               ('1' and 'true' will go to stderr)
             - log levels
 
+        - debugging C libraries
+            - make it possible to debug the C code by enabling verbosity
+              from lua code.
+
     - bundled plugins
         - mpd: controls / volume
         - history: 
