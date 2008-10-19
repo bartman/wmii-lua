@@ -255,7 +255,7 @@ static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd)
 int l_eventloop_run_loop (lua_State *L)
 {
 	struct lel_eventloop *el;
-	int timeout;
+	int timeout, status;
 	fd_set rfds, xfds;
 	struct timeval tv;
 
@@ -269,8 +269,8 @@ int l_eventloop_run_loop (lua_State *L)
 	tv.tv_usec = 0;
 
 	// run the loop
-	for (;;) {
-		int i, status, rc;
+	while (el->progs_count) {
+		int i, rc;
 
 		// catchup on programs that quit
 		while (waitpid (-1, &status, WNOHANG) > 0);
@@ -303,13 +303,16 @@ int l_eventloop_run_loop (lua_State *L)
 					break;
 			}
 
-			if (dead || FD_ISSET (prog->fd, &xfds)) {
+			if (dead /* || FD_ISSET (prog->fd, &xfds) */ ) {
 				DBGF("** killing %d (fd=%d) **\n",
 						prog->pid, prog->fd);
 				kill_exec(L, el, prog->fd);
 			}
 		}
 	}
+
+	// catchup on programs that quit
+	while (waitpid (-1, &status, WNOHANG) > 0);
 	
 	return 0;
 }
