@@ -847,13 +847,13 @@ local key_handlers = {
 
         -- column modes
         ["Mod1-d"] = function (key)
-		write("/tag/sel/ctl", "colmode sel default")
+		write("/tag/sel/ctl", "colmode sel default-max")
         end,
         ["Mod1-s"] = function (key)
-		write("/tag/sel/ctl", "colmode sel stack")
+		write("/tag/sel/ctl", "colmode sel stack-max")
         end,
         ["Mod1-m"] = function (key)
-		write("/tag/sel/ctl", "colmode sel max")
+		write("/tag/sel/ctl", "colmode sel stack+max")
         end,
         ["Mod1-f"] = function (key)
                 ke_fullscreen_toggle()
@@ -1209,7 +1209,7 @@ local ev_handlers = {
                 client_destoryed (arg)
         end,
 
-        -- urgent tag?
+        -- urgent tag
         UrgentTag = function (ev, arg)
                 log ("UrgentTag: " .. arg)
                 write ("/lbar/" .. arg, "*" .. arg);
@@ -1217,8 +1217,20 @@ local ev_handlers = {
         NotUrgentTag = function (ev, arg)
                 log ("NotUrgentTag: " .. arg)
                 write ("/lbar/" .. arg, arg);
-        end
+        end,
 
+        -- notifications
+        Unresponsive = function (ev, arg)
+                log ("Unresponsive: " .. arg)
+                -- TODO ask the user if it shoudl be killed off
+        end,
+
+        Notice = function (ev, arg)
+                log ("Notice: " .. arg)
+                -- TODO send to the message plugin (or implement there)
+        end,
+
+        -- /
 }
 
 --[[
