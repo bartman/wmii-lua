@@ -1212,11 +1212,11 @@ local ev_handlers = {
         -- urgent tag?
         UrgentTag = function (ev, arg)
                 log ("UrgentTag: " .. arg)
-		-- wmiir xwrite "/lbar/$@" "*$@"
+                write ("/lbar/" .. arg, "*" .. arg);
         end,
         NotUrgentTag = function (ev, arg)
                 log ("NotUrgentTag: " .. arg)
-		-- wmiir xwrite "/lbar/$@" "$@"
+                write ("/lbar/" .. arg, arg);
         end
 
 }
