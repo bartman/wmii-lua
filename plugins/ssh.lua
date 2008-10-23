@@ -47,7 +47,10 @@ local type = type
 module ("ssh")
 api_version=0.1
 
+wmii.set_conf ("ssh.askforuser", "true");
+
 local hosts
+local users
 
 function load_hosts()
   hosts = {}
@@ -65,12 +68,37 @@ function load_hosts()
   end
 end
 
+function load_users()
+  users = {}
+
+  local file = io.open("/etc/passwd", "r")
+  if file then
+    local line = file:read("*line")
+
+	users[""] = 1
+    while line do
+      local user = line:match("([^:]+)")
+      users[user] = 1
+      line = file:read("*line")
+    end
+    file:close()
+  end
+end
+
 function show_menu()
   local str = wmii.menu(hosts, "ssh:")
   if type(str) == "string" then
-    local cmd = wmii.get_conf("xterm") .. " -e ssh " .. str .. " &"
+    local cmd = wmii.get_conf("xterm") .. " -e /bin/sh -c \"ssh "
+	if wmii.get_conf("ssh.askforuser") == "true" then
+  		local user = wmii.menu(users, "username:")
+		if type(user) == "string" and user ~= "" then
+			cmd = cmd .. "-l " .. user .. " " 
+		end
+	end
+	cmd = cmd .. str .. "\" &"
     os.execute(cmd)
   end
 end
 
 load_hosts()
+load_users()
