@@ -837,8 +837,19 @@ local key_handlers = {
                 -- move selected client to a tag, and follow
                 local tag = tag_menu()
                 if tag then
-                        write ("/client/sel/tags", tag)
-                        set_view(tag)
+                        -- get the current window id
+                        local xid = wmixp:read("/client/sel/ctl") or ""
+                        
+                        -- modify the tag
+                        write("/client/sel/tags", tag)
+
+                        -- if the client is still in this tag, then
+                        -- it might have been a regexp tag... check
+                        local test = wmixp:read("/client/sel/ctl")
+                        if not test or test ~= xid then
+                                -- if the window moved, follow it
+                                set_view(tag)
+                        end
                 end
         end,
         ["Mod1-Control-t"] = function (key)
