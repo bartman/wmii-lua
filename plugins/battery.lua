@@ -244,7 +244,31 @@ local function update_single_battery ( battery )
 		batt_state = "v"
 	end
 
-	printout = batt_state .. string.format("%.0f",batt_percent) .. batt_state
+	local batt_rate = batt:match('present rate:%s+(%d+)') * 1
+
+	local batt_time = "inf"
+	if batt_rate > 0 then
+		if batt_state == "^" then
+			batt_time = (battinfo:match('last full capacity:%s+(%d+)') - batt:match('remaining capacity:%s+(%d+)')) / batt_rate
+		else
+			batt_time = batt:match('remaining capacity:%s+(%d+)') / batt_rate
+		end
+		local hour = string.format("%d",batt_time)
+		local min = (batt_time - hour) * 60
+
+		if min > 59 then
+			min = min - 60
+			hour = hour + 1
+		end
+		if min < 0 then
+			min = 0
+		end
+		batt_time = hour .. ':'
+		batt_time = batt_time .. string.format("%.2d",min)
+	end
+
+	batt_rate = batt_rate/1000
+	printout = string.format("%.2f",batt_rate) .. 'W -> ' .. batt_time .. '(' .. batt_state .. string.format("%.0f",batt_percent) .. batt_state .. ')'
 
 	battery["widget"]:show(printout, colors)
 end
