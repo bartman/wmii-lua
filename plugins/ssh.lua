@@ -47,7 +47,7 @@ local type = type
 module ("ssh")
 api_version=0.1
 
-wmii.set_conf ("ssh.askforuser", "true");
+wmii.set_conf ("ssh.askforuser", true);
 
 local hosts
 local users
@@ -88,8 +88,8 @@ end
 function show_menu()
   local str = wmii.menu(hosts, "ssh:")
   if type(str) == "string" then
-    local cmd = wmii.get_conf("xterm") .. " -e /bin/sh -c \"ssh "
-	if wmii.get_conf("ssh.askforuser") == "true" then
+    local cmd = wmii.get_conf("xterm") .. " -e /bin/sh -c \"exec ssh "
+	if wmii.get_conf("ssh.askforuser") then
   		local user = wmii.menu(users, "username:")
 		if type(user) == "string" and user ~= "" then
 			cmd = cmd .. "-l " .. user .. " " 
