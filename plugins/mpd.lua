@@ -76,6 +76,11 @@ local function update_mpd_status (time_since_update)
 	local printout = _command("export MPD_HOST=" .. wmii.get_conf("mpd.server") .. "&& export MPD_PORT=" .. wmii.get_conf("mpd.port") .. " && mpc")
 
 	widget:show(printout)
+
+	-- if we dont get a response from the server we test every 2 minutes
+	if printout == nil or printout == "" then
+		return 120
+	end
 	return 5
 end 
 
