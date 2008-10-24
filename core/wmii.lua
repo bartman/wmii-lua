@@ -1395,7 +1395,8 @@ function set_conf (first,second)
 
         elseif type(first) == "string" 
                         and (type(second) == "string" 
-                                or type(second) == "number") then
+                                or type(second) == "number"
+                                or type(second) == "boolean") then
                 config[first] = second
 
         else
