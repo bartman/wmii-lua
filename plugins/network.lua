@@ -84,7 +84,6 @@ local function create_device_string(device)
 			local ssid = "iwconfig " .. device["name"]
 			local str_ssid = _command(ssid)
 			str_ssid = str_ssid:gmatch("ESSID:\"(.*)\"")()
-			str_ssid = str_ssid.sub(str_ssid, 2, str_ssid.len(str_ssid)-3)
 			txt = txt .. "@(" .. str_ssid .. ")"
 		end
 	end
