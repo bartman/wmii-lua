@@ -8,10 +8,21 @@ mpd.lua - wmiirc-lua plugin for monitoring and controlling mpd (music player dae
 =head1 SYNOPSIS
 
     -- in your wmiirc.lua:
-    wmii.load_plugin("cpu")
+    mpd = wmii.load_plugin("mpd")
 
 
 =head1 DESCRIPTION
+
+For binding the mpd controls to the multimedia keys you could add
+the following keyhandlers to your wmiirc.lua:
+
+wmii.add_key_handler('XF86AudioNext', mpd.next_song())
+
+wmii.add_key_handler('XF86AudioPrev', mpd.prev_song())
+
+wmii.add_key_handler('XF86AudioPlay', mpd.toggle_pause())
+
+wmii.add_key_handler('XF86AudioStop', mpd.stop())
 
 =head1 SEE ALSO
 
@@ -33,9 +44,7 @@ is NO WARRANTY, to the extent permitted by law.
 --]]
 local wmii = require("wmii")
 local io = require("io")
-local os = require("os")
 local string = require("string")
-local tonumber = tonumber
 
 module("mpd")
 api_version=0.1
@@ -88,6 +97,18 @@ end
 function stop()
 	_command("export MPD_HOST=" .. wmii.get_conf("mpd.server") .. "&& export MPD_PORT=" .. wmii.get_conf("mpd.port") .. " && mpc stop")
 	update_mpd_status(0)
+end
+
+function register_action()
+  wmii.add_action_handler ("mpd",
+    function(act,args)           
+      local actions = { 'play', 'pause', 'stop', 'next', 'prev' }
+      local act = wmii.menu(actions, "mpd: ")                    
+      local fn = function_handlers[act]      
+      if fn then                       
+        local r, err = pcall (fn)
+      end                        
+    end)
 end
 
 local timer = wmii.timer:new (update_mpd_status, 1)
