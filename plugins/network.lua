@@ -8,10 +8,17 @@ network.lua - wmiirc-lua plugin for monitoring network interfaces
 =head1 SYNOPSIS
 
     -- in your wmiirc.lua:
-    wmii.load_plugin("cpu")
+    wmii.load_plugin("network")
 
 
 =head1 DESCRIPTION
+
+For the options you can define something like
+
+wmii.set_conf("network.interfaces", "wlan0,true,eth0,false")
+
+which will show informations about the wireless device wlan0 and
+the non-wireless device eth0
 
 =head1 SEE ALSO
 
@@ -33,17 +40,17 @@ is NO WARRANTY, to the extent permitted by law.
 --]]
 
 local wmii = require("wmii")
-local os = require("os")
-local posix = require("posix")
 local io = require("io")
-local type = type
-local error = error
+local string = require("string")
 local pairs = pairs
-local tostring = tostring
 
 module("network")
 api_version = 0.1
 
+wmii.set_conf("network.interfaces", "eth0,false")
+
+local devices = { }
+local wireless_devices = { }
 -- ------------------------------------------------------------
 -- MODULE VARIABLES
 local widget = nil
@@ -65,36 +72,67 @@ local function _command ( cmd )
 	end
 end
 
-function update ( new_vol )
+local function create_device_string(device,wireless)
+	local ip = "ifconfig " .. device .. "| awk -F: '/inet addr/ {print $2}' | awk '{print $1}'"
+	local ipstr = _command(ip)
+	if ipstr == "" then
+
+		txt = device .. ": down"
+	else
+		ipstr = ipstr.sub(ipstr, 1, ipstr.len(ipstr))
+		txt = device .. ": " .. ipstr 
+		if wireless then
+			local ssid = "iwconfig " .. device .. " |grep ESSID | awk -F: '{print $2}'"
+			local str_ssid = _command(ssid)
+			str_ssid = str_ssid.sub(str_ssid, 2, str_ssid.len(str_ssid)-3)
+			txt = txt .. "@(" .. str_ssid .. ")"
+		end
+	end
+	return txt
+end
+
+local function update ()
     local txt = ""
-	local ssid = "iwconfig wlan0 |grep ESSID | awk -F: '{print $2}'"
-	local wlan0ip = "ifconfig wlan0 | awk -F: '/inet addr/ {print $2}' | awk '{print $1}'"
-	local eth0ip = "ifconfig eth0 | awk -F: '/inet addr/ {print $2}' | awk '{print $1}'"
-	local str_ssid = _command(ssid)
-	str_ssid = str_ssid.sub(str_ssid, 2, str_ssid.len(str_ssid)-3)
-	local str = _command(wlan0ip)
-	str = str.sub(str, 1, str.len(str))
 
-	if wlan0ip == "" then
-		txt = "wlan0: down eth: "
-	else
-		txt = "wlan0: " .. str .. "@(" .. str_ssid .. ") eth0: "
+	local space = ""
+	for _,device in pairs(wireless_devices) do
+		txt = txt .. space .. create_device_string(device,true)
+		space = " "
 	end
-
-	local str_eth0 = _command(eth0ip)
-	str_eth0 = str_eth0.sub(str_eth0, 1, str_eth0.len(str_eth0))
-	if str_eth0 == "" then
-		txt = txt .. "down"
-	else
-		txt = txt .. str_eth0
+	for _,device in pairs(devices) do
+		txt = txt .. space .. create_device_string(device,false)
+		space = " "
 	end
-
 	widget:show(txt)
 end
 
+local function generate_lists() 
+	local strings = wmii.get_conf("network.interfaces")
+
+	local string_list = { }
+
+	for str in strings:gmatch("%w+") do
+		string_list[#string_list+1] = str
+    end
+
+	local i = 1
+	while i < #string_list do
+		if string_list[i+1] == "true" then
+			wireless_devices[#wireless_devices+1] = string_list[i]
+		else
+			devices[#devices+1] = string_list[i]
+		end
+		i = i + 2
+	end
+end
+
 local function network_timer ( timer )
-	update(0)
+	if #devices == 0 and #wireless_devices == 0 then
+		generate_lists()
+	end
+	update()
     return 60
 end
+
 
 timer = wmii.timer:new (network_timer, 1)
