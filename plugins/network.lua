@@ -15,7 +15,8 @@ network.lua - wmiirc-lua plugin for monitoring network interfaces
 
 For the options you can define something like
 
-wmii.set_conf("network.interfaces", "wlan0,true,eth0,false")
+wmii.set_conf("network.interfaces.wired", "eth0")
+wmii.set_conf("network.interfaces.wireless", "wlan0")
 
 which will show informations about the wireless device wlan0 and
 the non-wireless device eth0
@@ -47,16 +48,13 @@ local pairs = pairs
 module("network")
 api_version = 0.1
 
-wmii.set_conf("network.interfaces", "eth0,false")
+wmii.set_conf("network.interfaces.wired", "eth0")
+wmii.set_conf("network.interfaces.wireless", "")
 
 local devices = { }
-local wireless_devices = { }
 -- ------------------------------------------------------------
 -- MODULE VARIABLES
-local widget = nil
 local timer  = nil
-
-widget = wmii.widget:new ("350_network")
 
 local function _command ( cmd )
 
@@ -66,73 +64,71 @@ local function _command ( cmd )
 		local status = file:read("*a")
 		file:close()
 
-		return status:match("[^\n]*")
+		return status
+		--return status:match("[^\n]*")
 	else
 		return ""
 	end
 end
 
-local function create_device_string(device,wireless)
-	local ip = "ifconfig " .. device .. "| awk -F: '/inet addr/ {print $2}' | awk '{print $1}'"
+local function create_device_string(device)
+	local ip = "ifconfig " .. device["name"] 
 	local ipstr = _command(ip)
-	if ipstr == "" then
-
-		txt = device .. ": down"
+	ipstr = ipstr:gmatch("inet addr:([0-9.]+)")()
+	if ipstr == nil or ipstr == "" then
+		txt = device["name"] .. ": down"
 	else
 		ipstr = ipstr.sub(ipstr, 1, ipstr.len(ipstr))
-		txt = device .. ": " .. ipstr 
-		if wireless then
-			local ssid = "iwconfig " .. device .. " |grep ESSID | awk -F: '{print $2}'"
+		txt = device["name"] .. ": " .. ipstr 
+		if device["wireless"] then
+			local ssid = "iwconfig " .. device["name"]
 			local str_ssid = _command(ssid)
+			str_ssid = str_ssid:gmatch("ESSID:\"(.*)\"")()
 			str_ssid = str_ssid.sub(str_ssid, 2, str_ssid.len(str_ssid)-3)
 			txt = txt .. "@(" .. str_ssid .. ")"
 		end
 	end
-	return txt
+
+	device["widget"]:show(txt)
+end
+
+
+local function generate_lists() 
+	wmii.log("generating interface list")
+	local strings = wmii.get_conf("network.interfaces.wired")
+	for str in strings:gmatch("%w+") do
+		devices[#devices+1] = {
+								name        = str,
+								widget      = wmii.widget:new ("350_network_" .. str),
+								wireless = false
+							  }
+		wmii.log("found " .. str)
+	end
+	local strings = wmii.get_conf("network.interfaces.wireless")
+	for str in strings:gmatch("%w+") do
+		devices[#devices+1] = {
+								name        = str,
+								widget      = wmii.widget:new ("350_network_" .. str),
+								wireless = true
+							  }
+		wmii.log("found " .. str)
+	end
+
 end
 
 local function update ()
-    local txt = ""
-
-	local space = ""
-	for _,device in pairs(wireless_devices) do
-		txt = txt .. space .. create_device_string(device,true)
-		space = " "
-	end
 	for _,device in pairs(devices) do
-		txt = txt .. space .. create_device_string(device,false)
-		space = " "
-	end
-	widget:show(txt)
-end
-
-local function generate_lists() 
-	local strings = wmii.get_conf("network.interfaces")
-
-	local string_list = { }
-
-	for str in strings:gmatch("%w+") do
-		string_list[#string_list+1] = str
-    end
-
-	local i = 1
-	while i < #string_list do
-		if string_list[i+1] == "true" then
-			wireless_devices[#wireless_devices+1] = string_list[i]
-		else
-			devices[#devices+1] = string_list[i]
-		end
-		i = i + 2
+		create_device_string(device)
 	end
 end
 
 local function network_timer ( timer )
-	if #devices == 0 and #wireless_devices == 0 then
+	if #devices == 0 then
 		generate_lists()
 	end
 	update()
     return 60
-end
 
+end
 
 timer = wmii.timer:new (network_timer, 1)
