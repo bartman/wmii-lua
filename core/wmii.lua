@@ -305,7 +305,7 @@ end
 -- ------------------------------------------------------------------------
 -- setup a table describing dmenu command
 local function dmenu_cmd (prompt, iterator)
-        local cmdt = { "dmenu", "-b" }
+        local cmdt = { wmiir, "setsid", "dmenu", "-b" }
         local fn = get_ctl("font")
         if fn then
                 cmdt[#cmdt+1] = "-fn"
@@ -537,7 +537,7 @@ local action_handlers = {
                 end
                 local cmd = xterm .. " -e man " .. page .. " &"
                 log ("    executing: " .. cmd)
-                os.execute (cmd)
+                os.execute (wmiir .. " setsid " .. cmd)
         end,
 
         quit = function ()
@@ -553,7 +553,7 @@ local action_handlers = {
 
         xlock = function (act)
                 local cmd = get_conf("xlock") or "xscreensaver-command --lock"
-                os.execute (cmd)
+                os.execute (wmiir .. " setsid " .. cmd)
         end,
 
         wmiirc = function ()
@@ -709,7 +709,7 @@ local key_handlers = {
         ["Mod1-Return"] = function (key)
                 local xterm = get_conf("xterm") or "xterm"
                 log ("    executing: " .. xterm)
-                os.execute (xterm .. " &")
+                os.execute (wmiir .. " setsid " .. xterm .. " &")
         end,
         ["Mod1-Shift-Return"] = function (key)
                 local tag = tag_menu()
@@ -717,7 +717,7 @@ local key_handlers = {
                         local xterm = get_conf("xterm") or "xterm"
                         log ("    executing: " .. xterm .. "  on: " .. tag)
                         next_client_goes_to_tag = tag
-                        os.execute (xterm .. " &")
+                        os.execute (wmiir .. " setsid " .. xterm .. " &")
                 end
         end,
         ["Mod1-a"] = function (key)
@@ -728,7 +728,7 @@ local key_handlers = {
                 if prog then
                         prog_hist:add(prog:match("(%w+)"))
                         log ("    executing: " .. prog)
-                        os.execute (prog .. " &")
+                        os.execute (wmiir .. " setsid " .. prog .. " &")
                 end
         end,
         ["Mod1-Shift-p"] = function (key)
@@ -738,7 +738,7 @@ local key_handlers = {
                         if prog then
                                 log ("    executing: " .. prog .. "  on: " .. tag)
                                 next_client_goes_to_tag = tag
-                                os.execute (prog .. " &")
+                                os.execute (wmiir .. " setsid " .. prog .. " &")
                         end
                 end
         end,
