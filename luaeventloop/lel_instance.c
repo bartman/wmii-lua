@@ -182,7 +182,7 @@ int l_eventloop_add_exec (lua_State *L)
 	lua_pushvalue (L, 3);			// [-1] = the function (3rd arg)
 	lua_settable (L, -3);			// eventloop[fd] = function
 
-	lua_pushinteger (L, pid);
+	lua_pushinteger (L, prog->fd);
 	return 1;
 }
 
