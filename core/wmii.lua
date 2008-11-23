@@ -1419,27 +1419,39 @@ end
 
 -- the event loop instance
 local el = eventloop.new()
+local event_read_fd = -1
 
--- add the core event handler for events
-el:add_exec (wmiir .. " read /event",
-        function (line)
-                local line = line or "nil"
-
-                -- try to split off the argument(s)
-                local ev,arg = string.match(line, "(%S+)%s+(.+)")
-                if not ev then
-                        ev = line
+-- ------------------------------------------------------------------------
+-- start/restart the core event reading process
+local function start_event_reader ()
+        if event_read_fd ~= -1 then
+                if el:check_exec(event_read_fd) then
+                        return
                 end
+        end
+        log("wmii: starting /event reading process")
+        event_read_fd = el:add_exec (wmiir .. " read /event",
+                function (line)
+                        local line = line or "nil"
 
-                -- now locate the handler function and call it
-                local fn = ev_handlers[ev] or ev_handlers["*"]
-                if fn then
-                        local r, err = pcall (fn, ev, arg)
-                        if not r then
-                                log ("WARNING: " .. tostring(err))
+                        -- try to split off the argument(s)
+                        local ev,arg = string.match(line, "(%S+)%s+(.+)")
+                        if not ev then
+                                ev = line
+                        end
+
+                        -- now locate the handler function and call it
+                        local fn = ev_handlers[ev] or ev_handlers["*"]
+                        if fn then
+                                local r, err = pcall (fn, ev, arg)
+                                if not r then
+                                        log ("WARNING: " .. tostring(err))
+                                end
                         end
                 end
-        end)
+        )
+        log("wmii: ... fd=" .. tostring(event_read_fd))
+end
 
 -- ------------------------------------------------------------------------
 -- run the event loop and process events, this function does not exit
@@ -1461,6 +1473,7 @@ function run_event_loop ()
 
         log("wmii: starting event loop")
         while true do
+                start_event_reader()
                 local sleep_for = process_timers()
                 el:run_loop(sleep_for)
         end
