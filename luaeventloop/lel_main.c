@@ -64,6 +64,7 @@ static const luaL_reg instance_table[] =
 	{ "__gc",		l_eventloop_gc },
 
 	{ "add_exec",		l_eventloop_add_exec },
+	{ "check_exec",		l_eventloop_check_exec },
 	{ "kill_exec",		l_eventloop_kill_exec },
 
 	{ "run_loop",		l_eventloop_run_loop },

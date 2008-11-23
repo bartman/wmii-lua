@@ -187,6 +187,43 @@ int l_eventloop_add_exec (lua_State *L)
 }
 
 /* ------------------------------------------------------------------------
+ * checks if an executable is still running
+ *
+ * lua: running = el:check_exec(fd)
+ *
+ *    fd - file descriptor returned from el:add_exec()
+ *    running - boolean indicating if it's still running
+ */
+
+int l_eventloop_check_exec (lua_State *L)
+{
+	struct lel_eventloop *el;
+	int fd, i;
+	bool found = false;
+
+	el = lel_checkeventloop(L, 1);
+	fd = luaL_checknumber(L, 2);
+
+	DBGF("** eventloop:check_exec (%d) **\n", fd);
+
+	for (i=(el->progs_count-1); i>=0; i--) {
+		struct lel_program *prog;
+
+		prog = el->progs[i];
+
+		if (prog->fd != fd)
+			continue;
+
+		found = true;
+		break;
+	}
+
+	lua_pushboolean(L, found);
+	return 1;
+}
+
+
+/* ------------------------------------------------------------------------
  * kills off a previously spawned off process and cleans up
  * (actually, it just closes the fifo)
  *
