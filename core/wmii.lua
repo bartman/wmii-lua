@@ -1134,18 +1134,46 @@ local ev_handlers = {
         end,
 
         FocusTag = function (ev, arg)
+                log ("FocusTag: " .. arg)
+
+                local tag,scrn = arg:match("(%w+)%s*(%w*)")
+                if not tag then
+                        return
+                end
+
+                local file = "/lbar/" .. tag
+                if scrn and scrn:len() > 0 then
+                        file = "/screen/" .. scrn .. file
+                end
+
                 local fc = get_ctl("focuscolors") or ""
-                create ("/lbar/" .. arg, fc .. " " .. arg)
-                write ("/lbar/" .. arg, fc .. " " .. arg)
+                log ("# echo " .. fc .. " " .. tag .. " | wmiir write " .. file)
+
+                create (file, fc .. " " .. tag)
+                write (file, fc .. " " .. tag)
         end,
         UnfocusTag = function (ev, arg)
+                log ("UnfocusTag: " .. arg)
+
+                local tag,scrn = arg:match("(%w+)%s*(%w*)")
+                if not tag then
+                        return
+                end
+
+                local file = "/lbar/" .. tag
+                if scrn and scrn:len() > 0 then
+                        file = "/screen/" .. scrn .. file
+                end
+
                 local nc = get_ctl("normcolors") or ""
-                create ("/lbar/" .. arg, nc .. " " .. arg)
-                write ("/lbar/" .. arg, nc .. " " .. arg)
+                log ("# echo " .. nc .. " " .. tag .. " | wmiir write " .. file)
+
+                create (file, nc .. " " .. tag)
+                write (file, nc .. " " .. tag)
 
                 -- don't duplicate the last entry
-                if not (arg == view_hist[#view_hist]) then
-                        view_hist[#view_hist+1] = arg
+                if not (tag == view_hist[#view_hist]) then
+                        view_hist[#view_hist+1] = tag
 
                         -- limit to view_hist_max
                         if #view_hist > view_hist_max then
