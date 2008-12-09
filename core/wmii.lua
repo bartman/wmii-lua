@@ -2036,7 +2036,7 @@ end
 
 function get_program (pid)
         local prog = programs[pid]
-        if not prog then
+        if pid and not prog then
                 prog = program:new (pid)
                 programs[pid] = prog
         end
@@ -2046,6 +2046,11 @@ end
 -- client class
 client = {}
 function client:new (xid)
+        local pid = xid_to_pid(xid)
+        if not pid then
+                log ("WARNING: failed to convert XID " .. tostring(xid) .. " to a PID")
+                return
+        end
         -- make an object
         local o = {}
         setmetatable (o,self)
@@ -2058,8 +2063,8 @@ function client:new (xid)
         self.__gc = function (old) old.prog=nil end
         -- initialize the new object
         o.xid = xid
-        o.pid = xid_to_pid(xid)
-        o.prog = get_program (o.pid)
+        o.pid = pid
+        o.prog = get_program (pid)
         -- raw mode
         o.raw = {}
         o.raw.toggle = function (cli)
