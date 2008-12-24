@@ -19,12 +19,15 @@ package.path  = wmiidir .. "/core/?.lua;"       ..
                 wmiidir .. "/plugins/?.lua;"    ..
                 package.path
 require "wmii" 
+require "os"
 
 -- Setup my environment (completely optional)
 
+local hostname = os.getenv("HOSTNAME")
+local homedir  = os.getenv("HOME") or "~"
+
 --[[
         -- conditionally load up my xmodmaprc
-        hostname = os.getenv("HOSTNAME")
         if type(hostname) == 'string' and hostname:match("^oxygen") then
                 os.execute ("xmodmap ~/.xmodmaprc")
         end
@@ -46,19 +49,33 @@ require "wmii"
         os.execute ("xset r on")
         os.execute ("xset r rate 200 25")
         os.execute ("xset b off")
+        os.execute ("xrandr --dpi 96")
 
         -- clear the background
         os.execute ("xsetroot -solid black")
+
+        -- this will prime the alt-p menu's cache
+        os.execute ("dmenu_path>/dev/null&")
 --]]
 
 -- This is the base configuration of wmii, it writes to the /ctl file.
 wmii.set_ctl ({
-        view        = 1,
         border      = 1,
         font        = '-windows-proggytiny-medium-r-normal--10-80-96-96-c-60-iso8859-1',
         focuscolors = '#FFFFaa #007700 #88ff88',
-        normcolors  = '#888888 #222222 #333333',
+        normcolors  = '#FFFFFF #222222 #333333',
         grabmod     = 'Mod1'
+})
+
+-- Set slightly different colors on each screen.
+wmii.set_screen_ctl(0, {
+        focuscolors = '#FFFFaa #007700 #88ff88'
+})
+wmii.set_screen_ctl(1, {
+        focuscolors = '#FFFFaa #770000 #ff8888'
+})
+wmii.set_screen_ctl(2, {
+        focuscolors = '#FFFFaa #000077 #8888ff'
 })
 
 -- This overrides some variables that are used by event and key handlers.
@@ -69,7 +86,9 @@ wmii.set_ctl ({
 -- use configuration values as appropriate with wmii.setconf("var", "val"), or
 -- as a table like the example below.
 wmii.set_conf ({
-        xterm = 'x-terminal-emulator'
+        xterm = 'x-terminal-emulator',
+        -- xlock = '/usr/bin/xtrlock',
+        -- debug = true,
 })
 
 -- colrules file contains a list of rules which affect the width of newly 
@@ -91,10 +110,16 @@ wmii.write ("/colrules", "/.*/ -> 50+50\n"
 --      ~ which represents the floating layer
 wmii.write ("/tagrules", "/XMMS.*/ -> ~\n"
                       .. "/Firefox.*/ -> www\n"
+                      .. "/Iceweasel.*/ -> www\n"
+                      .. "/vimperator/ -> www\n"
+                      .. "/a[Kk]regator/ -> www\n"
                       .. "/Gimp.*/ -> ~\n"
                       .. "/Gimp.*/ -> gimp\n"
                       .. "/Gaim.*/ -> gaim\n"
+                      .. "/gitk/ -> ~\n"
                       .. "/MPlayer.*/ -> ~\n"
+                      .. "/x?vnc[^ ]*viewer.*/ -> ~\n"
+                      .. "/VNC.*:VNC.*/ -> ~\n"
                       .. "/.*/ -> sel\n"
                       .. "/.*/ -> 1\n")
 
@@ -104,6 +129,25 @@ wmii.load_plugin ("clock")
 wmii.load_plugin ("loadavg")
 wmii.load_plugin ("volume")
 wmii.load_plugin ("browser")
+wmii.load_plugin ("view_workdir")
+wmii.load_plugin ("cpu")
+
+wmii.load_plugin ("battery")
+wmii.set_conf("battery.names", "BAT0")
+
+wmii.load_plugin ("ssh")
+wmii.add_key_handler ("Mod1-z", ssh.show_menu)
+
+-- other handlers
+
+wmii.add_key_handler (brightness_up,   function (key) os.execute("xbacklight -steps 1 -time 0 -inc 10") end)
+wmii.add_key_handler (brightness_down, function (key) os.execute("xbacklight -steps 1 -time 0 -dec 10") end)
+
+wmii.add_action_handler ("hibernate-disk",
+function(act,args)
+        os.execute ('gksudo hibernate-disk')
+end)
+
 
 
 -- here are some other examples...

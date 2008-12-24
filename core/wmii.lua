@@ -419,7 +419,7 @@ function prog_menu ()
 end
 
 -- ------------------------------------------------------------------------
--- displays the a program menu, returns selected program
+-- returns a table of sorted tags names
 function get_tags()
         local t = {}
         local s
@@ -433,10 +433,23 @@ function get_tags()
 end
 
 -- ------------------------------------------------------------------------
--- displays the a program menu, returns selected program
-function get_view()
-        local v = wmixp:read("/ctl") or ""
-        return v:match("view%s+(%S+)")
+-- returns a table of sorted screen names
+function get_screens()
+        local t = {}
+        local s
+        for s in wmixp:idir ("/screen") do
+                if s.name and not (s.name == "sel") then
+                        t[#t + 1] = s.name
+                end
+        end
+        table.sort(t)
+        return t
+end
+
+-- ------------------------------------------------------------------------
+-- returns current view, on current screen or specified screen
+function get_view(screen)
+        return get_screen_ctl(screen, "view") or get_ctl("view")
 end
 
 -- ------------------------------------------------------------------------
@@ -984,20 +997,39 @@ end
 -- ------------------------------------------------------------------------
 -- update the /lbar wmii file with the current tags
 function update_displayed_tags ()
-        -- colours for /lbar
-        local fc = get_ctl("focuscolors") or ""
-        local nc = get_ctl("normcolors") or ""
+        -- list of all screens
+        local screens = get_screens()
+        if not screens then
+                update_displayed_tags_on_screen()
+                return
+        end
+
+        local i, s
+        for i,s in pairs(screens) do
+                update_displayed_tags_on_screen(s)
+        end
+end
+
+function update_displayed_tags_on_screen(s)
+        local lbar = "/lbar"
+        if s then
+                lbar = "/screen/" .. s .. "/lbar"
+        end
+
+        -- colours for screen
+        local fc = get_screen_ctl(s, "focuscolors") or get_ctl("focuscolors") or ""
+        local nc = get_screen_ctl(s, "normcolors") or get_ctl("normcolors") or ""
 
         -- build up a table of existing tags in the /lbar
         local old = {}
-        local s
-        for s in wmixp:idir ("/lbar") do
-                old[s.name] = 1
+        local ent
+        for ent in wmixp:idir (lbar) do
+                old[ent.name] = 1
         end
 
         -- for all actual tags in use create any entries in /lbar we don't have
         -- clear the old table entries if we have them
-        local cur = get_view()
+        local cur = get_view(s)
         local all = get_tags()
         local i,v
         for i,v in pairs(all) do
@@ -1006,19 +1038,47 @@ function update_displayed_tags ()
                         color = fc
                 end
                 if not old[v] then
-                        create ("/lbar/" .. v, color .. " " .. v)
+                       create (lbar .. "/" .. v, color .. " " .. v)
                 end
-                write ("/lbar/" .. v, color .. " " .. v)
+                write (lbar .. "/" .. v, color .. " " .. v)
                 old[v] = nil
         end
 
         -- anything left in the old table should be removed now
         for i,v in pairs(old) do
                 if v then
-                        remove("/lbar/"..i)
+                        remove(lbar.."/"..i)
                 end
         end
+
+        create ("/screen/"..s.."/lbar/000000000000000000", '-'..s..'-')
 end
+
+function create_tag_widget(name)
+        local nc = get_ctl("normcolors") or ""
+        local screens = get_screens()
+        if not screens then
+                create ("/lbar/" .. name, nc .. " " .. name)
+                return
+        end
+        local i, s
+        for i,s in pairs(screens) do
+                create ("/screen/"..s.."/lbar/" .. name, nc .. " " .. name)
+        end
+end
+
+function destroy_tag_widget(name)
+        local screens = get_screens()
+        if not screens then
+                remove ("/lbar/" .. name)
+                return
+        end
+        local i, s
+        for i,s in pairs(screens) do
+                remove ("/screen/"..s.."/lbar/" .. name)
+        end
+end
+
 
 -- ========================================================================
 -- EVENT HANDLERS
@@ -1117,11 +1177,12 @@ local ev_handlers = {
 
         -- tag management
         CreateTag = function (ev, arg)
-                local nc = get_ctl("normcolors") or ""
-                create ("/lbar/" .. arg, nc .. " " .. arg)
+                log ("CreateTag: " .. arg)
+                create_tag_widget(arg)
         end,
         DestroyTag = function (ev, arg)
-                remove ("/lbar/" .. arg)
+                log ("DestroyTag: " .. arg)
+                destroy_tag_widget(arg)
 
                 -- remove the tag from history
                 local i,v
@@ -1146,7 +1207,7 @@ local ev_handlers = {
                         file = "/screen/" .. scrn .. file
                 end
 
-                local fc = get_ctl("focuscolors") or ""
+                local fc = get_screen_ctl(scrn, "focuscolors") or get_ctl("focuscolors") or ""
                 log ("# echo " .. fc .. " " .. tag .. " | wmiir write " .. file)
 
                 create (file, fc .. " " .. tag)
@@ -1165,7 +1226,7 @@ local ev_handlers = {
                         file = "/screen/" .. scrn .. file
                 end
 
-                local nc = get_ctl("normcolors") or ""
+                local nc = get_screen_ctl(scrn, "normcolors") or get_ctl("normcolors") or ""
                 log ("# echo " .. nc .. " " .. tag .. " | wmiir write " .. file)
 
                 create (file, nc .. " " .. tag)
@@ -1393,7 +1454,7 @@ end
 -- ------------------------------------------------------------------------
 -- read a value from /ctl wmii file
 --   table = wmii.get_ctl()
---   value = wmii.get_ctl("variable"
+--   value = wmii.get_ctl("variable")
 function get_ctl (name)
         local s
         local t = {}
@@ -1403,6 +1464,54 @@ function get_ctl (name)
                         return val
                 end
                 t[var] = val
+        end
+        if not name then
+                return t
+        end
+        return nil
+end
+
+-- ------------------------------------------------------------------------
+-- write configuration to /screen/*/ctl wmii file
+--   wmii.set_screen_ctl("screen", { "var" = "val", ...})
+--   wmii.set_screen_ctl("screen", "var, "val")
+function set_screen_ctl (screen, first, second)
+        local ctl = "/screen/" .. tostring(screen) .. "/ctl"
+        if not screen then
+                error ("screen is not set")
+        elseif type(first) == "table" and second == nil then
+                local x, y
+                for x, y in pairs(first) do
+                        write (ctl, x .. " " .. y)
+                end
+
+        elseif type(first) == "string" and type(second) == "string" then
+                write (ctl, first .. " " .. second)
+
+        else
+                error ("expecting a screen name, followed by a table or two string arguments")
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- read a value from /screen/*/ctl wmii file
+--   table = wmii.get_screen_ctl("screen")
+--   value = wmii.get_screen_ctl("screen", "variable")
+function get_screen_ctl (screen, name)
+        local s
+        local t = {}
+        if not screen then
+                return nil
+        end
+        local ctl = "/screen/" .. tostring(screen) .. "/ctl"
+        for s in iread(ctl) do
+                local var,val = s:match("(%w+)%s+(.+)")
+                if var == name then
+                        return val
+                end
+                -- sometimes first line is the name of the entry
+                -- in which case there will be no space
+                t[var or ""] = val
         end
         if not name then
                 return t
