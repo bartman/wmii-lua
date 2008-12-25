@@ -303,8 +303,8 @@ function write (file, value)
 end
 
 -- ------------------------------------------------------------------------
--- setup a table describing dmenu command
-local function dmenu_cmd (prompt, iterator)
+-- setup a table describing the menu command
+local function menu_cmd (prompt)
         local cmdt = { wmiir, "setsid", "dmenu", "-b" }
         local fn = get_ctl("font")
         if fn then
@@ -346,7 +346,7 @@ end
 -- ------------------------------------------------------------------------
 -- displays the menu given an table of entires, returns selected text
 function menu (tbl, prompt)
-        local dmenu = dmenu_cmd(prompt)
+        local menu = menu_cmd(prompt)
 
         local infile = os.tmpname()
         local fh = io.open (infile, "w+")
@@ -364,12 +364,12 @@ function menu (tbl, prompt)
 
         local outfile = os.tmpname()
 
-        dmenu[#dmenu+1] = "<"
-        dmenu[#dmenu+1] = infile
-        dmenu[#dmenu+1] = ">"
-        dmenu[#dmenu+1] = outfile
+        menu[#menu+1] = "<"
+        menu[#menu+1] = infile
+        menu[#menu+1] = ">"
+        menu[#menu+1] = outfile
 
-        local cmd = table.concat(dmenu," ")
+        local cmd = table.concat(menu," ")
         os.execute (cmd)
 
         fh = io.open (outfile, "r")
@@ -392,12 +392,12 @@ end
 -- ------------------------------------------------------------------------
 -- displays the a program menu, returns selected program
 function prog_menu ()
-        local dmenu = dmenu_cmd("cmd:")
+        local menu = menu_cmd("cmd:")
 
         local outfile = os.tmpname()
 
-        dmenu[#dmenu+1] = ">"
-        dmenu[#dmenu+1] = outfile
+        menu[#menu+1] = ">"
+        menu[#menu+1] = outfile
 
         local hstt = { }
         for n in prog_hist:walk_reverse_unique() do
@@ -406,7 +406,7 @@ function prog_menu ()
 
         local cmd = "(" .. table.concat(hstt)
                          .. "dmenu_path ) |" 
-                         .. table.concat(dmenu," ")
+                         .. table.concat(menu," ")
         os.execute (cmd)
 
         local fh = io.open (outfile, "rb")
