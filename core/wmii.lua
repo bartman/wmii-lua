@@ -739,7 +739,7 @@ local key_handlers = {
         ["Mod1-p"] = function (key)
                 local prog = prog_menu()
                 if prog then
-                        prog_hist:add(prog:match("(%w+)"))
+                        prog_hist:add(prog:match("([^ ]+)"))
                         log ("    executing: " .. prog)
                         os.execute (wmiir .. " setsid " .. prog .. " &")
                 end
