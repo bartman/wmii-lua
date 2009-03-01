@@ -182,9 +182,46 @@ int l_eventloop_add_exec (lua_State *L)
 	lua_pushvalue (L, 3);			// [-1] = the function (3rd arg)
 	lua_settable (L, -3);			// eventloop[fd] = function
 
-	lua_pushinteger (L, pid);
+	lua_pushinteger (L, prog->fd);
 	return 1;
 }
+
+/* ------------------------------------------------------------------------
+ * checks if an executable is still running
+ *
+ * lua: running = el:check_exec(fd)
+ *
+ *    fd - file descriptor returned from el:add_exec()
+ *    running - boolean indicating if it's still running
+ */
+
+int l_eventloop_check_exec (lua_State *L)
+{
+	struct lel_eventloop *el;
+	int fd, i;
+	bool found = false;
+
+	el = lel_checkeventloop(L, 1);
+	fd = luaL_checknumber(L, 2);
+
+	DBGF("** eventloop:check_exec (%d) **\n", fd);
+
+	for (i=(el->progs_count-1); i>=0; i--) {
+		struct lel_program *prog;
+
+		prog = el->progs[i];
+
+		if (prog->fd != fd)
+			continue;
+
+		found = true;
+		break;
+	}
+
+	lua_pushboolean(L, found);
+	return 1;
+}
+
 
 /* ------------------------------------------------------------------------
  * kills off a previously spawned off process and cleans up
@@ -255,7 +292,7 @@ static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd)
 int l_eventloop_run_loop (lua_State *L)
 {
 	struct lel_eventloop *el;
-	int timeout;
+	int timeout, status;
 	fd_set rfds, xfds;
 	struct timeval tv;
 
@@ -269,8 +306,8 @@ int l_eventloop_run_loop (lua_State *L)
 	tv.tv_usec = 0;
 
 	// run the loop
-	for (;;) {
-		int i, status, rc;
+	while (el->progs_count) {
+		int i, rc;
 
 		// catchup on programs that quit
 		while (waitpid (-1, &status, WNOHANG) > 0);
@@ -304,13 +341,16 @@ int l_eventloop_run_loop (lua_State *L)
 					break;
 			}
 
-			if (dead || FD_ISSET (prog->fd, &xfds)) {
+			if (dead /* || FD_ISSET (prog->fd, &xfds) */ ) {
 				DBGF("** killing %d (fd=%d) **\n",
 						prog->pid, prog->fd);
 				kill_exec(L, el, prog->fd);
 			}
 		}
 	}
+
+	// catchup on programs that quit
+	while (waitpid (-1, &status, WNOHANG) > 0);
 	
 	return 0;
 }

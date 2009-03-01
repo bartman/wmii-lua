@@ -303,9 +303,9 @@ function write (file, value)
 end
 
 -- ------------------------------------------------------------------------
--- setup a table describing dmenu command
-local function dmenu_cmd (prompt, iterator)
-        local cmdt = { "dmenu", "-b" }
+-- setup a table describing the menu command
+local function menu_cmd (prompt)
+        local cmdt = { wmiir, "setsid", "dmenu", "-b" }
         local fn = get_ctl("font")
         if fn then
                 cmdt[#cmdt+1] = "-fn"
@@ -346,7 +346,7 @@ end
 -- ------------------------------------------------------------------------
 -- displays the menu given an table of entires, returns selected text
 function menu (tbl, prompt)
-        local dmenu = dmenu_cmd(prompt)
+        local menu = menu_cmd(prompt)
 
         local infile = os.tmpname()
         local fh = io.open (infile, "w+")
@@ -364,12 +364,12 @@ function menu (tbl, prompt)
 
         local outfile = os.tmpname()
 
-        dmenu[#dmenu+1] = "<"
-        dmenu[#dmenu+1] = infile
-        dmenu[#dmenu+1] = ">"
-        dmenu[#dmenu+1] = outfile
+        menu[#menu+1] = "<"
+        menu[#menu+1] = infile
+        menu[#menu+1] = ">"
+        menu[#menu+1] = outfile
 
-        local cmd = table.concat(dmenu," ")
+        local cmd = table.concat(menu," ")
         os.execute (cmd)
 
         fh = io.open (outfile, "r")
@@ -392,12 +392,12 @@ end
 -- ------------------------------------------------------------------------
 -- displays the a program menu, returns selected program
 function prog_menu ()
-        local dmenu = dmenu_cmd("cmd:")
+        local menu = menu_cmd("cmd:")
 
         local outfile = os.tmpname()
 
-        dmenu[#dmenu+1] = ">"
-        dmenu[#dmenu+1] = outfile
+        menu[#menu+1] = ">"
+        menu[#menu+1] = outfile
 
         local hstt = { }
         for n in prog_hist:walk_reverse_unique() do
@@ -406,7 +406,7 @@ function prog_menu ()
 
         local cmd = "(" .. table.concat(hstt)
                          .. "dmenu_path ) |" 
-                         .. table.concat(dmenu," ")
+                         .. table.concat(menu," ")
         os.execute (cmd)
 
         local fh = io.open (outfile, "rb")
@@ -419,7 +419,7 @@ function prog_menu ()
 end
 
 -- ------------------------------------------------------------------------
--- displays the a program menu, returns selected program
+-- returns a table of sorted tags names
 function get_tags()
         local t = {}
         local s
@@ -433,10 +433,23 @@ function get_tags()
 end
 
 -- ------------------------------------------------------------------------
--- displays the a program menu, returns selected program
-function get_view()
-        local v = wmixp:read("/ctl") or ""
-        return v:match("view%s+(%S+)")
+-- returns a table of sorted screen names
+function get_screens()
+        local t = {}
+        local s
+        for s in wmixp:idir ("/screen") do
+                if s.name and not (s.name == "sel") then
+                        t[#t + 1] = s.name
+                end
+        end
+        table.sort(t)
+        return t
+end
+
+-- ------------------------------------------------------------------------
+-- returns current view, on current screen or specified screen
+function get_view(screen)
+        return get_screen_ctl(screen, "view") or get_ctl("view")
 end
 
 -- ------------------------------------------------------------------------
@@ -537,7 +550,7 @@ local action_handlers = {
                 end
                 local cmd = xterm .. " -e man " .. page .. " &"
                 log ("    executing: " .. cmd)
-                os.execute (cmd)
+                os.execute (wmiir .. " setsid " .. cmd)
         end,
 
         quit = function ()
@@ -553,7 +566,7 @@ local action_handlers = {
 
         xlock = function (act)
                 local cmd = get_conf("xlock") or "xscreensaver-command --lock"
-                os.execute (cmd)
+                os.execute (wmiir .. " setsid " .. cmd)
         end,
 
         wmiirc = function ()
@@ -709,7 +722,7 @@ local key_handlers = {
         ["Mod1-Return"] = function (key)
                 local xterm = get_conf("xterm") or "xterm"
                 log ("    executing: " .. xterm)
-                os.execute (xterm .. " &")
+                os.execute (wmiir .. " setsid " .. xterm .. " &")
         end,
         ["Mod1-Shift-Return"] = function (key)
                 local tag = tag_menu()
@@ -717,7 +730,7 @@ local key_handlers = {
                         local xterm = get_conf("xterm") or "xterm"
                         log ("    executing: " .. xterm .. "  on: " .. tag)
                         next_client_goes_to_tag = tag
-                        os.execute (xterm .. " &")
+                        os.execute (wmiir .. " setsid " .. xterm .. " &")
                 end
         end,
         ["Mod1-a"] = function (key)
@@ -726,9 +739,9 @@ local key_handlers = {
         ["Mod1-p"] = function (key)
                 local prog = prog_menu()
                 if prog then
-                        prog_hist:add(prog:match("(%w+)"))
+                        prog_hist:add(prog:match("([^ ]+)"))
                         log ("    executing: " .. prog)
-                        os.execute (prog .. " &")
+                        os.execute (wmiir .. " setsid " .. prog .. " &")
                 end
         end,
         ["Mod1-Shift-p"] = function (key)
@@ -738,7 +751,7 @@ local key_handlers = {
                         if prog then
                                 log ("    executing: " .. prog .. "  on: " .. tag)
                                 next_client_goes_to_tag = tag
-                                os.execute (prog .. " &")
+                                os.execute (wmiir .. " setsid " .. prog .. " &")
                         end
                 end
         end,
@@ -837,8 +850,19 @@ local key_handlers = {
                 -- move selected client to a tag, and follow
                 local tag = tag_menu()
                 if tag then
-                        write ("/client/sel/tags", tag)
-                        set_view(tag)
+                        -- get the current window id
+                        local xid = wmixp:read("/client/sel/ctl") or ""
+                        
+                        -- modify the tag
+                        write("/client/sel/tags", tag)
+
+                        -- if the client is still in this tag, then
+                        -- it might have been a regexp tag... check
+                        local test = wmixp:read("/client/sel/ctl")
+                        if not test or test ~= xid then
+                                -- if the window moved, follow it
+                                set_view(tag)
+                        end
                 end
         end,
         ["Mod1-Control-t"] = function (key)
@@ -847,13 +871,13 @@ local key_handlers = {
 
         -- column modes
         ["Mod1-d"] = function (key)
-		write("/tag/sel/ctl", "colmode sel default")
+		write("/tag/sel/ctl", "colmode sel default-max")
         end,
         ["Mod1-s"] = function (key)
-		write("/tag/sel/ctl", "colmode sel stack")
+		write("/tag/sel/ctl", "colmode sel stack-max")
         end,
         ["Mod1-m"] = function (key)
-		write("/tag/sel/ctl", "colmode sel max")
+		write("/tag/sel/ctl", "colmode sel stack+max")
         end,
         ["Mod1-f"] = function (key)
                 ke_fullscreen_toggle()
@@ -973,20 +997,39 @@ end
 -- ------------------------------------------------------------------------
 -- update the /lbar wmii file with the current tags
 function update_displayed_tags ()
-        -- colours for /lbar
-        local fc = get_ctl("focuscolors") or ""
-        local nc = get_ctl("normcolors") or ""
+        -- list of all screens
+        local screens = get_screens()
+        if not screens then
+                update_displayed_tags_on_screen()
+                return
+        end
+
+        local i, s
+        for i,s in pairs(screens) do
+                update_displayed_tags_on_screen(s)
+        end
+end
+
+function update_displayed_tags_on_screen(s)
+        local lbar = "/lbar"
+        if s then
+                lbar = "/screen/" .. s .. "/lbar"
+        end
+
+        -- colours for screen
+        local fc = get_screen_ctl(s, "focuscolors") or get_ctl("focuscolors") or ""
+        local nc = get_screen_ctl(s, "normcolors") or get_ctl("normcolors") or ""
 
         -- build up a table of existing tags in the /lbar
         local old = {}
-        local s
-        for s in wmixp:idir ("/lbar") do
-                old[s.name] = 1
+        local ent
+        for ent in wmixp:idir (lbar) do
+                old[ent.name] = 1
         end
 
         -- for all actual tags in use create any entries in /lbar we don't have
         -- clear the old table entries if we have them
-        local cur = get_view()
+        local cur = get_view(s)
         local all = get_tags()
         local i,v
         for i,v in pairs(all) do
@@ -995,19 +1038,47 @@ function update_displayed_tags ()
                         color = fc
                 end
                 if not old[v] then
-                        create ("/lbar/" .. v, color .. " " .. v)
+                       create (lbar .. "/" .. v, color .. " " .. v)
                 end
-                write ("/lbar/" .. v, color .. " " .. v)
+                write (lbar .. "/" .. v, color .. " " .. v)
                 old[v] = nil
         end
 
         -- anything left in the old table should be removed now
         for i,v in pairs(old) do
                 if v then
-                        remove("/lbar/"..i)
+                        remove(lbar.."/"..i)
                 end
         end
+
+        create ("/screen/"..s.."/lbar/000000000000000000", '-'..s..'-')
 end
+
+function create_tag_widget(name)
+        local nc = get_ctl("normcolors") or ""
+        local screens = get_screens()
+        if not screens then
+                create ("/lbar/" .. name, nc .. " " .. name)
+                return
+        end
+        local i, s
+        for i,s in pairs(screens) do
+                create ("/screen/"..s.."/lbar/" .. name, nc .. " " .. name)
+        end
+end
+
+function destroy_tag_widget(name)
+        local screens = get_screens()
+        if not screens then
+                remove ("/lbar/" .. name)
+                return
+        end
+        local i, s
+        for i,s in pairs(screens) do
+                remove ("/screen/"..s.."/lbar/" .. name)
+        end
+end
+
 
 -- ========================================================================
 -- EVENT HANDLERS
@@ -1106,11 +1177,12 @@ local ev_handlers = {
 
         -- tag management
         CreateTag = function (ev, arg)
-                local nc = get_ctl("normcolors") or ""
-                create ("/lbar/" .. arg, nc .. " " .. arg)
+                log ("CreateTag: " .. arg)
+                create_tag_widget(arg)
         end,
         DestroyTag = function (ev, arg)
-                remove ("/lbar/" .. arg)
+                log ("DestroyTag: " .. arg)
+                destroy_tag_widget(arg)
 
                 -- remove the tag from history
                 local i,v
@@ -1123,18 +1195,46 @@ local ev_handlers = {
         end,
 
         FocusTag = function (ev, arg)
-                local fc = get_ctl("focuscolors") or ""
-                create ("/lbar/" .. arg, fc .. " " .. arg)
-                write ("/lbar/" .. arg, fc .. " " .. arg)
+                log ("FocusTag: " .. arg)
+
+                local tag,scrn = arg:match("(%w+)%s*(%w*)")
+                if not tag then
+                        return
+                end
+
+                local file = "/lbar/" .. tag
+                if scrn and scrn:len() > 0 then
+                        file = "/screen/" .. scrn .. file
+                end
+
+                local fc = get_screen_ctl(scrn, "focuscolors") or get_ctl("focuscolors") or ""
+                log ("# echo " .. fc .. " " .. tag .. " | wmiir write " .. file)
+
+                create (file, fc .. " " .. tag)
+                write (file, fc .. " " .. tag)
         end,
         UnfocusTag = function (ev, arg)
-                local nc = get_ctl("normcolors") or ""
-                create ("/lbar/" .. arg, nc .. " " .. arg)
-                write ("/lbar/" .. arg, nc .. " " .. arg)
+                log ("UnfocusTag: " .. arg)
+
+                local tag,scrn = arg:match("(%w+)%s*(%w*)")
+                if not tag then
+                        return
+                end
+
+                local file = "/lbar/" .. tag
+                if scrn and scrn:len() > 0 then
+                        file = "/screen/" .. scrn .. file
+                end
+
+                local nc = get_screen_ctl(scrn, "normcolors") or get_ctl("normcolors") or ""
+                log ("# echo " .. nc .. " " .. tag .. " | wmiir write " .. file)
+
+                create (file, nc .. " " .. tag)
+                write (file, nc .. " " .. tag)
 
                 -- don't duplicate the last entry
-                if not (arg == view_hist[#view_hist]) then
-                        view_hist[#view_hist+1] = arg
+                if not (tag == view_hist[#view_hist]) then
+                        view_hist[#view_hist+1] = tag
 
                         -- limit to view_hist_max
                         if #view_hist > view_hist_max then
@@ -1209,16 +1309,28 @@ local ev_handlers = {
                 client_destoryed (arg)
         end,
 
-        -- urgent tag?
+        -- urgent tag
         UrgentTag = function (ev, arg)
                 log ("UrgentTag: " .. arg)
-		-- wmiir xwrite "/lbar/$@" "*$@"
+                write ("/lbar/" .. arg, "*" .. arg);
         end,
         NotUrgentTag = function (ev, arg)
                 log ("NotUrgentTag: " .. arg)
-		-- wmiir xwrite "/lbar/$@" "$@"
-        end
+                write ("/lbar/" .. arg, arg);
+        end,
 
+        -- notifications
+        Unresponsive = function (ev, arg)
+                log ("Unresponsive: " .. arg)
+                -- TODO ask the user if it shoudl be killed off
+        end,
+
+        Notice = function (ev, arg)
+                log ("Notice: " .. arg)
+                -- TODO send to the message plugin (or implement there)
+        end,
+
+        -- /
 }
 
 --[[
@@ -1342,7 +1454,7 @@ end
 -- ------------------------------------------------------------------------
 -- read a value from /ctl wmii file
 --   table = wmii.get_ctl()
---   value = wmii.get_ctl("variable"
+--   value = wmii.get_ctl("variable")
 function get_ctl (name)
         local s
         local t = {}
@@ -1352,6 +1464,54 @@ function get_ctl (name)
                         return val
                 end
                 t[var] = val
+        end
+        if not name then
+                return t
+        end
+        return nil
+end
+
+-- ------------------------------------------------------------------------
+-- write configuration to /screen/*/ctl wmii file
+--   wmii.set_screen_ctl("screen", { "var" = "val", ...})
+--   wmii.set_screen_ctl("screen", "var, "val")
+function set_screen_ctl (screen, first, second)
+        local ctl = "/screen/" .. tostring(screen) .. "/ctl"
+        if not screen then
+                error ("screen is not set")
+        elseif type(first) == "table" and second == nil then
+                local x, y
+                for x, y in pairs(first) do
+                        write (ctl, x .. " " .. y)
+                end
+
+        elseif type(first) == "string" and type(second) == "string" then
+                write (ctl, first .. " " .. second)
+
+        else
+                error ("expecting a screen name, followed by a table or two string arguments")
+        end
+end
+
+-- ------------------------------------------------------------------------
+-- read a value from /screen/*/ctl wmii file
+--   table = wmii.get_screen_ctl("screen")
+--   value = wmii.get_screen_ctl("screen", "variable")
+function get_screen_ctl (screen, name)
+        local s
+        local t = {}
+        if not screen then
+                return nil
+        end
+        local ctl = "/screen/" .. tostring(screen) .. "/ctl"
+        for s in iread(ctl) do
+                local var,val = s:match("(%w+)%s+(.+)")
+                if var == name then
+                        return val
+                end
+                -- sometimes first line is the name of the entry
+                -- in which case there will be no space
+                t[var or ""] = val
         end
         if not name then
                 return t
@@ -1372,7 +1532,8 @@ function set_conf (first,second)
 
         elseif type(first) == "string" 
                         and (type(second) == "string" 
-                                or type(second) == "number") then
+                                or type(second) == "number"
+                                or type(second) == "boolean") then
                 config[first] = second
 
         else
@@ -1395,28 +1556,39 @@ end
 
 -- the event loop instance
 local el = eventloop.new()
-local wmiirc_running = false
+local event_read_fd = -1
 
--- add the core event handler for events
-el:add_exec (wmiir .. " read /event",
-        function (line)
-                local line = line or "nil"
-
-                -- try to split off the argument(s)
-                local ev,arg = string.match(line, "(%S+)%s+(.+)")
-                if not ev then
-                        ev = line
+-- ------------------------------------------------------------------------
+-- start/restart the core event reading process
+local function start_event_reader ()
+        if event_read_fd ~= -1 then
+                if el:check_exec(event_read_fd) then
+                        return
                 end
+        end
+        log("wmii: starting /event reading process")
+        event_read_fd = el:add_exec (wmiir .. " read /event",
+                function (line)
+                        local line = line or "nil"
 
-                -- now locate the handler function and call it
-                local fn = ev_handlers[ev] or ev_handlers["*"]
-                if fn then
-                        local r, err = pcall (fn, ev, arg)
-                        if not r then
-                                log ("WARNING: " .. tostring(err))
+                        -- try to split off the argument(s)
+                        local ev,arg = string.match(line, "(%S+)%s+(.+)")
+                        if not ev then
+                                ev = line
+                        end
+
+                        -- now locate the handler function and call it
+                        local fn = ev_handlers[ev] or ev_handlers["*"]
+                        if fn then
+                                local r, err = pcall (fn, ev, arg)
+                                if not r then
+                                        log ("WARNING: " .. tostring(err))
+                                end
                         end
                 end
-        end)
+        )
+        log("wmii: ... fd=" .. tostring(event_read_fd))
+end
 
 -- ------------------------------------------------------------------------
 -- run the event loop and process events, this function does not exit
@@ -1437,12 +1609,11 @@ function run_event_loop ()
         update_active_keys ()
 
         log("wmii: starting event loop")
-        wmiirc_running = true
-        while wmiirc_running do
+        while true do
+                start_event_reader()
                 local sleep_for = process_timers()
                 el:run_loop(sleep_for)
         end
-        log ("wmii: exiting")
 end
 
 -- ========================================================================
@@ -1879,7 +2050,6 @@ function cleanup ()
         --]]
 
         log ("wmii: dormant")
-        wmiirc_running = false
 end
 
 -- ========================================================================
@@ -1975,7 +2145,7 @@ end
 
 function get_program (pid)
         local prog = programs[pid]
-        if not prog then
+        if pid and not prog then
                 prog = program:new (pid)
                 programs[pid] = prog
         end
@@ -1985,6 +2155,11 @@ end
 -- client class
 client = {}
 function client:new (xid)
+        local pid = xid_to_pid(xid)
+        if not pid then
+                log ("WARNING: failed to convert XID " .. tostring(xid) .. " to a PID")
+                return
+        end
         -- make an object
         local o = {}
         setmetatable (o,self)
@@ -1997,8 +2172,8 @@ function client:new (xid)
         self.__gc = function (old) old.prog=nil end
         -- initialize the new object
         o.xid = xid
-        o.pid = xid_to_pid(xid)
-        o.prog = get_program (o.pid)
+        o.pid = pid
+        o.prog = get_program (pid)
         -- raw mode
         o.raw = {}
         o.raw.toggle = function (cli)
@@ -2080,7 +2255,7 @@ end
 function client_focused (xid)
         log ("-client_focused " .. tostring(xid))
         -- return the current focused xid if nil is passed
-        if not xid then
+        if type(xid) ~= 'string' or not xid:match("0x[0-9][a-f][A-F]*$") then
                 return focused_xid
         end
         -- do nothing if the same xid

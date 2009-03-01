@@ -67,57 +67,67 @@ local function cpu_list()
         return list
 end
 
+
 function read_file(path)
-	local fd = io.open(path, "r")
-	if fd == nil then
-		return nil
-	end
+      local fd = io.open(path, "r")
+      if fd == nil then
+              return nil
+      end
 
-	local text = fd:read("*a")
-        fd:close()
+      local text = fd:read("*a")
+       fd:close()
 
-        if type(text) == 'string' then
-                text = text:match('(%w+)')
-        end
+       if type(text) == 'string' then
+               text = text:match('(%w+)')
+       end
 
-        return text
+      return text
 end
+
 
 local function create_string(cpu)
-        local govfile = cpu .. '/cpufreq/scaling_governor'
-        local gov = read_file(govfile) or ""
+       local govfile = cpu .. '/cpufreq/scaling_governor'
+       local gov = read_file(govfile) or ""
 
-        local frqfile = cpu .. '/cpufreq/scaling_cur_freq'
-        local frq = read_file(frqfile) or ""
+       local frqfile = cpu .. '/cpufreq/scaling_cur_freq'
+       local frq = read_file(frqfile) or ""
 
-        if type(frq) == 'string' then
-                local mhz = frq:match('(.*)000')
-                if mhz then
-                        frq = mhz .. "MHz"
-                else
-                        frq = frq .. "kHz"
-                end
-        else
-                frq = ""
-        end
+       if type(frq) == 'string' then
+               local mhz = frq:match('(.*)000')
+               if mhz then
+                       frq = mhz .. " MHz"
+               else
+                       frq = frq .. "kHz"
+               end
+       else
+               frq = ""
+       end
 
-        return gov .. " " .. frq
+      return frq .. "(" .. gov .. ")" 
 end
 
+
 function update ( new_vol )
-        local txt = ""
-        local _, cpu
-        local list = cpu_list()
-        for _,cpu in pairs(list) do
-                txt = txt .. create_string(cpu) .. " "
-        end
+       local txt = ""
+       local _, cpu
+       local list = cpu_list()
+	   local space = ""
+       for _,cpu in pairs(list) do
+		   local str = create_string(cpu)
+		   if txt == str then
+			   txt = "2x " .. txt
+		   else
+               txt = txt .. create_string(cpu) .. space
+		   end
+		   space = " "
+       end
 
 	widget:show(txt)
 end
 
-local function cpu_timer(timer)
-        update(0)
-        return 10
+local function cpu_timer ( timer )
+	update(0)
+    return 10
 end
 
 timer = wmii.timer:new (cpu_timer, 1)
