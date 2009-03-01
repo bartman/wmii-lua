@@ -6,6 +6,8 @@ OBJS = $(SRCS:.c=.o)
 CFLAGS += ${LUA_INC} ${IXP_INC} -ggdb -O0 -fPIC
 LIBS   += ${LUA_LIB} ${IXP_LIB}
 
+#CFLAGS += -DDBG
+
 TARGET = ixp.so
 
 .PHONY: all test clean install
