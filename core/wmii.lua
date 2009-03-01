@@ -437,10 +437,15 @@ end
 function get_screens()
         local t = {}
         local s
+        local empty = true
         for s in wmixp:idir ("/screen") do
                 if s.name and not (s.name == "sel") then
                         t[#t + 1] = s.name
+                        empty = false
                 end
+        end
+        if empty then
+                return nil
         end
         table.sort(t)
         return t
@@ -1051,7 +1056,11 @@ function update_displayed_tags_on_screen(s)
                 end
         end
 
-        create ("/screen/"..s.."/lbar/000000000000000000", '-'..s..'-')
+        -- this is a hack, and should brobably be rethought
+        -- the intent is to distinguish the multiple screens
+        if s then
+                create ("/screen/"..s.."/lbar/000000000000000000", '-'..s..'-')
+        end
 end
 
 function create_tag_widget(name)
