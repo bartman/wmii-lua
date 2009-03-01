@@ -1,3 +1,10 @@
+wmiirc-lua (0.2.6-1) unstable; urgency=low
+
+  * plugins: ssh menu, mpd, network monitor, battery;
+  * way too many fixes to list.
+
+ -- Bart Trojanowski <bart@jukie.net>  Sat, 28 Feb 2009 23:34:28 -0500
+
 wmiirc-lua (0.2.5-1) unstable; urgency=low
 
   * fix an old bug in ixp.read() code and ixp.iread() (Sytse Wielinga);
