@@ -314,6 +314,7 @@ int l_eventloop_run_loop (lua_State *L)
 
 		// init for select
 		rfds = el->all_fds;
+		xfds = el->all_fds;
 
 		// wait for the next event
 		rc = select (el->max_fd+1, &rfds, NULL, &xfds, &tv);
