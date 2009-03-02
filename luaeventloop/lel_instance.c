@@ -278,7 +278,7 @@ static void kill_exec (lua_State *L, struct lel_eventloop *el, int fd)
 	luaL_getmetatable (L, L_EVENTLOOP_MT);	// [-3] = get the table
 	lua_pushinteger (L, prog->fd);		// [-2] = the key
 	lua_pushnil (L);			// [-1] = nil
-	lua_settable (L, -3);			// eventloop[fd] = function
+	lua_settable (L, -3);			// eventloop[fd] = nil
 
 	// cleanup
 	lua_gc (L, LUA_GCSTEP, 10);

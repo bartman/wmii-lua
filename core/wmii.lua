@@ -1567,15 +1567,32 @@ end
 local el = eventloop.new()
 local event_read_fd = -1
 local wmiirc_running = false
+local event_read_start = 0
 
 -- ------------------------------------------------------------------------
 -- start/restart the core event reading process
 local function start_event_reader ()
+        -- prevent adding two readers
         if event_read_fd ~= -1 then
                 if el:check_exec(event_read_fd) then
                         return
                 end
         end
+        -- prevert rapid restarts
+        local now = os.time()
+        if os.difftime(now, event_read_start) < 5 then
+                log("wmii: detected rapid restart of /event reader")
+                local cmd = "wmiir ls /ctl"
+                if os.execute(cmd) ~= 0 then
+                        log("wmii: cannot confirm communication with wmii, shutting down!")
+                        wmiirc_running = false
+                        return
+                end
+                log("wmii: but things look ok, so we will restart it")
+        end
+        event_read_start = now
+
+        -- start a new event reader
         log("wmii: starting /event reading process")
         event_read_fd = el:add_exec (wmiir .. " read /event",
                 function (line)
