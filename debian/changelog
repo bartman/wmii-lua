@@ -1,3 +1,9 @@
+wmiirc-lua (0.2.7-1) unstable; urgency=low
+
+  * fixes to event loop, endless restarts, and single-head wmii access. 
+
+ -- Bart Trojanowski <bart@jukie.net>  Tue, 03 Mar 2009 02:02:51 -0500
+
 wmiirc-lua (0.2.6-1) unstable; urgency=low
 
   * plugins: ssh menu, mpd, network monitor, battery;
