@@ -437,10 +437,15 @@ end
 function get_screens()
         local t = {}
         local s
+        local empty = true
         for s in wmixp:idir ("/screen") do
                 if s.name and not (s.name == "sel") then
                         t[#t + 1] = s.name
+                        empty = false
                 end
+        end
+        if empty then
+                return nil
         end
         table.sort(t)
         return t
@@ -1051,7 +1056,11 @@ function update_displayed_tags_on_screen(s)
                 end
         end
 
-        create ("/screen/"..s.."/lbar/000000000000000000", '-'..s..'-')
+        -- this is a hack, and should brobably be rethought
+        -- the intent is to distinguish the multiple screens
+        if s then
+                create ("/screen/"..s.."/lbar/000000000000000000", '-'..s..'-')
+        end
 end
 
 function create_tag_widget(name)
@@ -1557,15 +1566,33 @@ end
 -- the event loop instance
 local el = eventloop.new()
 local event_read_fd = -1
+local wmiirc_running = false
+local event_read_start = 0
 
 -- ------------------------------------------------------------------------
 -- start/restart the core event reading process
 local function start_event_reader ()
+        -- prevent adding two readers
         if event_read_fd ~= -1 then
                 if el:check_exec(event_read_fd) then
                         return
                 end
         end
+        -- prevert rapid restarts
+        local now = os.time()
+        if os.difftime(now, event_read_start) < 5 then
+                log("wmii: detected rapid restart of /event reader")
+                local cmd = "wmiir ls /ctl"
+                if os.execute(cmd) ~= 0 then
+                        log("wmii: cannot confirm communication with wmii, shutting down!")
+                        wmiirc_running = false
+                        return
+                end
+                log("wmii: but things look ok, so we will restart it")
+        end
+        event_read_start = now
+
+        -- start a new event reader
         log("wmii: starting /event reading process")
         event_read_fd = el:add_exec (wmiir .. " read /event",
                 function (line)
@@ -1609,11 +1636,13 @@ function run_event_loop ()
         update_active_keys ()
 
         log("wmii: starting event loop")
-        while true do
+        wmiirc_running = true
+        while wmiirc_running do
                 start_event_reader()
                 local sleep_for = process_timers()
                 el:run_loop(sleep_for)
         end
+        log ("wmii: exiting")
 end
 
 -- ========================================================================
@@ -2050,6 +2079,7 @@ function cleanup ()
         --]]
 
         log ("wmii: dormant")
+        wmiirc_running = false
 end
 
 -- ========================================================================

@@ -33,6 +33,11 @@ int l_ixp_tostring (lua_State *L)
 	return 1;
 }
 
+static int nil_iter (lua_State *L)
+{
+	return 0;
+}
+
 /* ------------------------------------------------------------------------
  * lua: write(file, data) -- writes data to a file 
  */
@@ -240,20 +245,25 @@ int l_ixp_iread (lua_State *L)
 	file = luaL_checkstring (L, 2);
 
 	ctx = (struct l_ixp_iread_s*)lua_newuserdata (L, sizeof(*ctx));
-	if (!ctx)
-		return lixp_pusherror (L, "count not allocate context");
+	if (!ctx) {
+		DBGF("** ixp.iread (%s) - count not allocate context", file);
+		lua_pushcclosure (L, nil_iter, 1);
+		return 1;
+	}
 	memset (ctx, 0, sizeof (*ctx));
+
+	ctx->fid = ixp_open(ixp->client, file, P9_OREAD);
+	if(ctx->fid == NULL) {
+		DBGF("** ixp.iread (%s) - count not open p9 file", file);
+		lua_pushcclosure (L, nil_iter, 1);
+		return 1;
+	}
 
 	// set the metatable for the new userdata
 	luaL_getmetatable (L, L_IXP_IREAD_MT);
 	lua_setmetatable (L, -2);
 
-	ctx->fid = ixp_open(ixp->client, file, P9_OREAD);
-	if(ctx->fid == NULL) {
-		return lixp_pusherror (L, "count not open p9 file");
-	}
-
-	DBGF("** ixp.iread (%s) **\n", file);
+	DBGF("** ixp.iread (%s) - iterator ready **\n", file);
 
 	// create and return the iterator function
 	// the only argument is the userdata
@@ -387,28 +397,37 @@ int l_ixp_idir (lua_State *L)
 	ixp = lixp_checkixp (L, 1);
 	file = luaL_checkstring (L, 2);
 
-	ctx = (struct l_ixp_idir_s*)lua_newuserdata (L, sizeof(*ctx));
-	if (!ctx)
-		return lixp_pusherror (L, "count not allocate context");
-	memset(ctx, 0, sizeof (*ctx));
+	DBGF("** ixp.idir (%s) **\n", file);
 
-	// set the metatable for the new userdata
-	luaL_getmetatable (L, L_IXP_IDIR_MT);
-	lua_setmetatable (L, -2);
+	ctx = (struct l_ixp_idir_s*)lua_newuserdata (L, sizeof(*ctx));
+	if (!ctx) {
+		DBGF("** ixp.idir (%s) - count not allocate context", file);
+		lua_pushcclosure (L, nil_iter, 1);
+		return 1;
+	}
+	memset(ctx, 0, sizeof (*ctx));
 
 	ctx->fid = ixp_open(ixp->client, file, P9_OREAD);
 	if(ctx->fid == NULL) {
-		return lixp_pusherror (L, "count not open p9 file");
+		DBGF("** ixp.idir (%s) - count not open p9 file", file);
+		lua_pushcclosure (L, nil_iter, 1);
+		return 1;
 	}
 
 	ctx->buf = malloc (ctx->fid->iounit);
 	if (!ctx->buf) {
 		ixp_close (ctx->fid);
 		ctx->fid = NULL;
-		return lixp_pusherror (L, "count not allocate memory");
+		DBGF("** ixp.idir (%s) - count not allocate memory", file);
+		lua_pushcclosure (L, nil_iter, 1);
+		return 1;
 	}
 
-	DBGF("** ixp.idir (%s) **\n", file);
+	// set the metatable for the new userdata
+	luaL_getmetatable (L, L_IXP_IDIR_MT);
+	lua_setmetatable (L, -2);
+
+	DBGF("** ixp.idir (%s) - iterator ready **\n", file);
 
 	// create and return the iterator function
 	// the only argument is the userdata
