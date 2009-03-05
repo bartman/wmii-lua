@@ -143,12 +143,24 @@ local prog_hist = history.new (20)
 local action_hist = history.new(10)
 
 -- where to find plugins
-plugin_path = wmiidir .. "/plugins/?.so;"
-           .. wmiidir .. "/plugins/?.lua;"
-           .. "/usr/local/lib/lua/5.1/wmii/?.so;"
-           .. "/usr/local/share/lua/5.1/wmii/?.lua;"
-           .. "/usr/lib/lua/5.1/wmii/?.so;"
-           .. "/usr/share/lua/5.1/wmii/?.lua"
+plugin_paths = {}
+
+table.insert(plugin_paths, wmiidir .. "/plugins/?.so")
+table.insert(plugin_paths, wmiidir .. "/plugins/?.lua")
+
+for path in string.gmatch(package.path, "[^;]+") do
+    if not path:find("^./") and not path:find("core") and not path:find("plugins") then
+        local path = path:gsub("%?", "wmii/?")
+        table.insert(plugin_paths, path)
+    end
+end
+
+for path in string.gmatch(package.cpath, "[^;]+") do
+    if not path:find("^./") and not path:find("core") and not path:find("plugins") and not path:find("loadall.so") then
+        local path = path:gsub("%?", "wmii/?")
+        table.insert(plugin_paths, path)
+    end
+end
 
 -- where to find wmiirc (see find_wmiirc())
 wmiirc_path = wmiidir .. "/wmiirc.lua;"
@@ -1689,7 +1701,7 @@ function load_plugin(name, vars)
 
         -- first find the plugin file
         local s, path_match, full_name, file
-        for s in string.gmatch(plugin_path, "[^;]+") do
+        for i,s in pairs(plugin_paths) do
                 -- try to locate the files locally
                 local fn = s:gsub("%?", name)
                 file = io.open(fn, "r")
