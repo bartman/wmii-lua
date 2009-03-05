@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
 #
-# This script installs wmiirc-lua files into $HOME/.wmii-3.5
+# This script installs wmiirc-lua files into $HOME/.wmii-lua
 
 set -e
 

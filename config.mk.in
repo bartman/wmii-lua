@@ -45,7 +45,7 @@ PLUGIN_LIB_DIR	= ${DESTDIR}${PREFIX}/lib/lua/${LUA_VERSION}/wmii
 PLUGIN_LUA_DIR	= ${DESTDIR}${PREFIX}/share/lua/${LUA_VERSION}/wmii
 
 BIN_DIR		= ${DESTDIR}${PREFIX}/bin
-RC_DIR		= ${DESTDIR}/etc/X11/wmii-3.5
+RC_DIR		= ${DESTDIR}/etc/X11/wmii-lua
 MAN_DIR		= ${DESTDIR}${PREFIX}/share/man/man3
 XS_DIR		= ${DESTDIR}${PREFIX}/share/xsessions
 
@@ -61,7 +61,7 @@ ALL_INSTALL_DIRS= ${CORE_LIB_DIR} \
 # ------------------------------------------------------------------------
 # home directories
 
-HOME_WMII	= ~/.wmii-3.5
+HOME_WMII	= ~/.wmii-lua
 HOME_CORE	= ${HOME_WMII}/core
 HOME_PLUGINS	= ${HOME_WMII}/plugins
 HOME_BIN_DIR    = $(word 1,$(wildcard ~/usr/bin ~/bin) ~/usr/bin)

@@ -168,7 +168,7 @@ the doc/key-bindings for information on how to control wmii with the
 extended key bindings wmii-lua provides.
 
 More advanced users may also write plugins for wmii-lua using the
-plugin API.  Plugins live in ~/.wmii-3.5/plugins/ directory, and several
+plugin API.  Plugins live in ~/.wmii-lua/plugins/ directory, and several
 come with this package.  See the wmii.3lua man page, and doc/plugin-api
 for more information about how to write code for wmii-lua.
 

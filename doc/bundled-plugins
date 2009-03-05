@@ -2,7 +2,7 @@ About
 ======
 wmiirc-lua bundles some plugins with the distribution and this document
 briefly describes each.  The plugin files themselves are located in
-~/.wmii-3.5/plugins/ and are documented in more detail through comments.
+~/.wmii-lua/plugins/ and are documented in more detail through comments.
 
 browser
 ========

@@ -9,8 +9,8 @@ MAN = wmii.3lua
 # ------------------------------------------------------------------------
 # main target
 
-.PHONY: all help libs luaixp luaeventloop docs man clean distclean install install-user
-all: libs man
+.PHONY: all help generate libs luaixp luaeventloop docs man clean distclean install install-user
+all: generate libs man
 
 help:
 	@echo "make [target]"
@@ -34,7 +34,7 @@ help:
 GEN_SRC = core/wmii.lua.in install-wmiirc-lua.in wmii-lua.in wmiirc.lua.in
 GEN_DST = ${GEN_SRC:%.in=%}
 
-generate-from-in: ${GEN_DST}
+generate: ${GEN_DST}
 ${GEN_DST}: ${CONFIG_MK}
 ${GEN_DST}: %: %.in
 ifeq (${LOADED_CONFIG_MK},)
@@ -113,8 +113,8 @@ install: ${MAN} ${GEN_DST} install-variable-check
 # install in user directory
 #
 install-user: ${MAN} ${GEN_DST} install-user-variable-check
-ifeq ($(shell pwd),$(wildcard ~/.wmii-3.5))
-	@echo "You're already in the ~/.wmii-3.5/ directory"
+ifeq ($(shell pwd),$(wildcard ${HOME_WMII}))
+	@echo "You're already in the ${HOME_WMII} directory"
 else
 	${Q} ${INSTALL} -d ${ALL_HOME_DIRS}
 	${Q} if test -f ${HOME_WMII}/wmiirc ; then \
