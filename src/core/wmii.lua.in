@@ -1028,6 +1028,10 @@ function update_displayed_tags ()
         end
 end
 
+function tag_display(tag, selected)
+        return tag
+end
+
 function update_displayed_tags_on_screen(s)
         local lbar = "/lbar"
         if s then
@@ -1055,10 +1059,11 @@ function update_displayed_tags_on_screen(s)
                 if cur == v then
                         color = fc
                 end
+                local str = tag_display(v,selected)
                 if not old[v] then
-                       create (lbar .. "/" .. v, color .. " " .. v)
+                       create (lbar .. "/" .. v, color .. " " .. str)
                 end
-                write (lbar .. "/" .. v, color .. " " .. v)
+                write (lbar .. "/" .. v, color .. " " .. str)
                 old[v] = nil
         end
 
@@ -1092,7 +1097,7 @@ function create_tag_widget(name)
         end
         local i, s
         for i,s in pairs(screens) do
-                create ("/screen/"..s.."/lbar/" .. name, nc .. " " .. name)
+                create ("/screen/"..s.."/lbar/" .. name, nc .. " " .. tag_display(name))
         end
 end
 
@@ -1239,8 +1244,9 @@ local ev_handlers = {
                 local fc = get_screen_ctl(scrn, "focuscolors") or get_ctl("focuscolors") or ""
                 log ("# echo " .. fc .. " " .. tag .. " | wmiir write " .. file)
 
-                create (file, fc .. " " .. tag)
-                write (file, fc .. " " .. tag)
+                str = tag_display(tag,true)
+                create (file, fc .. " " .. str)
+                write (file, fc .. " " .. str)
         end,
         UnfocusTag = function (ev, arg)
                 log ("UnfocusTag: " .. arg)
@@ -1258,8 +1264,9 @@ local ev_handlers = {
                 local nc = get_screen_ctl(scrn, "normcolors") or get_ctl("normcolors") or ""
                 log ("# echo " .. nc .. " " .. tag .. " | wmiir write " .. file)
 
-                create (file, nc .. " " .. tag)
-                write (file, nc .. " " .. tag)
+                str = tag_display(tag,true)
+                create (file, nc .. " " .. str)
+                write (file, nc .. " " .. str)
 
                 -- don't duplicate the last entry
                 if not (tag == view_hist[#view_hist]) then
