@@ -2285,7 +2285,7 @@ end
 function client_focused (xid)
         log ("-client_focused " .. tostring(xid))
         -- return the current focused xid if nil is passed
-        if type(xid) ~= 'string' or not xid:match("0x[0-9][a-f][A-F]*$") then
+        if type(xid) ~= 'string' or not xid:match("0x%x*$") then
                 return focused_xid
         end
         -- do nothing if the same xid
