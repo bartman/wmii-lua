@@ -1050,6 +1050,13 @@ function update_displayed_tags_on_screen(s)
                 old[v] = nil
         end
 
+        -- ignore widgets on the lbar
+        for i,v in pairs(widgets) do
+                if v.bar == 'lbar' then
+                        old[v.name] = nil
+                end
+        end
+
         -- anything left in the old table should be removed now
         for i,v in pairs(old) do
                 if v then
@@ -1782,7 +1789,7 @@ widgets = {}
 -- examples:
 --     widget = wmii.widget:new ("999_clock")
 --     widget = wmii.widget:new ("999_clock", clock_event_handler)
-function widget:new (name, fn)
+function widget:new (name, fn, bar)
         local o = {}
 
         if type(name) == "string" then
@@ -1790,6 +1797,7 @@ function widget:new (name, fn)
                 if type(fn) == "function" then
                         o.fn = fn
                 end
+                o.bar = bar or "rbar"
         else
                 error ("expected name followed by an optional function as arguments")
         end
@@ -1827,9 +1835,9 @@ function widget:show (txt, colors)
                 towrite = colors .. " " .. towrite
         end
         if not self.txt then
-                create ("/rbar/" .. self.name, towrite)
+                create ('/'..self.bar..'/'.. self.name, towrite)
         else
-                write ("/rbar/" .. self.name, towrite)
+                write ('/'..self.bar..'/'.. self.name, towrite)
         end
         self.txt = txt
 end
@@ -1838,7 +1846,7 @@ end
 -- hides a widget and removes it from the bar
 function widget:hide ()
         if self.txt then
-                remove ("/lbar/" .. self.name)
+                remove ('/'..self.bar ..'/'.. self.name)
                 self.txt = nil
         end
 end
