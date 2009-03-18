@@ -1,3 +1,4 @@
+# vim: set ft=make :
 # ------------------------------------------------------------------------
 # standard programs
 CC = cc
@@ -6,11 +7,23 @@ POD2MAN = pod2man
 
 # ------------------------------------------------------------------------
 # things about lua
-LUA_VERSION	= 5.1
-LUA_PKG_NAME	= lua5.1
+LUA_VERSION	= $(shell lua -v 2>&1 | sed -e 's/.* \([0-9]\+\.[0-9]\+\)[ .].*/\1/')
+LUA_PKG_NAME	= lua${LUA_VERSION}
+
+ifeq (${LUA_VERSION},)
+$(error Unable to discover the lua interpreter version.  Make sure 'lua' is in PATH.)
+# If you see this you should see the README about the packages you need to install.
+endif
 
 LUA_INC := $(shell pkg-config --cflags ${LUA_PKG_NAME})
 LUA_LIB := $(shell pkg-config --libs ${LUA_PKG_NAME})
+
+ifeq (${LUA_INC},)
+$(error Unable to get include and library info on the ${LUA_PKG_NAME} package.)
+# If you see this then either LUA_VERSION or LUA_PKG_NAME is not getting
+# set correctly, or you don't have pkg-config installed.
+# Run pkg-config --list-all and see what LUA_PKG_NAME should be set to.
+endif
 
 # ------------------------------------------------------------------------
 # things about ixp
