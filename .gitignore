@@ -1,12 +1,20 @@
+# temporary files
 *~
 .*.swp
 cscope.files
 cscope.out
 tags
+
+# generated files
+config.mk
+core/wmii.lua
+install-wmiirc-lua
+wmii-lua
+wmiirc.lua
+
+# files built
 wmii.3lua
-build-stamp
-configure-stamp
 debian/files
 debian/wmiirc-lua.substvars
 debian/wmiirc-lua
-config.mk
+
