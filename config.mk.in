@@ -1,4 +1,4 @@
-# vim: set ft=make :
+LOADED_CONFIG_MK := 1
 # ------------------------------------------------------------------------
 # standard programs
 CC = cc
@@ -71,3 +71,4 @@ ALL_HOME_DIRS	= ${HOME_CORE} \
 		  ${HOME_PLUGINS} \
 		  ${HOME_PLUGINS}
 
+# vim: set ft=make :

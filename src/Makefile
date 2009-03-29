@@ -29,6 +29,28 @@ help:
 	@echo "   cscope         - build cscope index"
 
 # ------------------------------------------------------------------------
+# generating files from templates
+
+GEN_SRC = core/wmii.lua.in install-wmiirc-lua.in wmii-lua.in wmiirc.lua.in
+GEN_DST = ${GEN_SRC:%.in=%}
+
+generate-from-in: ${GEN_DST}
+${GEN_DST}: ${CONFIG_MK}
+${GEN_DST}: %: %.in
+ifeq (${LOADED_CONFIG_MK},)
+	${MAKE} ${CONFIG_MK}
+	${MAKE} $@
+else
+	@echo Generating $@
+	${Q} sed -e 's:%DESTDIR%:${DESTDIR}:' \
+		 -e 's:%PREFIX%:${PREFIX}:' \
+		 -e 's:%RC_DIR%:${RC_DIR}:' \
+		 -e 's:%LUA_BIN%:${LUA_BIN}:' \
+		 -e 's:%HOME_WMII%:${HOME_WMII}:' \
+		 $< > $@
+endif
+
+# ------------------------------------------------------------------------
 # building
 
 libs: luaeventloop luaixp
@@ -56,6 +78,7 @@ clean:
 	-${Q} ${MAKE} -C luaeventloop clean
 
 distclean: clean
+	-${Q} rm -f ${GEN_DST}
 
 # ------------------------------------------------------------------------
 # installing
@@ -63,7 +86,7 @@ distclean: clean
 #
 # install system wide
 #
-install: ${MAN} install-variable-check
+install: ${MAN} ${GEN_DST} install-variable-check
 	# create directories
 	${Q} ${INSTALL} -d ${ALL_INSTALL_DIRS}
 	#
@@ -89,7 +112,7 @@ install: ${MAN} install-variable-check
 #
 # install in user directory
 #
-install-user: install-user-variable-check
+install-user: ${MAN} ${GEN_DST} install-user-variable-check
 ifeq ($(shell pwd),$(wildcard ~/.wmii-3.5))
 	@echo "You're already in the ~/.wmii-3.5/ directory"
 else

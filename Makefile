@@ -8,6 +8,7 @@ default: all
 # includes and defines
 
 ifneq ($(MAKECMDGOALS),gitclean)
+$(if $(wildcard config.mk),,$(shell cp config.mk.in config.mk))
 include config.mk
 endif
 include Makefile.ext
@@ -47,17 +48,6 @@ help:
 	@echo "   tags             - build ctags/cscope index"
 	@echo
 	@${MAKE} -s ext-help
-
-# ------------------------------------------------------------------------
-# config
-
-config.mk: config.mk.dist
-	@echo Updating $@
-	${Q} if test -f $@ ; then \
-		touch $@ ; \
-	else \
-		cp $< $@ ; \
-	fi
 
 # ------------------------------------------------------------------------
 # local dependencies for main rules

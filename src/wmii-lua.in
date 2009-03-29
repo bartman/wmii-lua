@@ -6,10 +6,10 @@
 
 # we will look for wmiirc in these directories
 POSSIBLE_WMIIRC="
-${HOME}/.wmii-3.5/wmiirc.lua
-${HOME}/.wmii-3.5/wmiirc
-/etc/X11/wmii-3.5/wmiirc.lua
-/etc/X11/wmii-3.5/wmiirc
+%HOME_WMII%/wmiirc.lua
+%HOME_WMII%/wmiirc
+%RC_DIR%/wmiirc.lua
+%RC_DIR%/wmiirc
 "
 
 # try to find the best wmiirc written in lua

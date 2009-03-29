@@ -55,7 +55,7 @@ It should be used by your wmiirc
 -- MODULE SETUP
 -- ========================================================================
 
-local wmiidir = os.getenv("HOME") .. "/.wmii-3.5"
+local wmiidir = ("%HOME_WMII%"):gsub("^~", os.getenv("HOME"))
 local wmiirc = wmiidir .. "/wmiirc"
 
 package.path  = wmiidir .. "/core/?.lua;" ..
@@ -143,18 +143,18 @@ local prog_hist = history.new (20)
 local action_hist = history.new(10)
 
 -- where to find plugins
-plugin_path = os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so;"
-           .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua;"
+plugin_path = wmiidir .. "/plugins/?.so;"
+           .. wmiidir .. "/plugins/?.lua;"
            .. "/usr/local/lib/lua/5.1/wmii/?.so;"
            .. "/usr/local/share/lua/5.1/wmii/?.lua;"
            .. "/usr/lib/lua/5.1/wmii/?.so;"
            .. "/usr/share/lua/5.1/wmii/?.lua"
 
 -- where to find wmiirc (see find_wmiirc())
-wmiirc_path = os.getenv("HOME") .. "/.wmii-3.5/wmiirc.lua;"
-           .. os.getenv("HOME") .. "/.wmii-3.5/wmiirc;"
-           .. "/etc/X11/wmii-3.5/wmiirc.lua;"
-           .. "/etc/X11/wmii-3.5/wmiirc"
+wmiirc_path = wmiidir .. "/wmiirc.lua;"
+           .. wmiidir .. "/wmiirc;"
+           .. "%RC_DIR%/wmiirc.lua;"
+           .. "%RC_DIR%/wmiirc"
 
 -- ========================================================================
 -- LOCAL HELPERS
@@ -182,7 +182,7 @@ end
 
 =item find_wmiirc ( )
 
-Locates the wmiirc script.  It looks in ~/.wmii-3.5 and /etc/X11/wmii-3.5
+Locates the wmiirc script.  It looks in %HOME_WMII%  and %RC_DIR%
 for the first lua script bearing the name wmiirc.lua or wmiirc.  Returns
 first match.
 
@@ -582,6 +582,7 @@ local action_handlers = {
                                 cleanup()
                                 posix.exec (wmiirc)
                                 posix.exec ("/bin/sh", "-c", "exec lua wmiirc")
+                                posix.exec ("%LUA_BIN%", wmiirc)
                                 posix.exec ("/usr/bin/lua", wmiirc)
                         end
                 else
