@@ -9,9 +9,10 @@ default: all
 
 ifneq ($(MAKECMDGOALS),gitclean)
 include config.mk
+endif
 include Makefile.ext
 include Makefile.check
-endif
+include Makefile.rules
 
 # ------------------------------------------------------------------------
 # main targets
@@ -19,11 +20,13 @@ endif
 .PHONY: all help docs clean distclean gitclean tags
 
 all clean distclean docs install install-user:
-	${MAKE} -C src $@
+	@echo Running '$@' in src...
+	${Q} ${MAKE} -C src $@
 
 gitclean:
+	@echo GITCLEAN
 	$(if $(wildcard .git/config),,$(error this is not a git repository))
-	git clean -d -x -f
+	${Q} git clean -d -x -f
 
 # ------------------------------------------------------------------------
 # help
@@ -49,7 +52,8 @@ help:
 # config
 
 config.mk: config.mk.dist
-	if test -f $@ ; then \
+	@echo Updating $@
+	${Q} if test -f $@ ; then \
 		touch $@ ; \
 	else \
 		cp $< $@ ; \
@@ -62,12 +66,12 @@ config.mk: config.mk.dist
 
 clean: lcl-clean
 lcl-clean:
-	-rm -f *~ */*~
-	-rm -f cscope.files cscope.out tags
+	-${Q} rm -f *~
+	-${Q} rm -f cscope.files cscope.out tags
 
 distclean: lcl-distclean
 lcl-distclean: clean
-	-rm -f config.mk
+	-${Q} rm -f config.mk
 
 .PHONY: 
 
@@ -81,13 +85,13 @@ install-user: install-user-variable-check
 .PHONY: cscope tags
 
 cscope.files::
-	find . -name '*.[ch]' -o -name '*.lua' | grep -v -e CVS -e SCCS > cscope.files
+	${Q} find . -name '*.[ch]' -o -name '*.lua' | grep -v -e CVS -e SCCS > cscope.files
 
 cscope: cscope.out
 cscope.out: cscope.files
-	-cscope -P`pwd` -b
+	-${Q} cscope -P`pwd` -b
 
 tags: cscope.out
-	rm -f tags
-	xargs -n 50 ctags -a < cscope.files
+	${Q} rm -f tags
+	${Q} xargs -n 50 ctags -a < cscope.files
 

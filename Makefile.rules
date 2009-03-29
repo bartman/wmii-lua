@@ -1,0 +1,5 @@
+# this file is meant for useful constructs
+
+# run make V=1 to see all commands
+Q = $(if ${V},,@)
+

@@ -31,12 +31,12 @@ EXT_SM_COUNT  = $(shell echo ${EXT_SM_NAMES} | wc -w)
 
 ext-check:
 	@echo "Checking git submodules..."
-	@if ! test ${EXT_SM_COUNT} = $$(git config --get-regexp "${EXT_SM_REGEXP}" | wc -l) ; then \
+	${Q} if ! test ${EXT_SM_COUNT} = $$(git config --get-regexp "${EXT_SM_REGEXP}" | wc -l) ; then \
 		echo "ERROR: submodules not initialized, run:" >&2 ; \
 		echo "       make update"                      >&2 ; \
 		$(if ${NOCHECK},true,false) ; \
 	 fi
-	@if (git submodule status | grep '^[+-]' 2>/dev/null) ; then \
+	${Q} if (git submodule status | grep '^[+-]' 2>/dev/null) ; then \
 		echo "ERROR: submodules out of date, run:"     >&2 ; \
 		echo "       make update"                      >&2 ; \
 		$(if ${NOCHECK},true,false) ; \
@@ -46,10 +46,10 @@ ext-check:
 update:
 ext-update:
 	@echo "Updating git submodules..."
-	@if ! test ${EXT_SM_COUNT} = $$(git config --get-regexp "${EXT_SM_REGEXP}" | wc -l) ; then \
+	${Q} if ! test ${EXT_SM_COUNT} = $$(git config --get-regexp "${EXT_SM_REGEXP}" | wc -l) ; then \
 		git submodule init ; \
 	 fi
-	@if (git submodule status | grep '^[+-]' 2>/dev/null) ; then \
+	${Q} if (git submodule status | grep '^[+-]' 2>/dev/null) ; then \
 		git submodule update ; \
 	 fi
 	@echo "UPDATE OK"
@@ -93,13 +93,13 @@ ext-build-helper: ext-check
 	$(if ${BUILD_RULE},,$(error $@ is an internal rule))
 	#
 	@echo ${BUILD_STR} libixp
-	${MAKE} -C ${EXT_DIR}/libixp ${BUILD_RULE} \
+	${Q} ${MAKE} -C ${EXT_DIR}/libixp ${BUILD_RULE} \
 		"CC=${CCPIC}" \
 		"PREFIX=${BUILD_PREFIX}" \
 		${BUILD_BASE_RULE}
 	#
 	@echo ${BUILD_STR} wmii
-	${MAKE} -C ${EXT_DIR}/wmii ${BUILD_RULE} \
+	${Q} ${MAKE} -C ${EXT_DIR}/wmii ${BUILD_RULE} \
 		"INCLUDE=${PWD}/${EXT_DIR}/libixp/include:${INCLUDE}" \
 		"LIBIXP=${PWD}/${EXT_DIR}/libixp/lib/libixp.a" "CC=${CCPIC}" \
 		"PREFIX=${BUILD_PREFIX}" \
@@ -115,6 +115,9 @@ ext-build-helper: ext-check
 .PHONY: lcl-gitclean
 gitclean: lcl-gitclean
 lcl-gitclean:
-	-cd ${EXT_DIR}/libixp && git clean -d -x -f
-	-cd ${EXT_DIR}/wmii && git clean -d -x -f
+	@echo GITCLEAN libixp
+	-${Q} cd ${EXT_DIR}/libixp && git clean -d -x -f
+	#
+	@echo GITCLEAN wmii
+	-${Q} cd ${EXT_DIR}/wmii && git clean -d -x -f
 
