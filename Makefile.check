@@ -17,4 +17,5 @@ install-user-variable-check:
 	$(if ${HOME_PLUGINS},, $(error HOME_PLUGINS variable is empty; check config.mk))
 	$(if ${HOME_WMII},,    $(error HOME_WMII variable is empty; check config.mk))
 	$(if ${HOME_BIN_DIR},, $(error HOME_BIN_DIR variable is empty; check config.mk))
+	$(if ${HOME_PREFIX},,  $(error HOME_PREFIX variable is empty; check config.mk))
 	@echo Config vars OK.

@@ -51,7 +51,8 @@ ALL_INSTALL_DIRS= ${CORE_LIB_DIR} \
 HOME_WMII	= ~/.wmii-3.5
 HOME_CORE	= ${HOME_WMII}/core
 HOME_PLUGINS	= ${HOME_WMII}/plugins
-HOME_BIN_DIR    = $(word 1,$(wildcard ~/usr/bin ~/bin) ~/bin)
+HOME_BIN_DIR    = $(word 1,$(wildcard ~/usr/bin ~/bin) ~/usr/bin)
+HOME_PREFIX     = $(dir ${HOME_BIN_DIR})
 
 ALL_HOME_DIRS	= ${HOME_CORE} \
 		  ${HOME_PLUGINS} \

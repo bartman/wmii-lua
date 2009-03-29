@@ -1,0 +1,120 @@
+# ------------------------------------------------------------------------
+# local variable overrides
+
+EXT_DIR = ext
+
+PWD     = $(shell pwd)
+
+CCPIC   = cc -c -fPIC
+
+# ------------------------------------------------------------------------
+# help
+
+.PHONY: ext-help
+ext-help:
+	@echo " extra packages"
+	@echo "   ext              - build all extra packages"
+	@echo "   ext-install      - install extra packages in system dir"
+	@echo "   ext-install-user - install extra packages in user home dir"
+	@echo "   ext-check        - check if sources are uptodate"
+	@echo "   ext-update       - update everything from git submodules"
+
+# ------------------------------------------------------------------------
+# git submodules
+
+EXT_SM_NAMES  = libixp wmii
+EXT_SM_DIRS   = ${EXT_SM_NAMES:%=${EXT_DIR}/%}
+EXT_SM_REGEXP = submodule\.($(shell echo ${EXT_SM_DIRS} | tr ' ' '|'))\.url
+EXT_SM_COUNT  = $(shell echo ${EXT_SM_NAMES} | wc -w)
+
+.PHONY: ext-check ext-update
+
+ext-check:
+	@echo "Checking git submodules..."
+	@if ! test ${EXT_SM_COUNT} = $$(git config --get-regexp "${EXT_SM_REGEXP}" | wc -l) ; then \
+		echo "ERROR: submodules not initialized, run:" >&2 ; \
+		echo "       make update"                      >&2 ; \
+		$(if ${NOCHECK},true,false) ; \
+	 fi
+	@if (git submodule status | grep '^[+-]' 2>/dev/null) ; then \
+		echo "ERROR: submodules out of date, run:"     >&2 ; \
+		echo "       make update"                      >&2 ; \
+		$(if ${NOCHECK},true,false) ; \
+	 fi
+	@echo "CHECK OK"
+
+update:
+ext-update:
+	@echo "Updating git submodules..."
+	@if ! test ${EXT_SM_COUNT} = $$(git config --get-regexp "${EXT_SM_REGEXP}" | wc -l) ; then \
+		git submodule init ; \
+	 fi
+	@if (git submodule status | grep '^[+-]' 2>/dev/null) ; then \
+		git submodule update ; \
+	 fi
+	@echo "UPDATE OK"
+
+# ------------------------------------------------------------------------
+# building & installing
+
+.PHONY: ext
+ext: ext-all
+
+.PHONY: ext-all ext-clean ext-install ext-install-user ext-user
+
+ext-all ext-user:               BUILD_STR="BUILD"
+ext-install ext-install-user:   BUILD_STR="INSTALL"
+
+ext-all ext-user:               BUILD_BASE_RULE=all
+ext-all ext-user:               BUILD_WMIIRCLUA_RULE=all
+
+ext-install ext-install-user:   BUILD_BASE_RULE=install
+ext-install:                    BUILD_WMIIRCLUA_RULE=install
+ext-install-user:               BUILD_WMIIRCLUA_RULE=install-user
+
+ext-all ext-install:            BUILD_RULE=all
+ext-all ext-install:            BUILD_PREFIX=${PREFIX}
+ext-all:                        ext-build-helper
+ext-install:                    ext-build-helper
+ext-install:                    install-variable-check
+
+ext-user ext-install-user:      BUILD_RULE=all
+ext-user ext-install-user:      BUILD_PREFIX=${HOME_PREFIX}
+ext-user:                       ext-build-helper
+ext-install-user:               ext-build-helper
+ext-install-user:               install-user-variable-check
+
+ext-clean:                      BUILD_RULE=clean
+ext-clean:                      BUILD_PREFIX=
+ext-clean:                      ext-build-helper
+
+.PHONY: ext-build-helper
+ext-build-helper: ext-check
+	$(if ${BUILD_RULE},,$(error $@ is an internal rule))
+	#
+	@echo ${BUILD_STR} libixp
+	${MAKE} -C ${EXT_DIR}/libixp ${BUILD_RULE} \
+		"CC=${CCPIC}" \
+		"PREFIX=${BUILD_PREFIX}" \
+		${BUILD_BASE_RULE}
+	#
+	@echo ${BUILD_STR} wmii
+	${MAKE} -C ${EXT_DIR}/wmii ${BUILD_RULE} \
+		"INCLUDE=${IXP_INC}:${INCLUDE}" \
+		"LIBIXP=${PWD}/${EXT_DIR}/libixp/lib/libixp.a" "CC=${CCPIC}" \
+		"PREFIX=${BUILD_PREFIX}" \
+		"CONFVERSION=lua" \
+		${BUILD_BASE_RULE}
+	#
+	@echo ${BUILD_STR} OK
+
+
+# ------------------------------------------------------------------------
+# more cleaning
+
+.PHONY: lcl-gitclean
+gitclean: lcl-gitclean
+lcl-gitclean:
+	-cd ${EXT_DIR}/libixp && git clean -d -x -f
+	-cd ${EXT_DIR}/wmii && git clean -d -x -f
+
