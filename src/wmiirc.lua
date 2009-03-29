@@ -140,8 +140,8 @@ wmii.add_key_handler ("Mod1-z", ssh.show_menu)
 
 -- other handlers
 
-wmii.add_key_handler (brightness_up,   function (key) os.execute("xbacklight -steps 1 -time 0 -inc 10") end)
-wmii.add_key_handler (brightness_down, function (key) os.execute("xbacklight -steps 1 -time 0 -dec 10") end)
+wmii.add_key_handler ('XF86KbdBrightnessUp',   function (key) os.execute("xbacklight -steps 1 -time 0 -inc 10") end)
+wmii.add_key_handler ('XF86KbdBrightnessDown', function (key) os.execute("xbacklight -steps 1 -time 0 -dec 10") end)
 
 wmii.add_action_handler ("hibernate-disk",
 function(act,args)
