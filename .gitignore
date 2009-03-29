@@ -7,13 +7,13 @@ tags
 
 # generated files
 config.mk
-core/wmii.lua
-install-wmiirc-lua
-wmii-lua
-wmiirc.lua
+src/core/wmii.lua
+src/install-wmiirc-lua
+src/wmii-lua
+src/wmiirc.lua
 
 # files built
-wmii.3lua
+src/wmii.3lua
 debian/files
 debian/wmiirc-lua.substvars
 debian/wmiirc-lua
