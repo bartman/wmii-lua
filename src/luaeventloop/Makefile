@@ -1,14 +1,16 @@
-include ../config.mk
+TOP         = ../..
+CONFIG_MK   = ${TOP}/config.mk
+include ${CONFIG_MK}
 
-SRCS = lixp_main.c lixp_debug.c lixp_util.c lixp_instance.c
+SRCS = lel_main.c lel_debug.c lel_util.c lel_instance.c
 OBJS = $(SRCS:.c=.o)
 
-CFLAGS += ${LUA_INC} ${IXP_INC} -ggdb -O0 -fPIC
-LIBS   += ${LUA_LIB} ${IXP_LIB}
+CFLAGS += ${LUA_INC} -ggdb -O0 -fPIC
+LIBS   += ${LUA_LIB}
 
 #CFLAGS += -DDBG
 
-TARGET = ixp.so
+TARGET = eventloop.so
 
 .PHONY: all test clean install
 all: ${TARGET}
