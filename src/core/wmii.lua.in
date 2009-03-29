@@ -149,17 +149,21 @@ table.insert(plugin_paths, wmiidir .. "/plugins/?.so")
 table.insert(plugin_paths, wmiidir .. "/plugins/?.lua")
 
 for path in string.gmatch(package.path, "[^;]+") do
-    if not path:find("^./") and not path:find("core") and not path:find("plugins") then
-        local path = path:gsub("%?", "wmii/?")
-        table.insert(plugin_paths, path)
-    end
+        local wmiidir = path:gsub("%?.*$", "wmii")
+        local stat = posix.stat(wmiidir)
+        if stat and stat.type == "directory" then
+              local path = path:gsub("%?", "wmii/?")
+              table.insert(plugin_paths, path)
+        end
 end
 
 for path in string.gmatch(package.cpath, "[^;]+") do
-    if not path:find("^./") and not path:find("core") and not path:find("plugins") and not path:find("loadall.so") then
-        local path = path:gsub("%?", "wmii/?")
-        table.insert(plugin_paths, path)
-    end
+        local wmiidir = path:gsub("%?.*$", "wmii")
+        local stat = posix.stat(wmiidir)
+        if stat and stat.type == "directory" then
+              local path = path:gsub("%?", "wmii/?")
+              table.insert(plugin_paths, path)
+        end
 end
 
 -- where to find wmiirc (see find_wmiirc())
