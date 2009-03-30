@@ -27,10 +27,12 @@ endif
 
 # ------------------------------------------------------------------------
 # things about ixp
-#IXP_PREFIX = ${HOME}
 
-IXP_INC := -I${IXP_PREFIX}/usr/include
-IXP_LIB := -L${IXP_PREFIX}/usr/lib -lixp
+IXP_PREFIX = /usr
+#IXP_PREFIX = ${HOME}/usr
+
+IXP_INC := -I${IXP_PREFIX}/include
+IXP_LIB := -L${IXP_PREFIX}/lib -lixp
 
 # ------------------------------------------------------------------------
 # system directories

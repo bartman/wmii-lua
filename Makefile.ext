@@ -55,6 +55,25 @@ ext-update:
 	@echo "UPDATE OK"
 
 # ------------------------------------------------------------------------
+# where is libixp ?
+
+.PHONY: ext-libixp-check
+
+# NOTE: by default we assume that libixp is available in ext directory
+EXT_IXP_PREFIX      = ${PWD}/${EXT_DIR}/libixp
+EXT_IXP_LIB_DIR     = ${EXT_IXP_PREFIX}/lib
+EXT_IXP_INC_DIR     = ${EXT_IXP_PREFIX}/include
+
+EXT_IXP_A           = ${EXT_IXP_LIB_DIR}/libixp.a
+EXT_IXP_H           = ${EXT_IXP_INC_DIR}/ixp.h
+
+ext-libixp-check:
+	@echo "Checking for libixp..."
+	$(if $(wildcard ${EXT_IXP_A}),,$(error could not find libixp.a in ${EXT_IXP_PREFIX}; set EXT_IXP_PREFIX appropriately))
+	$(if $(wildcard ${EXT_IXP_H}),,$(error could not find ixp.h in ${EXT_IXP_PREFIX}; set EXT_IXP_PREFIX appropriately))
+	@echo "LIBIXP OK"
+
+# ------------------------------------------------------------------------
 # building & installing
 
 .PHONY: ext
@@ -98,10 +117,12 @@ ext-build-helper: ext-check
 		"PREFIX=${BUILD_PREFIX}" \
 		${BUILD_BASE_RULE}
 	#
+	${MAKE} ext-libixp-check
+	#
 	@echo ${BUILD_STR} wmii
 	${Q} ${MAKE} -C ${EXT_DIR}/wmii ${BUILD_RULE} \
-		"INCLUDE=${PWD}/${EXT_DIR}/libixp/include:${INCLUDE}" \
-		"LIBIXP=${PWD}/${EXT_DIR}/libixp/lib/libixp.a" "CC=${CCPIC}" \
+		"INCLUDE=${EXT_IXP_INC_DIR}:${INCLUDE}" \
+		"LIBIXP=${EXT_IXP_A}" "CC=${CCPIC}" \
 		"PREFIX=${BUILD_PREFIX}" \
 		"CONFVERSION=lua" \
 		${BUILD_BASE_RULE}
