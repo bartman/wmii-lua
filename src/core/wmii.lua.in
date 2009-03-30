@@ -321,36 +321,7 @@ end
 -- ------------------------------------------------------------------------
 -- setup a table describing the menu command
 local function menu_cmd (prompt)
-        local cmdt = { wmiir, "setsid", "dmenu", "-b" }
-        local fn = get_ctl("font")
-        if fn then
-                cmdt[#cmdt+1] = "-fn"
-                cmdt[#cmdt+1] = fn
-        end
-        local normcolors = get_ctl("normcolors")
-        if normcolors then
-                local nf, nb = normcolors:match("(#%x+)%s+(#%x+)%s#%x+")
-                if nf then
-                        cmdt[#cmdt+1] = "-nf"
-                        cmdt[#cmdt+1] = "'" .. nf .. "'"
-                end
-                if nb then
-                        cmdt[#cmdt+1] = "-nb"
-                        cmdt[#cmdt+1] = "'" .. nb .. "'"
-                end
-        end
-        local focuscolors = get_ctl("focuscolors")
-        if focuscolors then
-                local sf, sb = focuscolors:match("(#%x+)%s+(#%x+)%s#%x+")
-                if sf then
-                        cmdt[#cmdt+1] = "-sf"
-                        cmdt[#cmdt+1] = "'" .. sf .. "'"
-                end
-                if sb then
-                        cmdt[#cmdt+1] = "-sb"
-                        cmdt[#cmdt+1] = "'" .. sb .. "'"
-                end
-        end
+        local cmdt = { wmiir, "setsid", "wimenu" }
         if prompt then
                 cmdt[#cmdt+1] = "-p"
                 cmdt[#cmdt+1] = "'" .. prompt .. "'"
