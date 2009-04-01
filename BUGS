@@ -1,3 +1,9 @@
+- multi head:
+  - start up weirdness
+  - floating/managed draw ordering
+  - alt-h that goes to the other view jumps too many
+  - handle client that has two visible tags nicely
+
 - convert repo to build debs using git-buildpackage
 
 10:57 < dave0> bartman: 'make deb' gives me wacky errors on wmiirc-lua
