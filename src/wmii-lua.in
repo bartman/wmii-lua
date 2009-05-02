@@ -14,7 +14,7 @@ POSSIBLE_WMIIRC="
 
 # try to find the best wmiirc written in lua
 WMIIRC=
-for wmiirc in ${POSSIBLE_WMIIRC} ; do
+for wmiirc in $(eval echo ${POSSIBLE_WMIIRC}) ; do
         if ( test -r "${wmiirc}" ) && ( head -n1 "${wmiirc}" | grep -q lua ) ; then
                 exec wmii -r "${wmiirc}"
         fi
