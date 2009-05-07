@@ -58,8 +58,12 @@ If you are running Debian (or derivative) these steps may help you:
     apt-get install git-core                                \
                     build-essential debhelper               \
                     libx11-dev libxext-dev libxt-dev        \
-                    lua5.1 liblua5.1-0-dev liblua5.1-posix0 \
+                    libxrandr-dev                           \
+                    lua5.1 liblua5.1-0-dev liblua5.1-posix1 \
                     dwm-tools xclip dstat pkg-config
+
+Note that liblua5.1-posix1 may actually be liblua5.1-posix0 or someother
+suffix.  Please check what's available on your platform.
 
     apt-get build-dep libixp wmii
 
@@ -126,7 +130,7 @@ C. Make a Debian package
     cd wmii-lua
 
     # Switch to the debian branch
-    git checkout debian
+    git checkout -b debian -t origin/debian
 
     # Build the .deb
     make deb
