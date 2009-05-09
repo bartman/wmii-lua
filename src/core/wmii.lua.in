@@ -654,7 +654,7 @@ local action_handlers = {
         end,
 
         exec = function (act, args)
-                local what = args or "wmii"
+		local what = args or "wmii-lua"
                 log ("    asking wmii to exec " .. tostring(what))
                 cleanup()
                 write ("/ctl", "exec " .. what)
