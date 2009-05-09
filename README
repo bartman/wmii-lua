@@ -59,13 +59,17 @@ If you are running Debian (or derivative) these steps may help you:
                     build-essential debhelper               \
                     libx11-dev libxext-dev libxt-dev        \
                     libxrandr-dev libxinerama-dev           \
-                    lua5.1 liblua5.1-0-dev liblua5.1-posix1 \
+                    lua5.1 liblua5.1-0-dev                  \
+                    liblua5.1-posix1-dev                    \
                     dwm-tools xclip dstat pkg-config
 
 Note that liblua5.1-posix1 may actually be liblua5.1-posix0 or someother
 suffix.  Please check what's available on your platform.
 
     apt-get build-dep libixp wmii
+
+Note that you will need *deb-src* lines in your `/etc/apt/source` config
+file.  Without the build-dep will not work.
 
 If you chose to work on plugins, you can install all lua packages
 like this:
