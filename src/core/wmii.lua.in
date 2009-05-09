@@ -198,9 +198,9 @@ wmiirc_path = wmiidir .. "/wmiirc.lua;"
 
 =item log ( str )
 
-Log the message provided in C<str>
+log the message provided in c<str>
 
-Currently just writes to io.stderr
+currently just writes to io.stderr
 
 =cut
 --]]
@@ -209,6 +209,57 @@ function log (str)
                 io.stderr:write (str .. "\n")
         end
 end
+
+
+
+--[[
+=pod
+
+=item warn ( str )
+
+generate an error message, c<str>, but do not terminate lua
+
+returns the string argument
+
+=cut
+--]]
+function warn (str)
+	pcall(error,str)
+	return str
+end
+
+
+
+--[[
+=pod
+
+=item execute ( cmd )
+
+setsid wrapper for os.execute(c<cmd>)
+
+=cut
+--]]
+local wmiir_has_setsid = nil
+function execute (cmd)
+	log ("    executing: " .. cmd)
+	if wmiir_has_setsid == nil then
+		-- test if wmiir has setsid support
+		local rc = os.execute (wmiir .. " setsid true")
+		wmiir_has_setsid = (rc == 0)
+		log ("wmiir " .. (wmiir_has_setsid and "has" or "does not have") .. " setsid support")
+	end
+		
+	if wmiir_has_setsid then
+		cmd = wmiir .. " setsid " .. cmd
+	end
+
+	log ("    ... " .. cmd)
+	local rc = os.execute (cmd)
+	log ("    ... rc=" .. tostring(rc))
+	return rc
+end
+
+
 
 --[[
 =pod
@@ -338,7 +389,7 @@ end
 -- ------------------------------------------------------------------------
 -- setup a table describing the menu command
 local function menu_cmd (prompt)
-        local cmdt = { wmiir, "setsid", "wimenu" }
+        local cmdt = { "wimenu" }
         if prompt then
                 cmdt[#cmdt+1] = "-p"
                 cmdt[#cmdt+1] = "'" .. prompt .. "'"
@@ -374,7 +425,7 @@ function menu (tbl, prompt)
         menu[#menu+1] = outfile
 
         local cmd = table.concat(menu," ")
-        os.execute (cmd)
+        execute (cmd)
 
         fh = io.open (outfile, "r")
         os.remove (outfile)
@@ -411,7 +462,7 @@ function prog_menu ()
         local cmd = "(" .. table.concat(hstt)
                          .. "dmenu_path ) |" 
                          .. table.concat(menu," ")
-        os.execute (cmd)
+        execute (cmd)
 
         local fh = io.open (outfile, "rb")
         os.remove (outfile)
@@ -558,8 +609,7 @@ local action_handlers = {
                         page = wmiidir .. "/wmii.3lua"
                 end
                 local cmd = xterm .. " -e man " .. page .. " &"
-                log ("    executing: " .. cmd)
-                os.execute (wmiir .. " setsid " .. cmd)
+                execute (cmd)
         end,
 
         quit = function ()
@@ -575,7 +625,7 @@ local action_handlers = {
 
         xlock = function (act)
                 local cmd = get_conf("xlock") or "xscreensaver-command --lock"
-                os.execute (wmiir .. " setsid " .. cmd)
+                execute (cmd)
         end,
 
         wmiirc = function ()
@@ -731,16 +781,15 @@ local key_handlers = {
         -- execution and actions
         ["Mod1-Return"] = function (key)
                 local xterm = get_conf("xterm") or "xterm"
-                log ("    executing: " .. xterm)
-                os.execute (wmiir .. " setsid " .. xterm .. " &")
+                execute (xterm .. " &")
         end,
         ["Mod1-Shift-Return"] = function (key)
                 local tag = tag_menu()
                 if tag then
                         local xterm = get_conf("xterm") or "xterm"
-                        log ("    executing: " .. xterm .. "  on: " .. tag)
+                        log ("    executing on: " .. tag)
                         next_client_goes_to_tag = tag
-                        os.execute (wmiir .. " setsid " .. xterm .. " &")
+                        execute (xterm .. " &")
                 end
         end,
         ["Mod1-a"] = function (key)
@@ -750,8 +799,7 @@ local key_handlers = {
                 local prog = prog_menu()
                 if prog then
                         prog_hist:add(prog:match("([^ ]+)"))
-                        log ("    executing: " .. prog)
-                        os.execute (wmiir .. " setsid " .. prog .. " &")
+                        execute (prog .. " &")
                 end
         end,
         ["Mod1-Shift-p"] = function (key)
@@ -759,9 +807,9 @@ local key_handlers = {
                 if tag then
                         local prog = prog_menu()
                         if prog then
-                                log ("    executing: " .. prog .. "  on: " .. tag)
+                        	log ("    executing on: " .. tag)
                                 next_client_goes_to_tag = tag
-                                os.execute (wmiir .. " setsid " .. prog .. " &")
+                                execute (prog .. " &")
                         end
                 end
         end,
@@ -929,7 +977,7 @@ function add_key_handler (key, fn)
 
 	local onlyKey = key:match("([^-]+)$")
 	if 0 ~= os.execute("xmodmap -pk | grep -q '(" .. onlyKey .. ")'") then
-		error ("xmodmap -pk doesn't know about '" .. onlyKey .. "'")
+		return warn ("xmodmap -pk doesn't know about '" .. onlyKey .. "'")
 	end
 
 	if key_handlers[key] then
@@ -1606,7 +1654,7 @@ local function start_event_reader ()
         local now = os.time()
         if os.difftime(now, event_read_start) < 5 then
                 log("wmii: detected rapid restart of /event reader")
-                local cmd = "wmiir ls /ctl"
+                local cmd = wmiir .. " ls /ctl"
                 if os.execute(cmd) ~= 0 then
                         log("wmii: cannot confirm communication with wmii, shutting down!")
                         wmiirc_running = false
