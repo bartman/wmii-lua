@@ -123,6 +123,15 @@ end
 -- TODO: need to make sure that wmiir is in path, and if not find it
 local wmiir = "wmiir"
 
+-- wimenu points to the wimenu
+local wimenu = "wimenu"
+if 0 ~= os.execute("which wimenu") then
+	if 0 ~= os.execute("which dmenu") then
+		error ("could not find wimenu or dmenu in the PATH")
+	end
+	wimenu = "dmenu"
+end
+
 -- wmii_adr is the address we use when connecting using ixp
 -- TODO: hide this magic in luaixp
 local wmii_adr = os.getenv("WMII_ADDRESS") or ""
@@ -389,11 +398,39 @@ end
 -- ------------------------------------------------------------------------
 -- setup a table describing the menu command
 local function menu_cmd (prompt)
-        local cmdt = { "wimenu" }
+        local cmdt = { wimenu }
         if prompt then
                 cmdt[#cmdt+1] = "-p"
                 cmdt[#cmdt+1] = "'" .. prompt .. "'"
         end
+
+	if wimenu == "dmenu" then
+		cmdt[#cmdt+1] = "-b"
+		local normcolors = get_ctl("normcolors")
+		if normcolors then
+			local nf, nb = normcolors:match("(#%x+)%s+(#%x+)%s#%x+")
+			if nf then
+				cmdt[#cmdt+1] = "-nf"
+				cmdt[#cmdt+1] = "'" .. nf .. "'"
+			end
+			if nb then
+				cmdt[#cmdt+1] = "-nb"
+				cmdt[#cmdt+1] = "'" .. nb .. "'"
+			end
+		end
+		local focuscolors = get_ctl("focuscolors")
+		if focuscolors then
+			local sf, sb = focuscolors:match("(#%x+)%s+(#%x+)%s#%x+")
+			if sf then
+				cmdt[#cmdt+1] = "-sf"
+				cmdt[#cmdt+1] = "'" .. sf .. "'"
+			end
+			if sb then
+				cmdt[#cmdt+1] = "-sb"
+				cmdt[#cmdt+1] = "'" .. sb .. "'"
+			end
+		end
+	end
 
         return cmdt
 end
