@@ -124,9 +124,26 @@ end
 local wmiir = "wmiir"
 
 -- wmii_adr is the address we use when connecting using ixp
-local wmii_adr = os.getenv("WMII_ADDRESS")
-        or ("unix!/tmp/ns." ..  os.getenv("USER") ..  "." 
-            .. os.getenv("DISPLAY"):match("(:%d+)") .. "/wmii")
+-- TODO: hide this magic in luaixp
+local wmii_adr = os.getenv("WMII_ADDRESS") or ""
+if wmii_adr == "" then
+	local user = os.getenv("USER") or ""
+	if user == "" then
+		local cmd = "id -n -u"
+		local file = io.popen (cmd)
+		if file then
+			user = file:read("*l") or ""
+			file:close()
+		end
+		if not user or user == "" then
+			error ("no WMII_ADDRESS environment variable set, and "
+			.. "could not determine user name for socket location")
+		end
+	end
+	local disp = os.getenv("DISPLAY") or ":0.0"
+	wmii_adr = "unix!/tmp/ns." .. user ..  "."
+	.. disp:match("(:%d+)") .. "/wmii"
+end
 
 -- wmixp is the ixp context we use to talk to wmii
 local wmixp = ixp.new(wmii_adr)
@@ -908,6 +925,11 @@ function add_key_handler (key, fn)
 
 	if type(key) ~= "string" or type(fn) ~= "function" then
 		error ("expecting a string and a function")
+	end
+
+	local onlyKey = key:match("([^-]+)$")
+	if 0 ~= os.execute("xmodmap -pk | grep -q '(" .. onlyKey .. ")'") then
+		error ("xmodmap -pk doesn't know about '" .. onlyKey .. "'")
 	end
 
 	if key_handlers[key] then
@@ -2371,3 +2393,4 @@ is NO WARRANTY, to the extent permitted by law.
 
 =cut
 --]]
+-- vim: set noet ts=8 sw=8 :
