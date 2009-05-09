@@ -6,7 +6,7 @@
 set -e
 
 SRC_DIR="%RC_DIR%"
-DST_DIR=$(echo "%HOME_WMII%")
+DST_DIR=$(eval echo "%HOME_WMII%")
 
 SRC_WMIIRC="${SRC_DIR}/wmiirc.lua"
 DST_WMIIRC="${DST_DIR}/wmiirc"
