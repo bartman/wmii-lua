@@ -1,3 +1,12 @@
+wmiirc-lua (0.2.8-1) unstable; urgency=low
+
+  * move to ~/.wmii-lua, switch to github for hosting, build chnages for
+    handling submodules in ext dir, less dependency on lua version and wmii
+    version, improve installaction and start scripts, added view_workdir
+    plugin, using wimenu if available, many misc bugs fixed.
+
+ -- Bart Trojanowski <bart@jukie.net>  Sat, 09 May 2009 21:06:35 -0400
+
 wmiirc-lua (0.2.7-1) unstable; urgency=low
 
   * fixes to event loop, endless restarts, and single-head wmii access. 
