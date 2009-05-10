@@ -22,7 +22,7 @@ Base release     (master -> release)
  git merge master
  git tag -s v$VERSION                           # enter description
  
- git push
+ git pushall --tags
 
 Debian release   (release -> debian)
 ===============
@@ -37,7 +37,12 @@ Debian release   (release -> debian)
 
  git commit -m"debian $DEBVERSION" debian/
 
- git push
+ git-buildpackage --git-tag
+
+ # alternatively, this is a hack to force unsigned releases...
+ git-buildpackage --git-ignore-new --git-no-sign-tags --git-builder='debuild -i\.git -I.git -uc -us' --git-tag
+
+ git pushall --tags
 
 
 
