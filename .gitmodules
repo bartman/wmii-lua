@@ -1,0 +1,6 @@
+[submodule "ext/libixp"]
+	path = ext/libixp
+	url = git://github.com/bartman/libixp.git
+[submodule "ext/wmii"]
+	path = ext/wmii
+	url = git://github.com/bartman/wmii.git

@@ -1,0 +1,21 @@
+.PHONY: install-variable-check install-user-variable-check
+
+install-variable-check:
+	$(if ${ALL_INSTALL_DIRS},,$(error ALL_INSTALL_DIRS variable is empty; check config.mk))
+	$(if ${CORE_LUA_DIR},,    $(error CORE_LUA_DIR variable is empty; check config.mk))
+	$(if ${PLUGIN_LUA_DIR},,  $(error PLUGIN_LUA_DIR variable is empty; check config.mk))
+	$(if ${RC_DIR},,          $(error RC_DIR variable is empty; check config.mk))
+	$(if ${XS_DIR},,          $(error XS_DIR variable is empty; check config.mk))
+	$(if ${MAN_DIR},,         $(error MAN_DIR variable is empty; check config.mk))
+	$(if ${BIN_DIR},,         $(error BIN_DIR variable is empty; check config.mk))
+	@echo Config vars OK.
+
+install-user-variable-check:
+	$(if ${ALL_HOME_DIRS},,$(error ALL_HOME_DIRS variable is empty; check config.mk))
+	$(if ${HOME_WMII},,    $(error HOME_WMII variable is empty; check config.mk))
+	$(if ${HOME_CORE},,    $(error HOME_CORE variable is empty; check config.mk))
+	$(if ${HOME_PLUGINS},, $(error HOME_PLUGINS variable is empty; check config.mk))
+	$(if ${HOME_WMII},,    $(error HOME_WMII variable is empty; check config.mk))
+	$(if ${HOME_BIN_DIR},, $(error HOME_BIN_DIR variable is empty; check config.mk))
+	$(if ${HOME_PREFIX},,  $(error HOME_PREFIX variable is empty; check config.mk))
+	@echo Config vars OK.

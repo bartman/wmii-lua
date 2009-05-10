@@ -55,7 +55,7 @@ It should be used by your wmiirc
 -- MODULE SETUP
 -- ========================================================================
 
-local wmiidir = os.getenv("HOME") .. "/.wmii-3.5"
+local wmiidir = ("%HOME_WMII%"):gsub("^~", os.getenv("HOME"))
 local wmiirc = wmiidir .. "/wmiirc"
 
 package.path  = wmiidir .. "/core/?.lua;" ..
@@ -123,10 +123,36 @@ end
 -- TODO: need to make sure that wmiir is in path, and if not find it
 local wmiir = "wmiir"
 
+-- wimenu points to the wimenu
+local wimenu = "wimenu"
+if 0 ~= os.execute("which wimenu") then
+	if 0 ~= os.execute("which dmenu") then
+		error ("could not find wimenu or dmenu in the PATH")
+	end
+	wimenu = "dmenu"
+end
+
 -- wmii_adr is the address we use when connecting using ixp
-local wmii_adr = os.getenv("WMII_ADDRESS")
-        or ("unix!/tmp/ns." ..  os.getenv("USER") ..  "." 
-            .. os.getenv("DISPLAY"):match("(:%d+)") .. "/wmii")
+-- TODO: hide this magic in luaixp
+local wmii_adr = os.getenv("WMII_ADDRESS") or ""
+if wmii_adr == "" then
+	local user = os.getenv("USER") or ""
+	if user == "" then
+		local cmd = "id -n -u"
+		local file = io.popen (cmd)
+		if file then
+			user = file:read("*l") or ""
+			file:close()
+		end
+		if not user or user == "" then
+			error ("no WMII_ADDRESS environment variable set, and "
+			.. "could not determine user name for socket location")
+		end
+	end
+	local disp = os.getenv("DISPLAY") or ":0.0"
+	wmii_adr = "unix!/tmp/ns." .. user ..  "."
+	.. disp:match("(:%d+)") .. "/wmii"
+end
 
 -- wmixp is the ixp context we use to talk to wmii
 local wmixp = ixp.new(wmii_adr)
@@ -143,18 +169,34 @@ local prog_hist = history.new (20)
 local action_hist = history.new(10)
 
 -- where to find plugins
-plugin_path = os.getenv("HOME") .. "/.wmii-3.5/plugins/?.so;"
-           .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua;"
-           .. "/usr/local/lib/lua/5.1/wmii/?.so;"
-           .. "/usr/local/share/lua/5.1/wmii/?.lua;"
-           .. "/usr/lib/lua/5.1/wmii/?.so;"
-           .. "/usr/share/lua/5.1/wmii/?.lua"
+plugin_paths = {}
+
+table.insert(plugin_paths, wmiidir .. "/plugins/?.so")
+table.insert(plugin_paths, wmiidir .. "/plugins/?.lua")
+
+for path in string.gmatch(package.path, "[^;]+") do
+        local wmiidir = path:gsub("%?.*$", "wmii")
+        local stat = posix.stat(wmiidir)
+        if stat and stat.type == "directory" then
+              local path = path:gsub("%?", "wmii/?")
+              table.insert(plugin_paths, path)
+        end
+end
+
+for path in string.gmatch(package.cpath, "[^;]+") do
+        local wmiidir = path:gsub("%?.*$", "wmii")
+        local stat = posix.stat(wmiidir)
+        if stat and stat.type == "directory" then
+              local path = path:gsub("%?", "wmii/?")
+              table.insert(plugin_paths, path)
+        end
+end
 
 -- where to find wmiirc (see find_wmiirc())
-wmiirc_path = os.getenv("HOME") .. "/.wmii-3.5/wmiirc.lua;"
-           .. os.getenv("HOME") .. "/.wmii-3.5/wmiirc;"
-           .. "/etc/X11/wmii-3.5/wmiirc.lua;"
-           .. "/etc/X11/wmii-3.5/wmiirc"
+wmiirc_path = wmiidir .. "/wmiirc.lua;"
+           .. wmiidir .. "/wmiirc;"
+           .. "%RC_DIR%/wmiirc.lua;"
+           .. "%RC_DIR%/wmiirc"
 
 -- ========================================================================
 -- LOCAL HELPERS
@@ -165,9 +207,9 @@ wmiirc_path = os.getenv("HOME") .. "/.wmii-3.5/wmiirc.lua;"
 
 =item log ( str )
 
-Log the message provided in C<str>
+log the message provided in c<str>
 
-Currently just writes to io.stderr
+currently just writes to io.stderr
 
 =cut
 --]]
@@ -177,12 +219,63 @@ function log (str)
         end
 end
 
+
+
+--[[
+=pod
+
+=item warn ( str )
+
+generate an error message, c<str>, but do not terminate lua
+
+returns the string argument
+
+=cut
+--]]
+function warn (str)
+	pcall(error,str)
+	return str
+end
+
+
+
+--[[
+=pod
+
+=item execute ( cmd )
+
+setsid wrapper for os.execute(c<cmd>)
+
+=cut
+--]]
+local wmiir_has_setsid = nil
+function execute (cmd)
+	log ("    executing: " .. cmd)
+	if wmiir_has_setsid == nil then
+		-- test if wmiir has setsid support
+		local rc = os.execute (wmiir .. " setsid true")
+		wmiir_has_setsid = (rc == 0)
+		log ("wmiir " .. (wmiir_has_setsid and "has" or "does not have") .. " setsid support")
+	end
+		
+	if wmiir_has_setsid then
+		cmd = wmiir .. " setsid " .. cmd
+	end
+
+	log ("    ... " .. cmd)
+	local rc = os.execute (cmd)
+	log ("    ... rc=" .. tostring(rc))
+	return rc
+end
+
+
+
 --[[
 =pod
 
 =item find_wmiirc ( )
 
-Locates the wmiirc script.  It looks in ~/.wmii-3.5 and /etc/X11/wmii-3.5
+Locates the wmiirc script.  It looks in %HOME_WMII%  and %RC_DIR%
 for the first lua script bearing the name wmiirc.lua or wmiirc.  Returns
 first match.
 
@@ -305,40 +398,39 @@ end
 -- ------------------------------------------------------------------------
 -- setup a table describing the menu command
 local function menu_cmd (prompt)
-        local cmdt = { wmiir, "setsid", "dmenu", "-b" }
-        local fn = get_ctl("font")
-        if fn then
-                cmdt[#cmdt+1] = "-fn"
-                cmdt[#cmdt+1] = fn
-        end
-        local normcolors = get_ctl("normcolors")
-        if normcolors then
-                local nf, nb = normcolors:match("(#%x+)%s+(#%x+)%s#%x+")
-                if nf then
-                        cmdt[#cmdt+1] = "-nf"
-                        cmdt[#cmdt+1] = "'" .. nf .. "'"
-                end
-                if nb then
-                        cmdt[#cmdt+1] = "-nb"
-                        cmdt[#cmdt+1] = "'" .. nb .. "'"
-                end
-        end
-        local focuscolors = get_ctl("focuscolors")
-        if focuscolors then
-                local sf, sb = focuscolors:match("(#%x+)%s+(#%x+)%s#%x+")
-                if sf then
-                        cmdt[#cmdt+1] = "-sf"
-                        cmdt[#cmdt+1] = "'" .. sf .. "'"
-                end
-                if sb then
-                        cmdt[#cmdt+1] = "-sb"
-                        cmdt[#cmdt+1] = "'" .. sb .. "'"
-                end
-        end
+        local cmdt = { wimenu }
         if prompt then
                 cmdt[#cmdt+1] = "-p"
                 cmdt[#cmdt+1] = "'" .. prompt .. "'"
         end
+
+	if wimenu == "dmenu" then
+		cmdt[#cmdt+1] = "-b"
+		local normcolors = get_ctl("normcolors")
+		if normcolors then
+			local nf, nb = normcolors:match("(#%x+)%s+(#%x+)%s#%x+")
+			if nf then
+				cmdt[#cmdt+1] = "-nf"
+				cmdt[#cmdt+1] = "'" .. nf .. "'"
+			end
+			if nb then
+				cmdt[#cmdt+1] = "-nb"
+				cmdt[#cmdt+1] = "'" .. nb .. "'"
+			end
+		end
+		local focuscolors = get_ctl("focuscolors")
+		if focuscolors then
+			local sf, sb = focuscolors:match("(#%x+)%s+(#%x+)%s#%x+")
+			if sf then
+				cmdt[#cmdt+1] = "-sf"
+				cmdt[#cmdt+1] = "'" .. sf .. "'"
+			end
+			if sb then
+				cmdt[#cmdt+1] = "-sb"
+				cmdt[#cmdt+1] = "'" .. sb .. "'"
+			end
+		end
+	end
 
         return cmdt
 end
@@ -370,7 +462,7 @@ function menu (tbl, prompt)
         menu[#menu+1] = outfile
 
         local cmd = table.concat(menu," ")
-        os.execute (cmd)
+        execute (cmd)
 
         fh = io.open (outfile, "r")
         os.remove (outfile)
@@ -407,7 +499,7 @@ function prog_menu ()
         local cmd = "(" .. table.concat(hstt)
                          .. "dmenu_path ) |" 
                          .. table.concat(menu," ")
-        os.execute (cmd)
+        execute (cmd)
 
         local fh = io.open (outfile, "rb")
         os.remove (outfile)
@@ -554,8 +646,7 @@ local action_handlers = {
                         page = wmiidir .. "/wmii.3lua"
                 end
                 local cmd = xterm .. " -e man " .. page .. " &"
-                log ("    executing: " .. cmd)
-                os.execute (wmiir .. " setsid " .. cmd)
+                execute (cmd)
         end,
 
         quit = function ()
@@ -563,7 +654,7 @@ local action_handlers = {
         end,
 
         exec = function (act, args)
-                local what = args or "wmii"
+		local what = args or "wmii-lua"
                 log ("    asking wmii to exec " .. tostring(what))
                 cleanup()
                 write ("/ctl", "exec " .. what)
@@ -571,7 +662,7 @@ local action_handlers = {
 
         xlock = function (act)
                 local cmd = get_conf("xlock") or "xscreensaver-command --lock"
-                os.execute (wmiir .. " setsid " .. cmd)
+                execute (cmd)
         end,
 
         wmiirc = function ()
@@ -582,6 +673,7 @@ local action_handlers = {
                                 cleanup()
                                 posix.exec (wmiirc)
                                 posix.exec ("/bin/sh", "-c", "exec lua wmiirc")
+                                posix.exec ("%LUA_BIN%", wmiirc)
                                 posix.exec ("/usr/bin/lua", wmiirc)
                         end
                 else
@@ -726,16 +818,15 @@ local key_handlers = {
         -- execution and actions
         ["Mod1-Return"] = function (key)
                 local xterm = get_conf("xterm") or "xterm"
-                log ("    executing: " .. xterm)
-                os.execute (wmiir .. " setsid " .. xterm .. " &")
+                execute (xterm .. " &")
         end,
         ["Mod1-Shift-Return"] = function (key)
                 local tag = tag_menu()
                 if tag then
                         local xterm = get_conf("xterm") or "xterm"
-                        log ("    executing: " .. xterm .. "  on: " .. tag)
+                        log ("    executing on: " .. tag)
                         next_client_goes_to_tag = tag
-                        os.execute (wmiir .. " setsid " .. xterm .. " &")
+                        execute (xterm .. " &")
                 end
         end,
         ["Mod1-a"] = function (key)
@@ -745,8 +836,7 @@ local key_handlers = {
                 local prog = prog_menu()
                 if prog then
                         prog_hist:add(prog:match("([^ ]+)"))
-                        log ("    executing: " .. prog)
-                        os.execute (wmiir .. " setsid " .. prog .. " &")
+                        execute (prog .. " &")
                 end
         end,
         ["Mod1-Shift-p"] = function (key)
@@ -754,9 +844,9 @@ local key_handlers = {
                 if tag then
                         local prog = prog_menu()
                         if prog then
-                                log ("    executing: " .. prog .. "  on: " .. tag)
+                        	log ("    executing on: " .. tag)
                                 next_client_goes_to_tag = tag
-                                os.execute (wmiir .. " setsid " .. prog .. " &")
+                                execute (prog .. " &")
                         end
                 end
         end,
@@ -922,6 +1012,11 @@ function add_key_handler (key, fn)
 		error ("expecting a string and a function")
 	end
 
+	local onlyKey = key:match("([^-]+)$")
+	if 0 ~= os.execute("xmodmap -pk | grep -q '(" .. onlyKey .. ")'") then
+		return warn ("xmodmap -pk doesn't know about '" .. onlyKey .. "'")
+	end
+
 	if key_handlers[key] then
 		-- TODO: we may wish to allow multiple handlers for one keypress
 		error ("key handler already exists for '" .. key .. "'")
@@ -1015,6 +1110,10 @@ function update_displayed_tags ()
         end
 end
 
+function tag_display(tag, selected)
+        return tag
+end
+
 function update_displayed_tags_on_screen(s)
         local lbar = "/lbar"
         if s then
@@ -1042,11 +1141,19 @@ function update_displayed_tags_on_screen(s)
                 if cur == v then
                         color = fc
                 end
+                local str = tag_display(v,selected)
                 if not old[v] then
-                       create (lbar .. "/" .. v, color .. " " .. v)
+                       create (lbar .. "/" .. v, color .. " " .. str)
                 end
-                write (lbar .. "/" .. v, color .. " " .. v)
+                write (lbar .. "/" .. v, color .. " " .. str)
                 old[v] = nil
+        end
+
+        -- ignore widgets on the lbar
+        for i,v in pairs(widgets) do
+                if v.bar == 'lbar' then
+                        old[v.name] = nil
+                end
         end
 
         -- anything left in the old table should be removed now
@@ -1072,7 +1179,7 @@ function create_tag_widget(name)
         end
         local i, s
         for i,s in pairs(screens) do
-                create ("/screen/"..s.."/lbar/" .. name, nc .. " " .. name)
+                create ("/screen/"..s.."/lbar/" .. name, nc .. " " .. tag_display(name))
         end
 end
 
@@ -1219,8 +1326,9 @@ local ev_handlers = {
                 local fc = get_screen_ctl(scrn, "focuscolors") or get_ctl("focuscolors") or ""
                 log ("# echo " .. fc .. " " .. tag .. " | wmiir write " .. file)
 
-                create (file, fc .. " " .. tag)
-                write (file, fc .. " " .. tag)
+                str = tag_display(tag,true)
+                create (file, fc .. " " .. str)
+                write (file, fc .. " " .. str)
         end,
         UnfocusTag = function (ev, arg)
                 log ("UnfocusTag: " .. arg)
@@ -1238,8 +1346,9 @@ local ev_handlers = {
                 local nc = get_screen_ctl(scrn, "normcolors") or get_ctl("normcolors") or ""
                 log ("# echo " .. nc .. " " .. tag .. " | wmiir write " .. file)
 
-                create (file, nc .. " " .. tag)
-                write (file, nc .. " " .. tag)
+                str = tag_display(tag,true)
+                create (file, nc .. " " .. str)
+                write (file, nc .. " " .. str)
 
                 -- don't duplicate the last entry
                 if not (tag == view_hist[#view_hist]) then
@@ -1582,7 +1691,7 @@ local function start_event_reader ()
         local now = os.time()
         if os.difftime(now, event_read_start) < 5 then
                 log("wmii: detected rapid restart of /event reader")
-                local cmd = "wmiir ls /ctl"
+                local cmd = wmiir .. " ls /ctl"
                 if os.execute(cmd) ~= 0 then
                         log("wmii: cannot confirm communication with wmii, shutting down!")
                         wmiirc_running = false
@@ -1681,7 +1790,7 @@ function load_plugin(name, vars)
 
         -- first find the plugin file
         local s, path_match, full_name, file
-        for s in string.gmatch(plugin_path, "[^;]+") do
+        for i,s in pairs(plugin_paths) do
                 -- try to locate the files locally
                 local fn = s:gsub("%?", name)
                 file = io.open(fn, "r")
@@ -1781,7 +1890,7 @@ widgets = {}
 -- examples:
 --     widget = wmii.widget:new ("999_clock")
 --     widget = wmii.widget:new ("999_clock", clock_event_handler)
-function widget:new (name, fn)
+function widget:new (name, fn, bar)
         local o = {}
 
         if type(name) == "string" then
@@ -1789,6 +1898,7 @@ function widget:new (name, fn)
                 if type(fn) == "function" then
                         o.fn = fn
                 end
+                o.bar = bar or "rbar"
         else
                 error ("expected name followed by an optional function as arguments")
         end
@@ -1826,9 +1936,9 @@ function widget:show (txt, colors)
                 towrite = colors .. " " .. towrite
         end
         if not self.txt then
-                create ("/rbar/" .. self.name, towrite)
+                create ('/'..self.bar..'/'.. self.name, towrite)
         else
-                write ("/rbar/" .. self.name, towrite)
+                write ('/'..self.bar..'/'.. self.name, towrite)
         end
         self.txt = txt
 end
@@ -1837,7 +1947,7 @@ end
 -- hides a widget and removes it from the bar
 function widget:hide ()
         if self.txt then
-                remove ("/lbar/" .. self.name)
+                remove ('/'..self.bar ..'/'.. self.name)
                 self.txt = nil
         end
 end
@@ -2285,7 +2395,7 @@ end
 function client_focused (xid)
         log ("-client_focused " .. tostring(xid))
         -- return the current focused xid if nil is passed
-        if type(xid) ~= 'string' or not xid:match("0x[0-9][a-f][A-F]*$") then
+        if type(xid) ~= 'string' or not xid:match("0x%x*$") then
                 return focused_xid
         end
         -- do nothing if the same xid
@@ -2368,3 +2478,4 @@ is NO WARRANTY, to the extent permitted by law.
 
 =cut
 --]]
+-- vim: set noet ts=8 sw=8 :

@@ -1,6 +1,6 @@
 About
 ======
-All files in wmiirc-lua are stored in ~/.wmii-3.5.  You can read a bit
+All files in wmiirc-lua are stored in ~/.wmii-lua.  You can read a bit
 more about this in doc/dir-structure.  wmiirc-lua configuration is stored
 in wmiirc and is a lua script.
 
@@ -22,12 +22,12 @@ to look for it.
 
         -- initialize wmii library
         package.path = package.path
-               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/core/?.lua"
-               .. ";" .. os.getenv("HOME") .. "/.wmii-3.5/plugins/?.lua"
+               .. ";" .. os.getenv("HOME") .. "/.wmii-lua/core/?.lua"
+               .. ";" .. os.getenv("HOME") .. "/.wmii-lua/plugins/?.lua"
         require "wmii" 
 
 The lines above sets a new package.path which will look for lua
-libraries in ~/.wmii-3.5/core/ and ~/.wmii-3.5/plugins/.
+libraries in ~/.wmii-lua/core/ and ~/.wmii-lua/plugins/.
 
 Loading the 'wmii' lua library does not cause any events to be handled
 yet.  To handle events you need to issue the wmii.run_event_loop() call,
@@ -120,7 +120,7 @@ Adding plugins
 ===============
 wmiirc-lua is extendible through plugin modules.  Some plugins are
 shipped with the package, others you can get from 3rd party sources.
-New plugins should be placed in ~/.wmii-3.5/plugins/ directory.
+New plugins should be placed in ~/.wmii-lua/plugins/ directory.
 See doc/plugin-api to learn more about writing plugins.
 
 To load plugins into wmiirc, simply call the load_plugin function:

@@ -1,6 +1,6 @@
 If you have any suggests I am happy to add them to the list.
 
-for 0.3 release
+for 0.4 release
     - core
         - verify required packages in wmii.lua (like lua version number)
         - version number in the files
@@ -56,7 +56,7 @@ future
             a parameter that wmii.lua passes to it.
 
         - improve logging
-          - use file in ~/.wmii-3.5/ like wmii+ruby
+          - use file in ~/.wmii-lua/ like wmii+ruby
 
     - bundled plugins
         - 'session_manager'

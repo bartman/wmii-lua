@@ -27,3 +27,9 @@
 <jkr> Woah, it crashed again.
 <jkr> wmii: column.c497: column_scale: Assertion `f->collapsed ? ((f->r).max.y - (f->r).min.y) >= 0 : dy > 0` failed
 
+- inconsistant ext-install-user behaviour
+
+<selckin> install-user does not search for ixp.h where ext-install-user installs it, not sure if thats supposed to work
+<selckin> with empty ~/usr ext-install-user fails on a manpage, INSTALL man man/wmii(1) | cp: cannot create regular file `~/usr//share/man/man1/wmii.1': No such file or directory | [2]: *** [wmii.install] Error  | make[2]: Leaving directory `/home/selckin/software/wmii-lua/ext/wmii/man'
+<selckin> oh i missed the option in config.mk for ixp
+

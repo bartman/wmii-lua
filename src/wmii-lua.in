@@ -6,15 +6,15 @@
 
 # we will look for wmiirc in these directories
 POSSIBLE_WMIIRC="
-${HOME}/.wmii-3.5/wmiirc.lua
-${HOME}/.wmii-3.5/wmiirc
-/etc/X11/wmii-3.5/wmiirc.lua
-/etc/X11/wmii-3.5/wmiirc
+%HOME_WMII%/wmiirc.lua
+%HOME_WMII%/wmiirc
+%RC_DIR%/wmiirc.lua
+%RC_DIR%/wmiirc
 "
 
 # try to find the best wmiirc written in lua
 WMIIRC=
-for wmiirc in ${POSSIBLE_WMIIRC} ; do
+for wmiirc in $(eval echo ${POSSIBLE_WMIIRC}) ; do
         if ( test -r "${wmiirc}" ) && ( head -n1 "${wmiirc}" | grep -q lua ) ; then
                 exec wmii -r "${wmiirc}"
         fi

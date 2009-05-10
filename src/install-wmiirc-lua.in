@@ -1,0 +1,66 @@
+#!/bin/sh
+# Copyright (c) 2007, Bart Trojanowski <bart@jukie.net>
+#
+# This script installs wmiirc-lua files into $HOME/.wmii-lua
+
+set -e
+
+prog=$(basename $0)
+
+SRC_DIR="%RC_DIR%"
+DST_DIR=$(eval echo "%HOME_WMII%")
+
+SRC_WMIIRC="${SRC_DIR}/wmiirc.lua"
+DST_WMIIRC="${DST_DIR}/wmiirc"
+
+INSTALL="install"
+FORCE=
+
+do_install () {
+        echo >&2 "Installing in $DST_DIR"
+
+        ${INSTALL} -m 755 -d "${DST_DIR}"
+        ${INSTALL} -m 744 -T "${SRC_WMIIRC}" "${DST_WMIIRC}"
+
+        echo >&2 "DONE"
+        exit 0
+}
+
+while test -n "$1" ; do
+        cmd=$1 ; shift
+        case $cmd in 
+            --force)
+                FORCE=true
+                ;;
+            --backup)
+                FORCE=true
+                INSTALL="$INSTALL -b"
+                ;;
+            *)
+                echo >&2 "Invalid option $cmd"
+                exit 1
+                ;;
+        esac
+done
+
+if test -z "$FORCE" ; then
+
+        if ! test -f "${SRC_WMIIRC}" ; then
+                echo >&2 "System wide files for wmiirc-lua not installed."
+                exit 1
+        fi
+
+        if test -f "${DST_WMIIRC}" ; then
+                echo >&2 "You already have files installed in ${DST_WMIIRC}."
+                echo >&2 ""
+                echo >&2 "Please select one of the following options and rerun this script:"
+                echo >&2 ""
+                echo >&2 "   $prog --force           - overwrite existing files"
+                echo >&2 "   $prog --backup          - backup existing files"
+                exit 1
+        fi
+
+fi
+
+do_install
+# vim: set et sw=8 ts=8 :

@@ -1,6 +1,6 @@
-This file describes the directory structure for ~/.wmii-3.5
+This file describes the directory structure for ~/.wmii-lua
 
-${HOME}/.wmii-3.5
+${HOME}/.wmii-lua
         |--- wmiirc                     <-- configuration file
         |--- core
         |    |--- wmii.lua              <-- core lua bits
@@ -14,7 +14,7 @@ In 0.2 the plugin directory will be extended to allow for plugins to
 have their own directory and they will be loaded using
 wmii.load_plugin("name") and not require "name".
 
-${HOME}/.wmii-3.5
+${HOME}/.wmii-lua
         ...
         ...
         `--- plugin
