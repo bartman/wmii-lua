@@ -273,6 +273,25 @@ end
 --[[
 =pod
 
+=item shell_execute ( cmd )
+
+setsid wrapper for os.execute(c<cmd>)
+like execute() but runs under a subshell
+
+=cut
+--]]
+function shell_execute (cmd)
+	cmd = cmd:gsub('([\\"])', '\\%1')
+	cmd = 'sh -c "' .. cmd .. '"'
+
+	return execute(cmd)
+end
+
+
+
+--[[
+=pod
+
 =item find_wmiirc ( )
 
 Locates the wmiirc script.  It looks in %HOME_WMII%  and %RC_DIR%
@@ -499,7 +518,7 @@ function prog_menu ()
         local cmd = "(" .. table.concat(hstt)
                          .. "dmenu_path ) |" 
                          .. table.concat(menu," ")
-        execute (cmd)
+        shell_execute (cmd)
 
         local fh = io.open (outfile, "rb")
         os.remove (outfile)
