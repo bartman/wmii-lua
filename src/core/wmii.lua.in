@@ -115,6 +115,19 @@ if not myid then
         myid = math.random(10000)
 end
 
+-- returns boolean indicating if path is a directory
+local function is_directory(path)
+	if have_posix then
+		local stat = posix.stat(wmiidir)
+		return stat and stat.type == "directory"
+	else
+		local path = path:gsub('([\\"])', '\\%1')
+		local cmd = '[ -d "' .. path .. '" ]'
+		local rc = os.execute (cmd)
+		return rc == 0
+	end
+end
+
 -- ========================================================================
 -- MODULE VARIABLES
 -- ========================================================================
@@ -176,8 +189,7 @@ table.insert(plugin_paths, wmiidir .. "/plugins/?.lua")
 
 for path in string.gmatch(package.path, "[^;]+") do
         local wmiidir = path:gsub("%?.*$", "wmii")
-        local stat = posix.stat(wmiidir)
-        if stat and stat.type == "directory" then
+	if is_directory(wmiidir) then
               local path = path:gsub("%?", "wmii/?")
               table.insert(plugin_paths, path)
         end
@@ -185,8 +197,7 @@ end
 
 for path in string.gmatch(package.cpath, "[^;]+") do
         local wmiidir = path:gsub("%?.*$", "wmii")
-        local stat = posix.stat(wmiidir)
-        if stat and stat.type == "directory" then
+	if is_directory(wmiidir) then
               local path = path:gsub("%?", "wmii/?")
               table.insert(plugin_paths, path)
         end
