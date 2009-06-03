@@ -117,7 +117,9 @@ ext-build-helper: ext-check
 		"PREFIX=${BUILD_PREFIX}" \
 		${BUILD_BASE_RULE}
 	#
+ifeq (${BUILD_RULE},clean)
 	${MAKE} ext-libixp-check
+endif
 	#
 	@echo ${BUILD_STR} wmii
 	${Q} ${MAKE} -C ${EXT_DIR}/wmii ${BUILD_RULE} \
