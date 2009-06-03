@@ -99,6 +99,7 @@ A. Install in $HOME only
     # (optional) build and install libixp and wmii
     make ext-update
     make ext-install-user
+    sed -i -e 's,^IXP_PREFIX.*,IXP_PREFIX = ${HOME}/usr,' config.mk
 
     # build and install wmii-lua
     make install-user
