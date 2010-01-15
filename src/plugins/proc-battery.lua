@@ -121,7 +121,6 @@ L<wmii(1)>, L<lua(1)>
 =head1 AUTHOR
 
 Dave O'Neill <dmo@dmo.ca>
-Bart Trojanowski <bart@jukie.net>
 
 Based on a port by Stefan Riegler <sr@bigfatflat.net> of the ruby-wmiirc
 standard-plugin.rb battery handling originally written Mauricio Fernandez.
@@ -130,7 +129,6 @@ standard-plugin.rb battery handling originally written Mauricio Fernandez.
 
 Copyright (c) 2007, Stefan Riegler <sr@bigfatflat.net>
 Copyright (c) 2008, Dave O'Neill <dmo@dmo.ca>
-Copyright (c) 2010, Bart Trojanowski <bart@jukie.net>
 
 This is free software.  You may redistribute copies of it under the terms of
 the GNU General Public License L<http://www.gnu.org/licenses/gpl.html>.  There
@@ -144,7 +142,6 @@ local wmii   = require("wmii")
 local io     = require("io")
 local os     = require("os")
 local string = require("string")
-local type   = type
 
 module("battery")
 api_version=0.1
@@ -167,8 +164,8 @@ wmii.set_conf ("battery.critical_bgcolor", "#FF0000")
 wmii.set_conf ("battery.critical_action",  'echo "Critical battery" | xmessage -center -buttons quit:0 -default quit -file -')
 
 -- Should not need to be modified on Linux
-wmii.set_conf ("battery.sysdir", "/sys/class/power_supply/%s")
--- ... see http://wiki.openmoko.org/wiki/GTA02_sysfs#power_supply_battery_information for more info
+wmii.set_conf ("battery.statefile", "/proc/acpi/battery/%s/state")
+wmii.set_conf ("battery.infofile",  "/proc/acpi/battery/%s/info")
 
 wmii.set_conf ("battery.showtime", true)
 wmii.set_conf ("battery.showrate", true)
@@ -178,23 +175,6 @@ wmii.set_conf ("battery.showrate", true)
 --
 local batteries       = { }
 
--- read a /sys file, return the first line
-local function read_sys_line(file, fmt)
-        local ret = nil
-        local fd = io.open(file)
-        if fd then
-                ret = fd:read(fmt or "*l")
-        end
-        return ret
-end
-local function read_sys_number(file)
-        local ret = read_sys_line(file, "*n")
-        if type(ret) ~= type(1) then
-                ret = 0
-        end
-        return ret
-end
-
 -- The actual work performed here.
 -- parses info, state file and preps for display
 local function update_single_battery ( battery )
@@ -202,33 +182,33 @@ local function update_single_battery ( battery )
 	local printout = "N/A"
 	local colors   = wmii.get_ctl("normcolors")
 
-        local sysdir   = string.format(wmii.get_conf("battery.sysdir"), battery["name"])
-
-        local batt_present     = read_sys_number(sysdir .. '/present')      -- 0 or 1
-        local batt_energy_now  = read_sys_number(sysdir .. '/energy_now')   -- µWh
-        local batt_energy_full = read_sys_number(sysdir .. '/energy_full')  -- µWh
-        local batt_current_now = read_sys_number(sysdir .. '/current_now')  -- µAh
-        local batt_power_now   = read_sys_number(sysdir .. '/power_now')    -- µW
-        local batt_status      = read_sys_line(sysdir .. '/status')         -- Full, Charging, Discharging, Unknown
-
-        -- the /sys reporting interface is not present
-	if not batt_present or not batt_energy_now or not batt_energy_full or not batt_status then
+	local fbatt    = io.open(string.format(wmii.get_conf("battery.statefile"), battery["name"] ),"r")
+	if fbatt == nil then
 		return battery["widget"]:show(printout, colors)
 	end
 
-        -- Special case when a second battery is drained and not charging
-        if batt_status == 'Unknown' and batt_current_now == 0 then
-		return battery["widget"]:show(printout, colors)
-        end
+	local batt = fbatt:read("*a")
+        fbatt:close()
 
-	local batt_percent = batt_energy_now / batt_energy_full * 100
+	local battpresent = batt:match('present:%s+(%w+)')
+	if battpresent ~= "yes" then
+		return battery["widget"]:show(printout, colors)
+	end
 
 	local low          = wmii.get_conf ("battery.low")
 	local critical     = wmii.get_conf ("battery.critical")
 
+	local fbattinfo    = io.open(string.format(wmii.get_conf("battery.infofile"), battery["name"]),"r")
+	local battinfo     = fbattinfo:read("*a")
+        fbattinfo:close()
+
+	local batt_percent = batt:match('remaining capacity:%s+(%d+)')
+	                     / battinfo:match('last full capacity:%s+(%d+)') * 100
+	local batt_state   = batt:match('charging state:%s+(%w+)')
+
 	-- Take action in case battery is low/critical
 	if batt_percent <= critical then
-		if batt_status == "Discharging" and not battery["warned_crit"] then
+		if batt_state == "discharging" and not battery["warned_crit"] then
 			wmii.log("Warning about critical battery.")
 			os.execute(wmii.get_conf("battmon.critical_action"), "&")
 			battery["warned_crit"] = true
@@ -239,7 +219,7 @@ local function update_single_battery ( battery )
 			..  wmii.get_conf ("battery.critical_bgcolor"),
 			1)
 	elseif batt_percent <= low then
-		if batt_status == "Discharging" and not battery["warned_low"] then
+		if batt_state == "discharging" and not battery["warned_low"] then
 			wmii.log("Warning about low battery.")
 			os.execute(wmii.get_conf("battmon.low_action"), "&")
 			battery["warned_low"] = true
@@ -257,32 +237,48 @@ local function update_single_battery ( battery )
 
 	-- If percent is 100 and state is discharging then
 	-- the battery is full and not discharging.
-        batt_state = "?"
-	if (batt_status == "Full") or (batt_status == "Discharging" and batt_percent >= 97)  then
+	if (batt_state == "charged") or (batt_state == "discharging" and batt_percent >= 97)  then
 		batt_state = "="
-        elseif batt_status == "Charging" then
+	end
+	if batt_state == "charging" then
 		batt_state = "^"
-        elseif batt_status == "Discharging" then
+	end
+	if batt_state == "discharging" then
 		batt_state = "v"
 	end
 
-        -- done calculating, compose the output
-        printout = ""
+	local batt_rate = batt:match('present rate:%s+(%d+)') * 1
 
-	if wmii.get_conf(battery.showrate) and batt_power_now then
-                printout = printout .. string.format("%.2fW ", batt_power_now / 1000000)
+	local batt_time = ""
+	if wmii.get_conf(battery.showtime) then
+		batt_time = "inf"
+		if batt_rate > 0 then
+			if batt_state == "^" then
+				batt_time = (battinfo:match('last full capacity:%s+(%d+)') - batt:match('remaining capacity:%s+(%d+)')) / batt_rate
+			else
+				batt_time = batt:match('remaining capacity:%s+(%d+)') / batt_rate
+			end
+			local hour = string.format("%d",batt_time)
+			local min = (batt_time - hour) * 60
+
+			if min > 59 then
+				min = min - 60
+				hour = hour + 1
+			end
+			if min < 0 then
+				min = 0
+			end
+			batt_time = hour .. ':'
+			batt_time = batt_time .. string.format("%.2d",min)
+		end
 	end
 
-	if wmii.get_conf(battery.showtime) and batt_current_now and batt_energy_now ~= 0 then
-                if batt_state == "^" then
-                        hours = (batt_energy_full - batt_energy_now) / batt_current_now
-                else
-                        hours = batt_energy_now / batt_current_now
-                end
-                printout = printout .. string.format("%d:%0.2d ", hours, (hours*60) % 60)
+	local battrate_string = ""
+	if wmii.get_conf(battery.showrate) then
+		batt_rate = batt_rate/1000
+		battrate_string = string.format("%.2f",batt_rate) .. 'W '
 	end
-
-	printout = printout .. '(' .. batt_state .. string.format("%.0f",batt_percent) .. batt_state .. ')'
+	printout =  battrate_string .. batt_time .. '(' .. batt_state .. string.format("%.0f",batt_percent) .. batt_state .. ')'
 
 	battery["widget"]:show(printout, colors)
 end
