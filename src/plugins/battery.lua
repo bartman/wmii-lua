@@ -32,9 +32,10 @@ need to be modified from the defaults for most users.
 =item battery.names
 
 A comma-separated list of battery names to poll for status.  This allows the
-widget to display multiple battery names.
+widget to display multiple battery names.  If left blank, will display all
+batteries.
 
-Defaults to "BAT0"
+Defaults to ""
 
 =item battery.poll_rate
 
@@ -98,6 +99,13 @@ Defaults to
 
     echo "Critical battery" | xmessage -center -buttons quit:0 -default quit -file -
 
+=item battery.practically_full_percentage
+
+This is a workaround for faulty batteries.  Set this lower if you want your battery to report being
+full at a lower percentage than 100.
+
+Defaults to 99
+
 =back
 
 =head1 BUGS AND LIMITATIONS
@@ -144,7 +152,9 @@ local wmii   = require("wmii")
 local io     = require("io")
 local os     = require("os")
 local string = require("string")
+local posix  = require("posix")
 local type   = type
+local tostring = tostring
 
 module("battery")
 api_version=0.1
@@ -154,7 +164,7 @@ api_version=0.1
 --
 wmii.set_conf ("battery.poll_rate", 30)
 
-wmii.set_conf ("battery.names", "BAT0")
+wmii.set_conf ("battery.names", "") -- leave empty to use all available batteries
 
 wmii.set_conf ("battery.low", 15)
 wmii.set_conf ("battery.low_fgcolor", "#000000")
@@ -166,8 +176,10 @@ wmii.set_conf ("battery.critical_fgcolor", "#000000")
 wmii.set_conf ("battery.critical_bgcolor", "#FF0000")
 wmii.set_conf ("battery.critical_action",  'echo "Critical battery" | xmessage -center -buttons quit:0 -default quit -file -')
 
+wmii.set_conf ("battery.practically_full_percentage", 99)
+
 -- Should not need to be modified on Linux
-wmii.set_conf ("battery.sysdir", "/sys/class/power_supply/%s")
+wmii.set_conf ("battery.sysdir", "/sys/class/power_supply")
 -- ... see http://wiki.openmoko.org/wiki/GTA02_sysfs#power_supply_battery_information for more info
 
 wmii.set_conf ("battery.showtime", true)
@@ -197,12 +209,23 @@ end
 
 -- The actual work performed here.
 -- parses info, state file and preps for display
-local function update_single_battery ( battery )
+local function update_single_battery ( name )
+
+        local battery = batteries[name]
+        if not battery then
+                batteries[name] = {
+                        name        = name,
+                        widget      = wmii.widget:new ("901_battery_" .. name),
+                        warned_low  = false,
+                        warned_crit = false,
+                }
+                battery = batteries[name]
+        end
 
 	local printout = "N/A"
 	local colors   = wmii.get_ctl("normcolors")
 
-        local sysdir   = string.format(wmii.get_conf("battery.sysdir"), battery["name"])
+        local sysdir   = string.format("%s/%s", wmii.get_conf("battery.sysdir"), name)
 
         local batt_present     = read_sys_number(sysdir .. '/present')      -- 0 or 1
         local batt_energy_now  = read_sys_number(sysdir .. '/energy_now')   -- µWh
@@ -216,15 +239,14 @@ local function update_single_battery ( battery )
 		return battery["widget"]:show(printout, colors)
 	end
 
-        -- Special case when a second battery is drained and not charging
-        if batt_status == 'Unknown' and batt_current_now == 0 then
-		return battery["widget"]:show(printout, colors)
+	local batt_percent = batt_energy_now / batt_energy_full * 100
+        if batt_percent > 100 then
+                batt_percent = 100
         end
 
-	local batt_percent = batt_energy_now / batt_energy_full * 100
-
-	local low          = wmii.get_conf ("battery.low")
-	local critical     = wmii.get_conf ("battery.critical")
+	local low              = wmii.get_conf ("battery.low")
+	local critical         = wmii.get_conf ("battery.critical")
+        local practically_full = wmii.get_conf ("battery.practically_full_percentage")
 
 	-- Take action in case battery is low/critical
 	if batt_percent <= critical then
@@ -257,8 +279,10 @@ local function update_single_battery ( battery )
 
 	-- If percent is 100 and state is discharging then
 	-- the battery is full and not discharging.
-        batt_state = "?"
-	if (batt_status == "Full") or (batt_status == "Discharging" and batt_percent >= 97)  then
+        local batt_state = "?"
+        if batt_status == "Unknown" then
+		batt_state = "-"
+        elseif (batt_status == "Full") or (batt_percent >= practically_full)  then
 		batt_state = "="
         elseif batt_status == "Charging" then
 		batt_state = "^"
@@ -273,7 +297,8 @@ local function update_single_battery ( battery )
                 printout = printout .. string.format("%.2fW ", batt_power_now / 1000000)
 	end
 
-	if wmii.get_conf(battery.showtime) and batt_current_now and batt_energy_now ~= 0 then
+	if wmii.get_conf(battery.showtime) and batt_current_now and batt_current_now ~= 0 then
+                local hours = 0
                 if batt_state == "^" then
                         hours = (batt_energy_full - batt_energy_now) / batt_current_now
                 else
@@ -282,7 +307,7 @@ local function update_single_battery ( battery )
                 printout = printout .. string.format("%d:%0.2d ", hours, (hours*60) % 60)
 	end
 
-	printout = printout .. '(' .. batt_state .. string.format("%.0f",batt_percent) .. batt_state .. ')'
+	printout = printout .. '(' .. batt_state .. string.format("%.0f", batt_percent) .. batt_state .. ')'
 
 	battery["widget"]:show(printout, colors)
 end
@@ -293,17 +318,20 @@ local function update_batt_data (time_since_update)
 
 	local batt_names = wmii.get_conf("battery.names");
 
-	for battery in batt_names:gmatch("%w+") do
-		if( not batteries[battery] ) then
-			batteries[battery] = {
-				name        = battery,
-				widget      = wmii.widget:new ("901_battery_" .. battery),
-				warned_low  = false,
-				warned_crit = false,
-			}
-		end
-		update_single_battery( batteries[battery] )
-	end
+        if type(batt_names) == type("") and batt_names ~= "" then
+                for name in batt_names:gmatch("%w+") do
+                        update_single_battery(name)
+                end
+        else
+                local sysdir = wmii.get_conf("battery.sysdir")
+                for name in posix.files(sysdir) do
+                        local type_file = string.format("%s/%s/type", sysdir, name)
+                        local batt_type = read_sys_line(type_file)
+                        if batt_type == "Battery" then
+                                update_single_battery(name)
+                        end
+                end
+        end
 
 	return wmii.get_conf("battery.poll_rate")
 end
